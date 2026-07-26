@@ -1,0 +1,64 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id         String       @id @default(uuid())
+  telegramId String       @unique
+  name       String
+  role       String       @default("EMPLOYEE") // ADMIN, MANAGER, EMPLOYEE
+  active     Boolean      @default(true)
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  Attendance Attendance[]
+  Sale       Sale[]
+}
+
+model Attendance {
+  id           String           @id @default(uuid())
+  user         User             @relation(fields: [userId], references: [id])
+  userId       String
+  date         DateTime         // Represents the day
+  checkInTime  DateTime?
+  checkOutTime DateTime?
+  gpsLat       Float?
+  gpsLng       Float?
+  status       String           @default("ON_TIME") // ON_TIME, LATE, ABSENT
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+}
+
+model Sale {
+  id            String        @id @default(uuid())
+  user          User          @relation(fields: [userId], references: [id])
+  userId        String
+  category      Category      @relation(fields: [categoryId], references: [id])
+  categoryId    String
+  itemName      String
+  price         Float
+  paymentMethod String        @default("CASH") // CASH, CARD, INSTALLMENT
+  date          DateTime      @default(now())
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+model Category {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  Sale      Sale[]
+}
+
+model Settings {
+  id        String   @id @default(uuid())
+  storeLat  Float
+  storeLng  Float
+  radius    Int      @default(50) // in meters
+  updatedAt DateTime @updatedAt
+}

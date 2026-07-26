@@ -9,17 +9,30 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@pbe/react-yandex-maps": "^1.2.5",
+    "@prisma/client": "^6.19.3",
+    "@twa-dev/sdk": "^8.0.2",
+    "clsx": "^2.1.1",
+    "date-fns": "^4.4.0",
+    "file-saver": "^2.0.5",
+    "geolib": "^3.3.14",
+    "lucide-react": "^1.27.0",
     "next": "16.2.12",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "tailwind-merge": "^3.6.0",
+    "telegraf": "^4.16.3",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/file-saver": "^2.0.7",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.12",
+    "prisma": "^6.19.3",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
