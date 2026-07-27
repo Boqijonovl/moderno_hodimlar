@@ -133,8 +133,9 @@ export async function POST(req: Request) {
       console.error('Failed to send notification', e);
     }
     return NextResponse.json(sale);
-  } catch (error) {
-    return NextResponse.json({ error: 'Failed to create sale' }, { status: 500 });
+  } catch (error: any) {
+    console.error('Failed to create sale:', error);
+    return NextResponse.json({ error: 'Failed to create sale: ' + error.message }, { status: 500 });
   }
 }
 
