@@ -93,7 +93,7 @@ export default function MainApp() {
   return (
     <main className="min-h-screen bg-slate-50 flex flex-col pb-[80px]">
       <div className="bg-blue-600 text-white p-6 shadow-md rounded-b-3xl shrink-0 z-10 relative">
-        <h1 className="text-2xl font-bold tracking-tight">Moderno Bot</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Moderno Mebel</h1>
         <p className="text-blue-100 mt-1">
           {currentTab === 'attendance' ? 'Davomat' : currentTab === 'sales' ? 'Savdolar' : 'Sozlamalar'}
         </p>

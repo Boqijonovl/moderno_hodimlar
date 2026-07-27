@@ -23,7 +23,7 @@ bot.start(async (ctx) => {
     console.error('Error auto-registering user:', error);
   }
 
-  ctx.reply('Assalomu alaykum! Moderno Mebel tizimiga xush kelibsiz. Ilovani ochish uchun pastdagi tugmani bosing.', {
+  ctx.reply(`Xush kelibsiz ${name}! Ilovani ochish uchun quyidagi tugmani bosing!`, {
     reply_markup: {
       inline_keyboard: [
         [{ text: '📱 Ilovani ochish', web_app: { url: process.env.NEXT_PUBLIC_APP_URL as string } }]
