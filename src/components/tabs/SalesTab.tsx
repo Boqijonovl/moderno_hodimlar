@@ -97,7 +97,7 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
   const openPDF = (saleId?: string) => {
     const id = saleId || lastSale?.id;
     if (id) {
-      WebApp?.openLink(`${window.location.origin}/api/sales/${id}/pdf`);
+      WebApp?.openLink(`${window.location.origin}/receipt/${id}`);
     }
   };
 
@@ -124,14 +124,14 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
             
             <div className="mb-6 flex flex-col items-center w-full">
               <p className="text-sm text-slate-600 dark:text-slate-300 mb-4 text-center">
-                🧾 <b>Chek tayyor!</b><br/>PDF botingizga yuborildi. Yoki uni shu yerdan ko'rishingiz mumkin:
+                🧾 <b>Chek tayyor!</b><br/>Chekni ko'rish tugmasini bosing:
               </p>
               <button 
                 onClick={() => openPDF()}
                 className="w-full bg-blue-600 text-white font-bold p-4 rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-all mb-3 shadow-md shadow-blue-600/20"
               >
                 <FileText className="w-5 h-5" />
-                PDF Chekni O'qish
+                Veb Chekni O'qish
               </button>
             </div>
 
@@ -297,7 +297,7 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
                     onClick={() => openPDF(sale.id)}
                     className="text-xs text-blue-600 font-bold hover:underline inline-flex items-center gap-1 mt-1 cursor-pointer"
                   >
-                    <FileText className="w-3 h-3" /> PDF Ko'rish
+                    <FileText className="w-3 h-3" /> Chekni ko'rish
                   </button>
                 </div>
               </div>

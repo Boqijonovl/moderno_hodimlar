@@ -70,11 +70,17 @@ export async function POST(req: Request) {
             doc.on('end', async () => {
               const pdfData = Buffer.concat(buffers);
               if (user.telegramId) {
+                const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://moderno-bot-web.vercel.app';
                 await bot.telegram.sendDocument(user.telegramId, {
                   source: pdfData,
                   filename: `Chek_${new Date().getTime()}.pdf`
                 }, {
-                  caption: `🎉 Sotuv muvaffaqiyatli saqlandi!\n\nSizning elektron chekingiz (PDF) tayyor.`
+                  caption: `🎉 Sotuv muvaffaqiyatli saqlandi!\n\n📄 Sizning elektron chekingiz (PDF) tayyor.\n🌐 Agarda PDF ochilmasa, pastdagi tugmani bosib Veb-Chek orqali oson ko'rishingiz mumkin.`,
+                  reply_markup: {
+                    inline_keyboard: [
+                      [{ text: "🌐 Veb-Chekni Ochish", url: `${appUrl}/receipt/${sale.id}` }]
+                    ]
+                  }
                 }).catch((e) => console.error("Error sending PDF:", e));
               }
               resolve();
