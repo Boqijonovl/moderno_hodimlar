@@ -33,7 +33,8 @@ model Attendance {
   gpsLat       Float?
   gpsLng       Float?
   status       String           @default("ON_TIME") // ON_TIME, LATE, ABSENT
-  reason       String?          // Reason if checked in/out from far distance
+  reason       String?          // If late or out of zone
+  lateMinutes  Int              @default(0)
   createdAt    DateTime         @default(now())
   updatedAt    DateTime         @updatedAt
 }

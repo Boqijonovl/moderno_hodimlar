@@ -172,10 +172,26 @@ export default function AttendanceTab({ user, WebApp }: { user: any, WebApp: any
       </div>
 
       <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
-        <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
-          <Calendar className="w-6 h-6 text-blue-600" />
-          Tarix
-        </h2>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+            <Calendar className="w-6 h-6 text-blue-600" />
+            Tarix
+          </h2>
+          {history.length > 0 && (
+            <div className="text-right">
+              <div className="text-[10px] text-slate-500 uppercase font-bold">Umumiy kechikish</div>
+              <div className="text-sm font-bold text-rose-500">
+                {(() => {
+                  const totalLate = history.reduce((sum, r) => sum + (r.lateMinutes || 0), 0);
+                  if (totalLate === 0) return '0 daqiqa';
+                  const h = Math.floor(totalLate / 60);
+                  const m = totalLate % 60;
+                  return h > 0 ? `${h} s ${m} d` : `${m} daqiqa`;
+                })()}
+              </div>
+            </div>
+          )}
+        </div>
         
         <div className="space-y-3">
           {history.length === 0 ? (

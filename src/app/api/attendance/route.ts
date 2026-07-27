@@ -51,22 +51,32 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: 'Siz allaqachon ishga kelgansiz. Oldin yakunlang!' }, { status: 400 });
       }
 
-      const currentTime = new Date();
-      const onTimeLimit = new Date();
+      const serverTime = new Date();
+      // Tashkent time object (this creates a Date object that is shifted to represent Tashkent time locally)
+      const tashkentTimeStr = serverTime.toLocaleString("en-US", {timeZone: "Asia/Tashkent"});
+      const tashkentTime = new Date(tashkentTimeStr);
       
+      const onTimeLimit = new Date(tashkentTime);
       const [startHour, startMinute] = (user.workStartTime || "09:00").split(':').map(Number);
       onTimeLimit.setHours(startHour, startMinute, 0, 0);
 
-      const status = currentTime <= onTimeLimit ? 'ON_TIME' : 'LATE';
+      const isLate = tashkentTime > onTimeLimit;
+      const status = isLate ? 'LATE' : 'ON_TIME';
+
+      let lateMinutes = 0;
+      if (isLate) {
+        lateMinutes = Math.floor((tashkentTime.getTime() - onTimeLimit.getTime()) / 60000);
+      }
 
       const attendance = await prisma.attendance.create({
         data: {
           userId: user.id,
           date: today,
-          checkInTime: currentTime,
+          checkInTime: serverTime, // Save actual server UTC time in DB for consistency
           gpsLat: lat,
           gpsLng: lng,
           status,
+          lateMinutes,
           reason: body.reason || null
         }
       });
