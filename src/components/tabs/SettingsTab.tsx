@@ -3,11 +3,14 @@
 import { useState } from 'react';
 import { User, Settings, Globe, Palette, ShieldAlert } from 'lucide-react';
 import Link from 'next/link';
+import { useTranslation, Language } from '@/lib/i18n';
 
 export default function SettingsTab({ user, onUserUpdate }: { user: any, onUserUpdate: () => void }) {
   const [name, setName] = useState(user?.name || '');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  
+  const t = useTranslation(user?.language as Language);
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,16 +24,32 @@ export default function SettingsTab({ user, onUserUpdate }: { user: any, onUserU
         body: JSON.stringify({ name })
       });
       if (res.ok) {
-        setMessage('Ismingiz muvaffaqiyatli saqlandi');
+        setMessage(t('success_save'));
         onUserUpdate();
       } else {
-        setMessage('Xatolik yuz berdi');
+        setMessage('Error');
       }
     } catch (e) {
-      setMessage('Tarmoq xatosi');
+      setMessage('Error');
     }
     setLoading(false);
     setTimeout(() => setMessage(''), 3000);
+  };
+
+  const handleLanguageChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newLang = e.target.value;
+    try {
+      const res = await fetch(`/api/me?telegramId=${user?.telegramId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ language: newLang })
+      });
+      if (res.ok) {
+        onUserUpdate();
+      }
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   return (
@@ -41,13 +60,13 @@ export default function SettingsTab({ user, onUserUpdate }: { user: any, onUserU
         <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl p-6 shadow-md text-white">
           <div className="flex items-center gap-3 mb-2">
             <ShieldAlert className="w-8 h-8 text-blue-200" />
-            <h2 className="text-xl font-bold">Admin Panel</h2>
+            <h2 className="text-xl font-bold">{t('admin_panel')}</h2>
           </div>
           <p className="text-blue-100 text-sm mb-4">
-            Barcha xodimlar, davomat va savdolar statistikasini boshqarish.
+            {t('admin_panel_desc')}
           </p>
           <Link href="/admin" className="inline-flex items-center justify-center w-full bg-white text-blue-600 hover:bg-blue-50 font-bold rounded-xl p-3 transition-colors">
-            Panelga O'tish
+            {t('go_to_panel')}
           </Link>
         </div>
       )}
@@ -56,12 +75,12 @@ export default function SettingsTab({ user, onUserUpdate }: { user: any, onUserU
       <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
         <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
           <User className="w-6 h-6 text-blue-600" />
-          Shaxsiy Ma'lumotlar
+          {t('personal_info')}
         </h2>
         
         <form onSubmit={handleUpdateProfile} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Ismingiz</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">{t('name')}</label>
             <input 
               type="text" 
               value={name}
@@ -80,7 +99,7 @@ export default function SettingsTab({ user, onUserUpdate }: { user: any, onUserU
             disabled={loading || name === user?.name}
             className="w-full bg-slate-800 hover:bg-slate-900 disabled:bg-slate-300 text-white rounded-xl p-3 font-medium transition-all"
           >
-            {loading ? 'Saqlanmoqda...' : 'Saqlash'}
+            {loading ? t('saving') : t('save')}
           </button>
         </form>
       </div>
@@ -89,15 +108,19 @@ export default function SettingsTab({ user, onUserUpdate }: { user: any, onUserU
       <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 space-y-4">
         <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
           <Settings className="w-6 h-6 text-blue-600" />
-          Ilova Sozlamalari
+          {t('app_settings')}
         </h2>
         
         <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
           <div className="flex items-center gap-3">
             <Globe className="w-5 h-5 text-slate-500" />
-            <span className="text-slate-700 font-medium text-sm">Tizim Tili</span>
+            <span className="text-slate-700 font-medium text-sm">{t('system_lang')}</span>
           </div>
-          <select className="bg-transparent text-sm font-medium outline-none text-blue-600">
+          <select 
+            value={user?.language || 'uz'} 
+            onChange={handleLanguageChange}
+            className="bg-transparent text-sm font-medium outline-none text-blue-600"
+          >
             <option value="uz">O'zbekcha</option>
             <option value="ru">Русский</option>
           </select>
@@ -106,11 +129,11 @@ export default function SettingsTab({ user, onUserUpdate }: { user: any, onUserU
         <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
           <div className="flex items-center gap-3">
             <Palette className="w-5 h-5 text-slate-500" />
-            <span className="text-slate-700 font-medium text-sm">Rang Mavzusi</span>
+            <span className="text-slate-700 font-medium text-sm">{t('theme')}</span>
           </div>
           <select className="bg-transparent text-sm font-medium outline-none text-blue-600">
-            <option value="light">Yorug'</option>
-            <option value="dark">Qorong'u</option>
+            <option value="light">{t('light')}</option>
+            <option value="dark">{t('dark')}</option>
           </select>
         </div>
       </div>

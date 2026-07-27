@@ -36,11 +36,13 @@ export async function PUT(req: Request) {
 
     const body = await req.json();
     
+    const dataToUpdate: any = {};
+    if (body.name !== undefined) dataToUpdate.name = body.name;
+    if (body.language !== undefined) dataToUpdate.language = body.language;
+
     const user = await prisma.user.update({
       where: { telegramId },
-      data: {
-        name: body.name
-      }
+      data: dataToUpdate
     });
 
     return NextResponse.json({ user });

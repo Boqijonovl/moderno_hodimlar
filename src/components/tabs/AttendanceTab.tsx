@@ -2,12 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import { LogIn, LogOut, Clock, Calendar } from 'lucide-react';
+import { useTranslation, Language } from '@/lib/i18n';
 
 export default function AttendanceTab({ user, WebApp }: { user: any, WebApp: any }) {
   const [status, setStatus] = useState<'idle' | 'checked-in' | 'checked-out'>('idle');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [history, setHistory] = useState<any[]>([]);
+
+  const t = useTranslation(user?.language as Language);
 
   useEffect(() => {
     fetchHistory();
@@ -28,11 +31,11 @@ export default function AttendanceTab({ user, WebApp }: { user: any, WebApp: any
 
   const handleCheckIn = (reason?: string) => {
     if (typeof window === 'undefined' || !navigator.geolocation) {
-      setMessage('Qurilmangizda GPS yo\'q yoki ruxsat etilmagan');
+      setMessage(t('gps_error'));
       return;
     }
     setLoading(true);
-    setMessage('Geolokatsiya olinmoqda...');
+    setMessage(t('getting_gps'));
     
     navigator.geolocation.getCurrentPosition(
       async (position) => {
@@ -52,11 +55,10 @@ export default function AttendanceTab({ user, WebApp }: { user: any, WebApp: any
           const data = await res.json();
           if (res.ok) {
             setStatus('checked-in');
-            setMessage(`Ishga kelganingiz muvaffaqiyatli qayd etildi! (${data.status})`);
+            setMessage(`Muvaffaqiyatli! (${data.status})`);
             if (WebApp?.HapticFeedback) WebApp.HapticFeedback.notificationOccurred('success');
             fetchHistory();
           } else if (res.status === 403 && data.needsReason) {
-            // Prompt for reason
             const userReason = window.prompt(data.error);
             if (userReason && userReason.trim()) {
               handleCheckIn(userReason.trim());
@@ -69,12 +71,12 @@ export default function AttendanceTab({ user, WebApp }: { user: any, WebApp: any
             if (WebApp?.HapticFeedback) WebApp.HapticFeedback.notificationOccurred('error');
           }
         } catch (e: any) {
-          setMessage(`Tarmoq xatosi: ${e.message || String(e)}`);
+          setMessage(`${t('network_error')}: ${e.message || String(e)}`);
         }
         setLoading(false);
       },
       (error) => {
-        setMessage('GPS ga ruxsat berilmagan yoki topilmadi');
+        setMessage(t('gps_error'));
         setLoading(false);
       },
       { enableHighAccuracy: true }
@@ -83,11 +85,11 @@ export default function AttendanceTab({ user, WebApp }: { user: any, WebApp: any
 
   const handleCheckOut = (reason?: string) => {
     if (typeof window === 'undefined' || !navigator.geolocation) {
-      setMessage('Qurilmangizda GPS yo\'q yoki ruxsat etilmagan');
+      setMessage(t('gps_error'));
       return;
     }
     setLoading(true);
-    setMessage('Geolokatsiya olinmoqda...');
+    setMessage(t('getting_gps'));
     
     navigator.geolocation.getCurrentPosition(
       async (position) => {
@@ -106,30 +108,27 @@ export default function AttendanceTab({ user, WebApp }: { user: any, WebApp: any
           const data = await res.json();
           if (res.ok) {
             setStatus('checked-out');
-            setMessage('Ishingiz muvaffaqiyatli yakunlandi!');
+            setMessage('Yakunlandi!');
             if (WebApp?.HapticFeedback) WebApp.HapticFeedback.notificationOccurred('success');
             fetchHistory();
           } else if (res.status === 403 && data.needsReason) {
-            // Prompt for reason
             const userReason = window.prompt(data.error);
             if (userReason && userReason.trim()) {
               handleCheckOut(userReason.trim());
             } else {
-              setMessage('Izoh kiritilmadi, amaliyot bekor qilindi.');
+              setMessage('Izoh kiritilmadi');
               if (WebApp?.HapticFeedback) WebApp.HapticFeedback.notificationOccurred('error');
             }
           } else {
             setMessage(data.error || 'Xatolik');
           }
         } catch (e: any) {
-          setMessage(`Tarmoq xatosi: ${e.message || String(e)}`);
+          setMessage(`${t('network_error')}: ${e.message || String(e)}`);
         }
         setLoading(false);
       },
       (error) => {
-        // Allow check-out without GPS if needed by commenting out or handling differently
-        // For now, require GPS to check location
-        setMessage('GPS ga ruxsat berilmagan. Yakunlash uchun ruxsat kerak.');
+        setMessage(t('gps_error'));
         setLoading(false);
       },
       { enableHighAccuracy: true }
@@ -141,7 +140,7 @@ export default function AttendanceTab({ user, WebApp }: { user: any, WebApp: any
       <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
         <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
           <Clock className="w-6 h-6 text-blue-600" />
-          Davomatni belgilash
+          {t('menu_attendance')}
         </h2>
         
         {message && (
@@ -157,7 +156,7 @@ export default function AttendanceTab({ user, WebApp }: { user: any, WebApp: any
             className="bg-emerald-500 hover:bg-emerald-600 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-2xl p-4 flex flex-col items-center gap-2 transition-all active:scale-95"
           >
             <LogIn className="w-8 h-8" />
-            <span className="font-medium text-sm">Ishga keldim</span>
+            <span className="font-medium text-sm">{t('check_in')}</span>
           </button>
           
           <button 
@@ -166,7 +165,7 @@ export default function AttendanceTab({ user, WebApp }: { user: any, WebApp: any
             className="bg-rose-500 hover:bg-rose-600 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-2xl p-4 flex flex-col items-center gap-2 transition-all active:scale-95"
           >
             <LogOut className="w-8 h-8" />
-            <span className="font-medium text-sm">Yakunladim</span>
+            <span className="font-medium text-sm">{t('check_out')}</span>
           </button>
         </div>
       </div>
@@ -175,18 +174,18 @@ export default function AttendanceTab({ user, WebApp }: { user: any, WebApp: any
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
             <Calendar className="w-6 h-6 text-blue-600" />
-            Tarix
+            {t('history')}
           </h2>
           {history.length > 0 && (
             <div className="text-right">
-              <div className="text-[10px] text-slate-500 uppercase font-bold">Umumiy kechikish</div>
+              <div className="text-[10px] text-slate-500 uppercase font-bold">{t('total_late')}</div>
               <div className="text-sm font-bold text-rose-500">
                 {(() => {
                   const totalLate = history.reduce((sum, r) => sum + (r.lateMinutes || 0), 0);
-                  if (totalLate === 0) return '0 daqiqa';
+                  if (totalLate === 0) return `0 ${t('minute')}`;
                   const h = Math.floor(totalLate / 60);
                   const m = totalLate % 60;
-                  return h > 0 ? `${h} s ${m} d` : `${m} daqiqa`;
+                  return h > 0 ? `${h} ${t('hour')} ${m} ${t('minute')}` : `${m} ${t('minute')}`;
                 })()}
               </div>
             </div>
@@ -195,7 +194,7 @@ export default function AttendanceTab({ user, WebApp }: { user: any, WebApp: any
         
         <div className="space-y-3">
           {history.length === 0 ? (
-            <p className="text-slate-500 text-center py-4 text-sm">Hali davomat qayd etilmagan.</p>
+            <p className="text-slate-500 text-center py-4 text-sm">{t('no_attendance')}</p>
           ) : (
             history.map((record) => (
               <div key={record.id} className="p-3 bg-slate-50 rounded-xl border border-slate-100 flex justify-between items-center">
@@ -204,13 +203,13 @@ export default function AttendanceTab({ user, WebApp }: { user: any, WebApp: any
                     {new Date(record.date).toLocaleDateString('uz-UZ')}
                   </div>
                   <div className="text-xs text-slate-500 mt-1 flex gap-2">
-                    <span>Kirish: {record.checkInTime ? new Date(record.checkInTime).toLocaleTimeString('uz-UZ', {hour: '2-digit', minute:'2-digit'}) : '--:--'}</span>
+                    <span>{t('entry')}: {record.checkInTime ? new Date(record.checkInTime).toLocaleTimeString('uz-UZ', {hour: '2-digit', minute:'2-digit'}) : '--:--'}</span>
                     <span>|</span>
-                    <span>Chiqish: {record.checkOutTime ? new Date(record.checkOutTime).toLocaleTimeString('uz-UZ', {hour: '2-digit', minute:'2-digit'}) : '--:--'}</span>
+                    <span>{t('exit')}: {record.checkOutTime ? new Date(record.checkOutTime).toLocaleTimeString('uz-UZ', {hour: '2-digit', minute:'2-digit'}) : '--:--'}</span>
                   </div>
                   {record.reason && (
                     <div className="text-[10px] text-slate-400 mt-1 italic">
-                      Izoh: {record.reason}
+                      {t('reason')}: {record.reason}
                     </div>
                   )}
                 </div>
@@ -219,7 +218,7 @@ export default function AttendanceTab({ user, WebApp }: { user: any, WebApp: any
                   record.status === 'LATE' ? 'bg-amber-100 text-amber-700' :
                   'bg-rose-100 text-rose-700'
                 }`}>
-                  {record.status === 'ON_TIME' ? 'Vaqtida' : record.status === 'LATE' ? 'Kechikdi' : 'Kelmagan'}
+                  {record.status === 'ON_TIME' ? t('on_time') : record.status === 'LATE' ? t('late') : t('absent')}
                 </div>
               </div>
             ))

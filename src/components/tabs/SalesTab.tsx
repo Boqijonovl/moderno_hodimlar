@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Send, CheckCircle2, Package, List } from 'lucide-react';
+import { useTranslation, Language } from '@/lib/i18n';
 
 export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
   const [categories, setCategories] = useState<{id: string, name: string}[]>([]);
@@ -14,6 +15,8 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [history, setHistory] = useState<any[]>([]);
+
+  const t = useTranslation(user?.language as Language);
 
   useEffect(() => {
     fetchCategories();
@@ -60,7 +63,7 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
         body: JSON.stringify({
           ...formData,
           price: parseFloat(formData.price),
-          telegramId: user?.telegramId, // Fixed: Need telegramId to find user
+          telegramId: user?.telegramId,
           userId: user?.id,
           employeeName: user?.name,
         })
@@ -76,13 +79,13 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
         if (WebApp?.HapticFeedback) WebApp.HapticFeedback.notificationOccurred('error');
         try {
           const errorData = await res.json();
-          alert(`Xatolik: ${errorData.error}`);
+          alert(`${t('error')}: ${errorData.error}`);
         } catch(e) {
-          alert('Tarmoq xatosi yoki server xatosi yuz berdi');
+          alert(t('network_error'));
         }
       }
     } catch (e: any) {
-      alert(`Tarmoq xatosi: ${e.message || String(e)}`);
+      alert(`${t('network_error')}: ${e.message || String(e)}`);
       console.error(e);
       if (WebApp?.HapticFeedback) WebApp.HapticFeedback.notificationOccurred('error');
     }
@@ -94,19 +97,19 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
       <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
         <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
           <Package className="w-6 h-6 text-blue-600" />
-          Yangi Sotuv
+          {t('add_sale')}
         </h2>
         
         {success ? (
           <div className="bg-emerald-50 text-emerald-600 p-8 rounded-2xl flex flex-col items-center justify-center border border-emerald-100 animate-in fade-in zoom-in">
             <CheckCircle2 className="w-16 h-16 mb-4 text-emerald-500" />
-            <h3 className="text-lg font-bold">Qabul qilindi!</h3>
-            <p className="text-sm mt-1 text-center">Sotuv muvaffaqiyatli saqlandi va adminga yuborildi.</p>
+            <h3 className="text-lg font-bold">{t('success')}</h3>
+            <p className="text-sm mt-1 text-center">{t('success_msg')}</p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Mebel Kategoriyasi</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">{t('category')}</label>
               <select 
                 value={formData.categoryId}
                 onChange={(e) => setFormData({...formData, categoryId: e.target.value})}
@@ -120,10 +123,9 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Nomi yoki Kodi</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">{t('item_name')}</label>
               <input 
                 type="text" 
-                placeholder="Masalan: Yulduz garnitur"
                 value={formData.itemName}
                 onChange={(e) => setFormData({...formData, itemName: e.target.value})}
                 className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl p-3 outline-none focus:ring-2 focus:ring-blue-500 transition-all"
@@ -132,7 +134,7 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Narxi ($)</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">{t('price')}</label>
               <input 
                 type="number" 
                 placeholder="0.00"
@@ -146,16 +148,16 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">To'lov Turi</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">{t('payment_method')}</label>
               <select 
                 value={formData.paymentMethod}
                 onChange={(e) => setFormData({...formData, paymentMethod: e.target.value})}
                 className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl p-3 outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                 required
               >
-                <option value="CASH">Naqd pul</option>
-                <option value="CARD">Plastik karta</option>
-                <option value="INSTALLMENT">Muddatli to'lov (Nasiya)</option>
+                <option value="CASH">{t('cash')}</option>
+                <option value="CARD">{t('card')}</option>
+                <option value="INSTALLMENT">{t('installment')}</option>
               </select>
             </div>
 
@@ -165,7 +167,7 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
               className="w-full mt-4 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white rounded-xl p-4 font-bold flex items-center justify-center gap-2 transition-all active:scale-95"
             >
               <Send className="w-5 h-5" />
-              {loading ? 'Yuborilmoqda...' : 'Saqlash va Yuborish'}
+              {loading ? t('adding') : t('add_btn')}
             </button>
           </form>
         )}
@@ -174,25 +176,25 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
       <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
         <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
           <List className="w-6 h-6 text-blue-600" />
-          Savdolar Tarixi
+          {t('history')}
         </h2>
         
         <div className="space-y-3">
           {history.length === 0 ? (
-            <p className="text-slate-500 text-center py-4 text-sm">Hali savdo kiritilmagan.</p>
+            <p className="text-slate-500 text-center py-4 text-sm">{t('no_sales')}</p>
           ) : (
             history.map((sale) => (
               <div key={sale.id} className="p-3 bg-slate-50 rounded-xl border border-slate-100 flex justify-between items-center">
                 <div>
                   <div className="font-semibold text-slate-800 text-sm">{sale.itemName}</div>
-                  <div className="text-xs text-slate-500 mt-1">
-                    {new Date(sale.date).toLocaleDateString('uz-UZ')} {new Date(sale.date).toLocaleTimeString('uz-UZ', {hour: '2-digit', minute:'2-digit'})} • {sale.category?.name}
+                  <div className="text-[10px] text-slate-500 mt-1">
+                    {new Date(sale.date).toLocaleDateString('uz-UZ')} {new Date(sale.date).toLocaleTimeString('uz-UZ', {hour: '2-digit', minute:'2-digit'})}
                   </div>
                 </div>
                 <div className="text-right">
                   <div className="font-bold text-emerald-600 text-sm">${sale.price}</div>
                   <div className="text-[10px] text-slate-500 uppercase mt-1">
-                    {sale.paymentMethod === 'CASH' ? 'Naqd' : sale.paymentMethod === 'CARD' ? 'Karta' : 'Nasiya'}
+                    {sale.paymentMethod === 'CASH' ? t('cash') : sale.paymentMethod === 'CARD' ? t('card') : t('installment')}
                   </div>
                 </div>
               </div>

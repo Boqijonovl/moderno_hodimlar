@@ -5,6 +5,7 @@ import { Clock, Package, Settings as SettingsIcon } from 'lucide-react';
 import AttendanceTab from '@/components/tabs/AttendanceTab';
 import SalesTab from '@/components/tabs/SalesTab';
 import SettingsTab from '@/components/tabs/SettingsTab';
+import { useTranslation, Language } from '@/lib/i18n';
 
 export default function MainApp() {
   const [activeTab, setActiveTab] = useState<'attendance' | 'sales' | 'settings'>('attendance');
@@ -20,11 +21,11 @@ export default function MainApp() {
         setUser(data.user);
       } else {
         // Fallback user state
-        setUser({ telegramId, name: fallbackName, role: 'EMPLOYEE' });
+        setUser({ telegramId, name: fallbackName, role: 'EMPLOYEE', language: 'uz' });
       }
     } catch (e) {
       console.error(e);
-      setUser({ telegramId, name: fallbackName, role: 'EMPLOYEE' });
+      setUser({ telegramId, name: fallbackName, role: 'EMPLOYEE', language: 'uz' });
     }
   };
 
@@ -55,6 +56,8 @@ export default function MainApp() {
     }
   };
 
+  const t = useTranslation(user?.language as Language);
+
   // Wait for user to be loaded
   if (!user) {
     return (
@@ -71,9 +74,9 @@ export default function MainApp() {
         <div className="w-20 h-20 bg-rose-100 rounded-full flex items-center justify-center mb-4">
           <SettingsIcon className="w-10 h-10 text-rose-500" />
         </div>
-        <h1 className="text-2xl font-bold text-slate-800 mb-2">Hisobingiz bloklangan</h1>
+        <h1 className="text-2xl font-bold text-slate-800 mb-2">{t('blocked_title')}</h1>
         <p className="text-slate-500">
-          Sizning hisobingiz tizim administratori tomonidan vaqtincha bloklangan. Iltimos, admin bilan bog'laning.
+          {t('blocked_desc')}
         </p>
       </div>
     );
@@ -95,7 +98,7 @@ export default function MainApp() {
       <div className="bg-blue-600 text-white p-6 shadow-md rounded-b-3xl shrink-0 z-10 relative">
         <h1 className="text-2xl font-bold tracking-tight">Moderno Mebel</h1>
         <p className="text-blue-100 mt-1">
-          {currentTab === 'attendance' ? 'Davomat' : currentTab === 'sales' ? 'Savdolar' : 'Sozlamalar'}
+          {currentTab === 'attendance' ? t('menu_attendance') : currentTab === 'sales' ? t('menu_sales') : t('menu_settings')}
         </p>
       </div>
 
@@ -112,7 +115,7 @@ export default function MainApp() {
             className={`flex flex-col items-center transition-colors w-20 ${currentTab === 'attendance' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
           >
             <Clock className={`w-6 h-6 mb-1 ${currentTab === 'attendance' ? 'fill-blue-50' : ''}`} />
-            <span className="text-[10px] font-bold">Davomat</span>
+            <span className="text-[10px] font-bold">{t('menu_attendance')}</span>
           </button>
         )}
         
@@ -122,7 +125,7 @@ export default function MainApp() {
             className={`flex flex-col items-center transition-colors w-20 ${currentTab === 'sales' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
           >
             <Package className={`w-6 h-6 mb-1 ${currentTab === 'sales' ? 'fill-blue-50' : ''}`} />
-            <span className="text-[10px] font-bold">Savdolar</span>
+            <span className="text-[10px] font-bold">{t('menu_sales')}</span>
           </button>
         )}
 
@@ -131,7 +134,7 @@ export default function MainApp() {
           className={`flex flex-col items-center transition-colors w-20 ${currentTab === 'settings' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
         >
           <SettingsIcon className={`w-6 h-6 mb-1 ${currentTab === 'settings' ? 'fill-blue-50' : ''}`} />
-          <span className="text-[10px] font-bold">Sozlamalar</span>
+          <span className="text-[10px] font-bold">{t('menu_settings')}</span>
         </button>
       </div>
     </main>
