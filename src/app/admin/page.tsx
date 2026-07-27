@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { DollarSign, ShoppingCart, UserCheck, Activity } from 'lucide-react';
 import Link from 'next/link';
+import DashboardCharts from '@/components/admin/DashboardCharts';
 
 export default function AdminDashboard() {
   const [data, setData] = useState<any>(null);
@@ -53,8 +54,10 @@ export default function AdminDashboard() {
            </div>
         </div>
       </div>
+      
+      {data.chartData && <DashboardCharts data={data.chartData} />}
 
-      <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+      <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 mt-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-semibold text-slate-800 flex items-center gap-2">
             <UserCheck className="w-5 h-5 text-blue-500" />

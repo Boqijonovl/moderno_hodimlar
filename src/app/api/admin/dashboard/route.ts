@@ -24,11 +24,38 @@ export async function GET() {
     const onTime = attendance.filter(a => a.status === 'ON_TIME').length;
     const late = attendance.filter(a => a.status === 'LATE').length;
     
+    // Generate 7-day chart data
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+    sevenDaysAgo.setHours(0,0,0,0);
+    
+    const weekSales = await prisma.sale.findMany({
+      where: { date: { gte: sevenDaysAgo } }
+    });
+    
+    const chartData = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dayName = d.toLocaleDateString('uz-UZ', { weekday: 'short' });
+      const dayStart = new Date(d);
+      dayStart.setHours(0,0,0,0);
+      const dayEnd = new Date(d);
+      dayEnd.setHours(23,59,59,999);
+      
+      const dayTotal = weekSales
+        .filter(s => s.date >= dayStart && s.date <= dayEnd)
+        .reduce((sum, s) => sum + s.price, 0);
+        
+      chartData.push({ name: dayName, total: dayTotal });
+    }
+    
     return NextResponse.json({
       totalRevenue: totalCash + totalCard + totalInstallment,
       breakdown: { cash: totalCash, card: totalCard, installment: totalInstallment },
       salesCount: sales.length,
       attendance: { total: attendance.length, onTime, late },
+      chartData,
       recentSales: await prisma.sale.findMany({
         take: 5,
         orderBy: { createdAt: 'desc' },

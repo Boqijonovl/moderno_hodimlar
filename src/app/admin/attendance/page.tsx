@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { YMaps, Map, Placemark, Circle } from '@pbe/react-yandex-maps';
-import { MapPin, Clock } from 'lucide-react';
+import { MapPin, Clock, Download } from 'lucide-react';
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
 
 export default function AttendancePage() {
   const [data, setData] = useState<any>(null);
@@ -14,13 +16,43 @@ export default function AttendancePage() {
       .then(setData);
   }, []);
 
+  const exportToExcel = () => {
+    if (!data || data.attendance.length === 0) return alert("Davomat yo'q");
+    
+    const excelData = data.attendance.map((a: any) => ({
+      'Sana': new Date(a.date).toLocaleDateString(),
+      'Xodim': a.user.name,
+      'Kelgan Vaqti': a.checkInTime ? new Date(a.checkInTime).toLocaleTimeString() : '',
+      'Ketgan Vaqti': a.checkOutTime ? new Date(a.checkOutTime).toLocaleTimeString() : '',
+      'Holat': a.status === 'ON_TIME' ? 'Vaqtida' : a.status === 'LATE' ? 'Kechikkan' : 'Kelmagan',
+      'Kechikish (daqiqa)': a.lateMinutes || 0,
+      'Izoh': a.reason || ''
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(excelData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Davomat');
+    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+    const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8' });
+    saveAs(blob, `Davomat_${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
+
   if (!data) return <div className="p-8 text-center text-slate-500">Yuklanmoqda...</div>;
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-800">Davomat</h1>
-        <p className="text-slate-500 text-sm">Bugungi xodimlar ro'yxati va xarita</p>
+      <div className="flex justify-between items-end">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-800">Davomat</h1>
+          <p className="text-slate-500 text-sm">Bugungi xodimlar ro'yxati va xarita</p>
+        </div>
+        <button 
+          onClick={exportToExcel}
+          className="bg-emerald-500 text-white p-2 rounded-xl flex items-center gap-2 hover:bg-emerald-600 transition-colors shadow-sm active:scale-95"
+        >
+          <Download className="w-5 h-5" />
+          <span className="text-sm font-medium">Excel</span>
+        </button>
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">

@@ -206,14 +206,24 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
           </h2>
           {attendances.length > 0 && (
             <div className="text-right">
-              <div className="text-[10px] text-slate-500 uppercase font-bold">Umumiy kechikish</div>
-              <div className="text-sm font-bold text-rose-500">
+              <div className="text-[10px] text-slate-500 uppercase font-bold">Umumiy kechikish / Overtaym</div>
+              <div className="text-sm font-bold">
                 {(() => {
                   const totalLate = attendances.reduce((sum, r) => sum + (r.lateMinutes || 0), 0);
-                  if (totalLate === 0) return '0 daqiqa';
-                  const h = Math.floor(totalLate / 60);
-                  const m = totalLate % 60;
-                  return h > 0 ? `${h} s ${m} d` : `${m} daqiqa`;
+                  if (totalLate === 0) return <span className="text-slate-500">0 daqiqa</span>;
+                  
+                  const isOvertime = totalLate < 0;
+                  const absMinutes = Math.abs(totalLate);
+                  const h = Math.floor(absMinutes / 60);
+                  const m = absMinutes % 60;
+                  
+                  const timeStr = h > 0 ? `${h} s ${m} d` : `${m} daqiqa`;
+                  
+                  return isOvertime ? (
+                    <span className="text-emerald-500">Ortiqcha ishlagan: {timeStr}</span>
+                  ) : (
+                    <span className="text-rose-500">Kechikkan: {timeStr}</span>
+                  );
                 })()}
               </div>
             </div>

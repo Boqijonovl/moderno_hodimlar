@@ -181,7 +181,8 @@ export default function AttendanceTab({ user, WebApp }: { user: any, WebApp: any
               <div className="text-[10px] text-slate-500 uppercase font-bold">{t('total_late')}</div>
               <div className="text-sm font-bold text-rose-500">
                 {(() => {
-                  const totalLate = history.reduce((sum, r) => sum + (r.lateMinutes || 0), 0);
+                  let totalLate = history.reduce((sum, r) => sum + (r.lateMinutes || 0), 0);
+                  if (totalLate < 0) totalLate = 0;
                   if (totalLate === 0) return `0 ${t('minute')}`;
                   const h = Math.floor(totalLate / 60);
                   const m = totalLate % 60;
