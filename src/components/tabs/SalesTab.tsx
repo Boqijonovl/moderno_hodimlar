@@ -16,8 +16,6 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
   const [success, setSuccess] = useState(false);
   const [lastSale, setLastSale] = useState<any>(null);
   const [history, setHistory] = useState<any[]>([]);
-  const [receiptImage, setReceiptImage] = useState<string | null>(null);
-  const receiptRef = useRef<HTMLDivElement>(null);
 
   const t = useTranslation(user?.language as Language);
 
@@ -25,26 +23,6 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
     fetchCategories();
     fetchHistory();
   }, [user]);
-
-  useEffect(() => {
-    if (success && receiptRef.current && !receiptImage) {
-      // Allow DOM to settle before capturing
-      setTimeout(async () => {
-        try {
-          if (!receiptRef.current) return;
-          const mod = await import('html2canvas');
-          const html2canvas = mod.default ? mod.default : mod;
-          // @ts-ignore
-          const canvas = await html2canvas(receiptRef.current, { scale: 3, backgroundColor: '#ffffff', useCORS: true, logging: false });
-          setReceiptImage(canvas.toDataURL("image/png"));
-        } catch (err) {
-          console.error("Failed to generate receipt", err);
-          // If it fails, we shouldn't leave the user hanging
-          alert("Chek tayyorlashda xatolik yuz berdi. Iltimos qayta urinib ko'ring.");
-        }
-      }, 800);
-    }
-  }, [success, receiptImage]);
 
   const fetchCategories = async () => {
     try {
@@ -95,7 +73,6 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
       if (res.ok) {
         const newSale = await res.json();
         setLastSale(newSale);
-        setReceiptImage(null);
         setSuccess(true);
         if (WebApp?.HapticFeedback) WebApp.HapticFeedback.notificationOccurred('success');
         setFormData(prev => ({ ...prev, itemName: '', price: '' }));
@@ -117,15 +94,6 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
     setLoading(false);
   };
 
-  const downloadReceiptDesktop = () => {
-    if (receiptImage) {
-      const link = document.createElement('a');
-      link.href = receiptImage;
-      link.download = `Chek_${lastSale?.itemName || 'Savdo'}.png`;
-      link.click();
-    }
-  };
-
   return (
     <div className="space-y-6">
       <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-sm border border-slate-100 dark:border-slate-800">
@@ -139,75 +107,24 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
             <div className="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 p-6 rounded-2xl flex flex-col items-center justify-center border border-emerald-100 dark:border-emerald-800 w-full mb-4">
               <CheckCircle2 className="w-12 h-12 mb-2 text-emerald-500" />
               <h3 className="text-lg font-bold">{t('success')}</h3>
+              <p className="text-sm mt-2 text-center">Savdo muvaffaqiyatli saqlandi.</p>
             </div>
             
-            {/* The actual visible image that users can long press */}
-            {receiptImage ? (
-              <div className="mb-4 flex flex-col items-center w-full">
-                <p className="text-xs text-slate-500 dark:text-slate-400 mb-2 text-center animate-pulse">
-                  Rasmni ustiga uzoqroq bosib saqlab oling (yoki pastdagi tugmani bosing)
-                </p>
-                <img src={receiptImage} alt="Chek" className="w-[300px] rounded-xl shadow-md border border-slate-200" />
-              </div>
-            ) : (
-              <div className="mb-4 w-[300px] h-[400px] bg-slate-100 dark:bg-slate-800 animate-pulse rounded-xl flex items-center justify-center text-sm text-slate-400">
-                Chek tayyorlanmoqda...
-              </div>
-            )}
-
-            {/* Hidden DOM Receipt to capture (must be in viewport for mobile) */}
-            <div className="fixed top-0 left-0 opacity-0 pointer-events-none -z-50 w-[350px]">
-              <div ref={receiptRef} className="w-[350px] bg-white p-6 shadow-none text-slate-900 font-sans">
-                <div className="text-center mb-6 border-b border-dashed border-slate-300 pb-4">
-                  <h1 className="text-2xl font-black tracking-tight text-slate-800">MODERNO MEBEL</h1>
-                  <p className="text-sm text-slate-500 mt-1">Sifat va Qulaylik</p>
-                </div>
-                <div className="space-y-3 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">Sana:</span>
-                    <span className="font-semibold">{new Date().toLocaleString('uz-UZ')}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">Sotuvchi:</span>
-                    <span className="font-semibold">{user?.name}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">To'lov turi:</span>
-                    <span className="font-semibold uppercase">{lastSale?.paymentMethod === 'CASH' ? 'Naqd' : lastSale?.paymentMethod === 'CARD' ? 'Karta' : 'Muddatli'}</span>
-                  </div>
-                </div>
-                <div className="mt-6 mb-6 border-t border-b border-dashed border-slate-300 py-4">
-                  <div className="font-bold text-slate-800 mb-1">{lastSale?.itemName}</div>
-                  <div className="text-xs text-slate-500 mb-2">{lastSale?.category?.name || 'Kategoriya'}</div>
-                  <div className="text-right text-lg font-black text-slate-800">
-                    {lastSale?.price ? lastSale.price.toLocaleString() : '0'} so'm
-                  </div>
-                </div>
-                <div className="text-center text-xs text-slate-500 italic">
-                  Xaridingiz uchun rahmat!<br/>
-                  Yana kutib qolamiz.
-                </div>
-              </div>
+            <div className="mb-6 flex flex-col items-center w-full">
+              <p className="text-sm text-slate-600 dark:text-slate-300 mb-2 text-center">
+                🧾 <b>PDF Chek tayyor!</b><br/>Ushbu savdo cheki PDF shaklida to'g'ridan-to'g'ri Telegram botingizga yuborildi. Bot xabarlarini tekshiring!
+              </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 w-full">
-              <button 
-                onClick={downloadReceiptDesktop}
-                disabled={!receiptImage}
-                className="bg-slate-800 disabled:bg-slate-400 text-white font-bold p-3 rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-all"
-              >
-                <Download className="w-5 h-5" />
-                Saqlash
-              </button>
+            <div className="w-full">
               <button 
                 onClick={() => {
                   setSuccess(false);
                   setLastSale(null);
-                  setReceiptImage(null);
                 }}
-                className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold p-3 rounded-xl active:scale-95 transition-all"
+                className="w-full bg-slate-800 text-white font-bold p-4 rounded-xl active:scale-95 transition-all"
               >
-                Yangi Savdo
+                Yangi Savdo Kiritish
               </button>
             </div>
           </div>
