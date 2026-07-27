@@ -32,13 +32,17 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
       setTimeout(async () => {
         try {
           if (!receiptRef.current) return;
-          const html2canvas = (await import('html2canvas')).default;
-          const canvas = await html2canvas(receiptRef.current, { scale: 3, backgroundColor: '#ffffff' });
+          const mod = await import('html2canvas');
+          const html2canvas = mod.default ? mod.default : mod;
+          // @ts-ignore
+          const canvas = await html2canvas(receiptRef.current, { scale: 3, backgroundColor: '#ffffff', useCORS: true, logging: false });
           setReceiptImage(canvas.toDataURL("image/png"));
         } catch (err) {
           console.error("Failed to generate receipt", err);
+          // If it fails, we shouldn't leave the user hanging
+          alert("Chek tayyorlashda xatolik yuz berdi. Iltimos qayta urinib ko'ring.");
         }
-      }, 500);
+      }, 800);
     }
   }, [success, receiptImage]);
 
@@ -151,8 +155,8 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
               </div>
             )}
 
-            {/* Hidden DOM Receipt to capture */}
-            <div className="absolute left-[-9999px] top-[-9999px]">
+            {/* Hidden DOM Receipt to capture (must be in viewport for mobile) */}
+            <div className="fixed top-0 left-0 opacity-0 pointer-events-none -z-50 w-[350px]">
               <div ref={receiptRef} className="w-[350px] bg-white p-6 shadow-none text-slate-900 font-sans">
                 <div className="text-center mb-6 border-b border-dashed border-slate-300 pb-4">
                   <h1 className="text-2xl font-black tracking-tight text-slate-800">MODERNO MEBEL</h1>
