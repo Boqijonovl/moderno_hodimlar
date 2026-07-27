@@ -60,6 +60,7 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
         body: JSON.stringify({
           ...formData,
           price: parseFloat(formData.price),
+          telegramId: user?.telegramId, // Fixed: Need telegramId to find user
           userId: user?.id,
           employeeName: user?.name,
         })

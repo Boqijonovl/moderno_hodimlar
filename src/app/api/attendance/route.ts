@@ -43,6 +43,14 @@ export async function POST(req: Request) {
         return NextResponse.json({ needsReason: true, error: `Do'kondan uzoqdasiz! Masofa: ${distance}m. Iltimos, sababni kiriting:` }, { status: 403 });
       }
 
+      // Check if already checked in and not checked out
+      const openAttendance = await prisma.attendance.findFirst({
+        where: { userId: user.id, checkOutTime: null }
+      });
+      if (openAttendance) {
+        return NextResponse.json({ error: 'Siz allaqachon ishga kelgansiz. Oldin yakunlang!' }, { status: 400 });
+      }
+
       const currentTime = new Date();
       const onTimeLimit = new Date();
       onTimeLimit.setHours(9, 0, 0, 0); // 09:00

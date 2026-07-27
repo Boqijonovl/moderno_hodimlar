@@ -14,9 +14,9 @@ export async function GET() {
           { name: 'Yumshoq mebel' }
         ]
       });
-      return NextResponse.json(await prisma.category.findMany());
+      return NextResponse.json({ categories: await prisma.category.findMany() });
     }
-    return NextResponse.json(categories);
+    return NextResponse.json({ categories });
   } catch (error) {
     return NextResponse.json({ error: 'Failed to fetch categories' }, { status: 500 });
   }
