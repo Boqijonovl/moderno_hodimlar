@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { use } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Clock, Package, User, Settings } from 'lucide-react';
+import { ArrowLeft, Clock, Package, User, Settings, Trash2 } from 'lucide-react';
 
 export default function UserDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
@@ -42,6 +42,36 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
       console.error(e);
     }
     setLoading(false);
+  };
+
+  const deleteAttendance = async (id: string) => {
+    if (!confirm("Haqiqatan ham ushbu davomatni o'chirasizmi?")) return;
+    try {
+      const res = await fetch(`/api/admin/attendance/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setAttendances(prev => prev.filter(a => a.id !== id));
+      } else {
+        alert("O'chirishda xatolik yuz berdi");
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Tarmoq xatosi');
+    }
+  };
+
+  const deleteSale = async (id: string) => {
+    if (!confirm("Haqiqatan ham ushbu savdoni o'chirasizmi?")) return;
+    try {
+      const res = await fetch(`/api/admin/sales/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setSales(prev => prev.filter(s => s.id !== id));
+      } else {
+        alert("O'chirishda xatolik yuz berdi");
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Tarmoq xatosi');
+    }
   };
 
   const toggleSetting = async (field: string, value: any) => {
@@ -194,12 +224,17 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
                     </div>
                   )}
                 </div>
-                <div className={`px-2 py-1 rounded-md text-[10px] font-bold ${
-                  record.status === 'ON_TIME' ? 'bg-emerald-100 text-emerald-700' :
-                  record.status === 'LATE' ? 'bg-amber-100 text-amber-700' :
-                  'bg-rose-100 text-rose-700'
-                }`}>
-                  {record.status === 'ON_TIME' ? 'Vaqtida' : record.status === 'LATE' ? 'Kechikdi' : 'Kelmagan'}
+                <div className="flex items-center gap-3">
+                  <div className={`px-2 py-1 rounded-md text-[10px] font-bold ${
+                    record.status === 'ON_TIME' ? 'bg-emerald-100 text-emerald-700' :
+                    record.status === 'LATE' ? 'bg-amber-100 text-amber-700' :
+                    'bg-rose-100 text-rose-700'
+                  }`}>
+                    {record.status === 'ON_TIME' ? 'Vaqtida' : record.status === 'LATE' ? 'Kechikdi' : 'Kelmagan'}
+                  </div>
+                  <button onClick={() => deleteAttendance(record.id)} className="p-1.5 bg-rose-50 text-rose-500 rounded-lg hover:bg-rose-100 transition-colors">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
             ))
@@ -225,11 +260,16 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
                     {new Date(sale.date).toLocaleDateString('uz-UZ')} {new Date(sale.date).toLocaleTimeString('uz-UZ', {hour: '2-digit', minute:'2-digit'})}
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="font-bold text-emerald-600 text-sm">${sale.price}</div>
-                  <div className="text-[10px] text-slate-500 uppercase mt-1">
-                    {sale.paymentMethod}
+                <div className="flex items-center gap-3">
+                  <div className="text-right">
+                    <div className="font-bold text-emerald-600 text-sm">${sale.price}</div>
+                    <div className="text-[10px] text-slate-500 uppercase mt-1">
+                      {sale.paymentMethod}
+                    </div>
                   </div>
+                  <button onClick={() => deleteSale(sale.id)} className="p-1.5 bg-rose-50 text-rose-500 rounded-lg hover:bg-rose-100 transition-colors">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
             ))
