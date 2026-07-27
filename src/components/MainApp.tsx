@@ -64,43 +64,73 @@ export default function MainApp() {
     );
   }
 
+  // Check active status
+  if (user && user.active === false) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 text-center">
+        <div className="w-20 h-20 bg-rose-100 rounded-full flex items-center justify-center mb-4">
+          <SettingsIcon className="w-10 h-10 text-rose-500" />
+        </div>
+        <h1 className="text-2xl font-bold text-slate-800 mb-2">Hisobingiz bloklangan</h1>
+        <p className="text-slate-500">
+          Sizning hisobingiz tizim administratori tomonidan vaqtincha bloklangan. Iltimos, admin bilan bog'laning.
+        </p>
+      </div>
+    );
+  }
+
+  // Handle active tab permissions
+  const showAttendance = user.canUseAttendance !== false;
+  const showSales = user.canUseSales !== false;
+  
+  let currentTab = activeTab;
+  if (!showAttendance && currentTab === 'attendance') {
+    currentTab = showSales ? 'sales' : 'settings';
+  } else if (!showSales && currentTab === 'sales') {
+    currentTab = showAttendance ? 'attendance' : 'settings';
+  }
+
   return (
     <main className="min-h-screen bg-slate-50 flex flex-col pb-[80px]">
       <div className="bg-blue-600 text-white p-6 shadow-md rounded-b-3xl shrink-0 z-10 relative">
         <h1 className="text-2xl font-bold tracking-tight">Moderno Bot</h1>
         <p className="text-blue-100 mt-1">
-          {activeTab === 'attendance' ? 'Davomat' : activeTab === 'sales' ? 'Savdolar' : 'Sozlamalar'}
+          {currentTab === 'attendance' ? 'Davomat' : currentTab === 'sales' ? 'Savdolar' : 'Sozlamalar'}
         </p>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 relative z-0 mt-[-20px] pt-[40px]">
-        {activeTab === 'attendance' && <AttendanceTab user={user} WebApp={WebApp} />}
-        {activeTab === 'sales' && <SalesTab user={user} WebApp={WebApp} />}
-        {activeTab === 'settings' && <SettingsTab user={user} onUserUpdate={handleUserUpdate} />}
+        {currentTab === 'attendance' && showAttendance && <AttendanceTab user={user} WebApp={WebApp} />}
+        {currentTab === 'sales' && showSales && <SalesTab user={user} WebApp={WebApp} />}
+        {currentTab === 'settings' && <SettingsTab user={user} onUserUpdate={handleUserUpdate} />}
       </div>
 
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex justify-around p-3 pb-safe z-50">
-        <button 
-          onClick={() => setActiveTab('attendance')}
-          className={`flex flex-col items-center transition-colors w-20 ${activeTab === 'attendance' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
-        >
-          <Clock className={`w-6 h-6 mb-1 ${activeTab === 'attendance' ? 'fill-blue-50' : ''}`} />
-          <span className="text-[10px] font-bold">Davomat</span>
-        </button>
+        {showAttendance && (
+          <button 
+            onClick={() => setActiveTab('attendance')}
+            className={`flex flex-col items-center transition-colors w-20 ${currentTab === 'attendance' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
+          >
+            <Clock className={`w-6 h-6 mb-1 ${currentTab === 'attendance' ? 'fill-blue-50' : ''}`} />
+            <span className="text-[10px] font-bold">Davomat</span>
+          </button>
+        )}
         
-        <button 
-          onClick={() => setActiveTab('sales')}
-          className={`flex flex-col items-center transition-colors w-20 ${activeTab === 'sales' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
-        >
-          <Package className={`w-6 h-6 mb-1 ${activeTab === 'sales' ? 'fill-blue-50' : ''}`} />
-          <span className="text-[10px] font-bold">Savdolar</span>
-        </button>
+        {showSales && (
+          <button 
+            onClick={() => setActiveTab('sales')}
+            className={`flex flex-col items-center transition-colors w-20 ${currentTab === 'sales' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
+          >
+            <Package className={`w-6 h-6 mb-1 ${currentTab === 'sales' ? 'fill-blue-50' : ''}`} />
+            <span className="text-[10px] font-bold">Savdolar</span>
+          </button>
+        )}
 
         <button 
           onClick={() => setActiveTab('settings')}
-          className={`flex flex-col items-center transition-colors w-20 ${activeTab === 'settings' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
+          className={`flex flex-col items-center transition-colors w-20 ${currentTab === 'settings' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
         >
-          <SettingsIcon className={`w-6 h-6 mb-1 ${activeTab === 'settings' ? 'fill-blue-50' : ''}`} />
+          <SettingsIcon className={`w-6 h-6 mb-1 ${currentTab === 'settings' ? 'fill-blue-50' : ''}`} />
           <span className="text-[10px] font-bold">Sozlamalar</span>
         </button>
       </div>

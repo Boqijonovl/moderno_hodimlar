@@ -8,15 +8,17 @@ datasource db {
 }
 
 model User {
-  id         String       @id @default(uuid())
-  telegramId String       @unique
-  name       String
-  role       String       @default("EMPLOYEE") // ADMIN, MANAGER, EMPLOYEE
-  active     Boolean      @default(true)
-  createdAt  DateTime     @default(now())
-  updatedAt  DateTime     @updatedAt
-  Attendance Attendance[]
-  Sale       Sale[]
+  id               String       @id @default(uuid())
+  telegramId       String       @unique
+  name             String
+  role             String       @default("EMPLOYEE") // ADMIN, MANAGER, EMPLOYEE
+  active           Boolean      @default(true)
+  canUseAttendance Boolean      @default(true)
+  canUseSales      Boolean      @default(true)
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  Attendance       Attendance[]
+  Sale             Sale[]
 }
 
 model Attendance {

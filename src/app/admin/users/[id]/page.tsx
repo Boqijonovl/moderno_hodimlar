@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { use } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Clock, Package, User } from 'lucide-react';
+import { ArrowLeft, Clock, Package, User, Settings } from 'lucide-react';
 
 export default function UserDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
@@ -44,6 +44,22 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
     setLoading(false);
   };
 
+  const toggleSetting = async (field: string, value: any) => {
+    try {
+      // Optimistic update
+      setUser((prev: any) => ({ ...prev, [field]: value }));
+      
+      await fetch(`/api/admin/users/${user.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [field]: value })
+      });
+    } catch (e) {
+      // Revert on error
+      fetchData();
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center py-10">
@@ -65,6 +81,67 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
         <h1 className="text-xl font-bold text-slate-800 flex items-center gap-2">
           <User className="w-6 h-6" /> {user.name}
         </h1>
+      </div>
+
+      <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
+        <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+          <Settings className="w-5 h-5 text-blue-600" />
+          Foydalanuvchi Sozlamalari
+        </h2>
+        
+        <div className="space-y-4">
+          <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+            <div>
+              <div className="font-semibold text-slate-800 text-sm">Aktiv (Bloklanmagan)</div>
+              <div className="text-xs text-slate-500">Tizimga kira oladimi?</div>
+            </div>
+            <button 
+              onClick={() => toggleSetting('active', !user.active)}
+              className={`w-12 h-6 rounded-full transition-colors relative ${user.active ? 'bg-emerald-500' : 'bg-slate-300'}`}
+            >
+              <div className={`w-5 h-5 bg-white rounded-full absolute top-0.5 transition-all ${user.active ? 'left-6.5 right-0.5' : 'left-0.5'}`} style={{ transform: user.active ? 'translateX(24px)' : 'translateX(0)' }}></div>
+            </button>
+          </div>
+
+          <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+            <div>
+              <div className="font-semibold text-slate-800 text-sm">Admin ruxsati</div>
+              <div className="text-xs text-slate-500">Admin panelni ko'radimi?</div>
+            </div>
+            <button 
+              onClick={() => toggleSetting('role', user.role === 'ADMIN' ? 'EMPLOYEE' : 'ADMIN')}
+              className={`w-12 h-6 rounded-full transition-colors relative ${user.role === 'ADMIN' ? 'bg-blue-500' : 'bg-slate-300'}`}
+            >
+              <div className={`w-5 h-5 bg-white rounded-full absolute top-0.5 transition-all ${user.role === 'ADMIN' ? 'left-6.5 right-0.5' : 'left-0.5'}`} style={{ transform: user.role === 'ADMIN' ? 'translateX(24px)' : 'translateX(0)' }}></div>
+            </button>
+          </div>
+
+          <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+            <div>
+              <div className="font-semibold text-slate-800 text-sm">Davomat bo'limi</div>
+              <div className="text-xs text-slate-500">1-bo'limga ruxsat</div>
+            </div>
+            <button 
+              onClick={() => toggleSetting('canUseAttendance', !user.canUseAttendance)}
+              className={`w-12 h-6 rounded-full transition-colors relative ${user.canUseAttendance ? 'bg-emerald-500' : 'bg-slate-300'}`}
+            >
+              <div className={`w-5 h-5 bg-white rounded-full absolute top-0.5 transition-all ${user.canUseAttendance ? 'left-6.5 right-0.5' : 'left-0.5'}`} style={{ transform: user.canUseAttendance ? 'translateX(24px)' : 'translateX(0)' }}></div>
+            </button>
+          </div>
+
+          <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+            <div>
+              <div className="font-semibold text-slate-800 text-sm">Savdolar bo'limi</div>
+              <div className="text-xs text-slate-500">2-bo'limga ruxsat</div>
+            </div>
+            <button 
+              onClick={() => toggleSetting('canUseSales', !user.canUseSales)}
+              className={`w-12 h-6 rounded-full transition-colors relative ${user.canUseSales ? 'bg-emerald-500' : 'bg-slate-300'}`}
+            >
+              <div className={`w-5 h-5 bg-white rounded-full absolute top-0.5 transition-all ${user.canUseSales ? 'left-6.5 right-0.5' : 'left-0.5'}`} style={{ transform: user.canUseSales ? 'translateX(24px)' : 'translateX(0)' }}></div>
+            </button>
+          </div>
+        </div>
       </div>
 
       <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
