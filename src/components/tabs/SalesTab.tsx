@@ -16,7 +16,7 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [lastSale, setLastSale] = useState<any>(null);
-  const [history, setHistory] = useState<any[]>([]);
+  const [receiptImage, setReceiptImage] = useState<string | null>(null);
   const receiptRef = useRef<HTMLDivElement>(null);
 
   const t = useTranslation(user?.language as Language);
@@ -25,6 +25,21 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
     fetchCategories();
     fetchHistory();
   }, [user]);
+
+  useEffect(() => {
+    if (success && receiptRef.current && !receiptImage) {
+      // Allow DOM to settle before capturing
+      setTimeout(async () => {
+        try {
+          if (!receiptRef.current) return;
+          const canvas = await html2canvas(receiptRef.current, { scale: 3, backgroundColor: '#ffffff' });
+          setReceiptImage(canvas.toDataURL("image/png"));
+        } catch (err) {
+          console.error("Failed to generate receipt", err);
+        }
+      }, 500);
+    }
+  }, [success, receiptImage]);
 
   const fetchCategories = async () => {
     try {
@@ -75,6 +90,7 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
       if (res.ok) {
         const newSale = await res.json();
         setLastSale(newSale);
+        setReceiptImage(null);
         setSuccess(true);
         if (WebApp?.HapticFeedback) WebApp.HapticFeedback.notificationOccurred('success');
         setFormData(prev => ({ ...prev, itemName: '', price: '' }));
@@ -96,18 +112,12 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
     setLoading(false);
   };
 
-  const downloadReceipt = async () => {
-    if (receiptRef.current) {
-      try {
-        const canvas = await html2canvas(receiptRef.current, { scale: 3, backgroundColor: '#ffffff' });
-        const image = canvas.toDataURL("image/png");
-        const link = document.createElement('a');
-        link.href = image;
-        link.download = `Chek_${lastSale?.itemName || 'Savdo'}.png`;
-        link.click();
-      } catch (err) {
-        console.error("Failed to generate receipt", err);
-      }
+  const downloadReceiptDesktop = () => {
+    if (receiptImage) {
+      const link = document.createElement('a');
+      link.href = receiptImage;
+      link.download = `Chek_${lastSale?.itemName || 'Savdo'}.png`;
+      link.click();
     }
   };
 
@@ -121,15 +131,28 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
         
         {success ? (
           <div className="flex flex-col items-center animate-in fade-in zoom-in">
-            <div className="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 p-8 rounded-2xl flex flex-col items-center justify-center border border-emerald-100 dark:border-emerald-800 w-full mb-4">
-              <CheckCircle2 className="w-16 h-16 mb-4 text-emerald-500" />
+            <div className="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 p-6 rounded-2xl flex flex-col items-center justify-center border border-emerald-100 dark:border-emerald-800 w-full mb-4">
+              <CheckCircle2 className="w-12 h-12 mb-2 text-emerald-500" />
               <h3 className="text-lg font-bold">{t('success')}</h3>
-              <p className="text-sm mt-1 text-center">{t('success_msg')}</p>
             </div>
             
-            {/* Hidden Receipt for html2canvas */}
+            {/* The actual visible image that users can long press */}
+            {receiptImage ? (
+              <div className="mb-4 flex flex-col items-center w-full">
+                <p className="text-xs text-slate-500 dark:text-slate-400 mb-2 text-center animate-pulse">
+                  Rasmni ustiga uzoqroq bosib saqlab oling (yoki pastdagi tugmani bosing)
+                </p>
+                <img src={receiptImage} alt="Chek" className="w-[300px] rounded-xl shadow-md border border-slate-200" />
+              </div>
+            ) : (
+              <div className="mb-4 w-[300px] h-[400px] bg-slate-100 dark:bg-slate-800 animate-pulse rounded-xl flex items-center justify-center text-sm text-slate-400">
+                Chek tayyorlanmoqda...
+              </div>
+            )}
+
+            {/* Hidden DOM Receipt to capture */}
             <div className="absolute left-[-9999px] top-[-9999px]">
-              <div ref={receiptRef} className="w-[350px] bg-white p-6 rounded-xl shadow-lg border border-slate-200 text-slate-900 font-sans">
+              <div ref={receiptRef} className="w-[350px] bg-white p-6 shadow-none text-slate-900 font-sans">
                 <div className="text-center mb-6 border-b border-dashed border-slate-300 pb-4">
                   <h1 className="text-2xl font-black tracking-tight text-slate-800">MODERNO MEBEL</h1>
                   <p className="text-sm text-slate-500 mt-1">Sifat va Qulaylik</p>
@@ -164,16 +187,18 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
 
             <div className="grid grid-cols-2 gap-3 w-full">
               <button 
-                onClick={downloadReceipt}
-                className="bg-slate-800 text-white font-bold p-3 rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-all"
+                onClick={downloadReceiptDesktop}
+                disabled={!receiptImage}
+                className="bg-slate-800 disabled:bg-slate-400 text-white font-bold p-3 rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-all"
               >
                 <Download className="w-5 h-5" />
-                Chek
+                Saqlash
               </button>
               <button 
                 onClick={() => {
                   setSuccess(false);
                   setLastSale(null);
+                  setReceiptImage(null);
                 }}
                 className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold p-3 rounded-xl active:scale-95 transition-all"
               >
