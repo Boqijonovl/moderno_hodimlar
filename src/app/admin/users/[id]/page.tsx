@@ -141,6 +141,30 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
               <div className={`w-5 h-5 bg-white rounded-full absolute top-0.5 transition-all ${user.canUseSales ? 'left-6.5 right-0.5' : 'left-0.5'}`} style={{ transform: user.canUseSales ? 'translateX(24px)' : 'translateX(0)' }}></div>
             </button>
           </div>
+
+          <div className="p-3 bg-slate-50 rounded-xl space-y-3">
+            <div className="font-semibold text-slate-800 text-sm border-b border-slate-200 pb-2">Ish vaqti grafigi</div>
+            
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-slate-600">Ish boshlash vaqti</div>
+              <input 
+                type="time" 
+                value={user.workStartTime || '09:00'}
+                onChange={(e) => toggleSetting('workStartTime', e.target.value)}
+                className="p-1 border border-slate-300 rounded-md text-sm outline-none focus:border-blue-500"
+              />
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-slate-600">Ish tugash vaqti</div>
+              <input 
+                type="time" 
+                value={user.workEndTime || '18:00'}
+                onChange={(e) => toggleSetting('workEndTime', e.target.value)}
+                className="p-1 border border-slate-300 rounded-md text-sm outline-none focus:border-blue-500"
+              />
+            </div>
+          </div>
         </div>
       </div>
 

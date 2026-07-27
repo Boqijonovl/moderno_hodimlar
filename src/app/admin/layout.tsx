@@ -1,9 +1,17 @@
 import Link from 'next/link';
-import { Home, Users, BarChart3, Settings, Clock } from 'lucide-react';
+import { Home, Users, BarChart3, Settings, Clock, ArrowLeft } from 'lucide-react';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col pb-20">
+      <div className="bg-white border-b border-slate-200 px-4 py-3 flex justify-between items-center shadow-sm sticky top-0 z-40">
+        <div className="font-bold text-slate-800">Admin Panel</div>
+        <Link href="/" className="flex items-center gap-1 text-sm font-semibold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors">
+          <ArrowLeft className="w-4 h-4" />
+          Ilovaga qaytish
+        </Link>
+      </div>
+
       <div className="flex-1 overflow-y-auto p-4">
         {children}
       </div>

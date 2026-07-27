@@ -53,7 +53,9 @@ export async function POST(req: Request) {
 
       const currentTime = new Date();
       const onTimeLimit = new Date();
-      onTimeLimit.setHours(9, 0, 0, 0); // 09:00
+      
+      const [startHour, startMinute] = (user.workStartTime || "09:00").split(':').map(Number);
+      onTimeLimit.setHours(startHour, startMinute, 0, 0);
 
       const status = currentTime <= onTimeLimit ? 'ON_TIME' : 'LATE';
 
