@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Send, CheckCircle2, Package, List, Download } from 'lucide-react';
 import { useTranslation, Language } from '@/lib/i18n';
-import html2canvas from 'html2canvas';
 
 export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
   const [categories, setCategories] = useState<{id: string, name: string}[]>([]);
@@ -32,6 +31,7 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
       setTimeout(async () => {
         try {
           if (!receiptRef.current) return;
+          const html2canvas = (await import('html2canvas')).default;
           const canvas = await html2canvas(receiptRef.current, { scale: 3, backgroundColor: '#ffffff' });
           setReceiptImage(canvas.toDataURL("image/png"));
         } catch (err) {
