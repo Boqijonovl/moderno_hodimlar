@@ -46,7 +46,10 @@ model Sale {
   user          User          @relation(fields: [userId], references: [id])
   userId        String
   totalPrice    Float         @default(0)
+  advance       Float         @default(0)
+  balance       Float         @default(0)
   paymentMethod String        @default("CASH") // CASH, CARD, INSTALLMENT
+  status        String        @default("COMPLETED") // COMPLETED, INCOMPLETE
   date          DateTime      @default(now())
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt

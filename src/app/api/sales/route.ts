@@ -4,7 +4,7 @@ import { Telegraf } from 'telegraf';
 
 export async function POST(req: Request) {
   try {
-    const { items, paymentMethod, telegramId, userId, employeeName } = await req.json();
+    const { items, paymentMethod, advance, telegramId, userId, employeeName } = await req.json();
 
     if (!items || !items.length) {
       return NextResponse.json({ error: 'Missing items' }, { status: 400 });
@@ -26,11 +26,17 @@ export async function POST(req: Request) {
     }
 
     const totalPrice = items.reduce((acc: number, item: any) => acc + parseFloat(item.price || 0), 0);
+    const parsedAdvance = advance ? parseFloat(advance) : (paymentMethod === 'INSTALLMENT' ? 0 : totalPrice);
+    const balance = totalPrice - parsedAdvance;
+    const status = balance > 0 ? 'INCOMPLETE' : 'COMPLETED';
 
     const sale = await prisma.sale.create({
       data: {
         userId: user.id,
         totalPrice,
+        advance: parsedAdvance,
+        balance,
+        status,
         paymentMethod,
         items: {
           create: items.map((item: any) => ({
@@ -50,7 +56,13 @@ export async function POST(req: Request) {
         
         let itemsText = items.map((item: any, i: number) => `${i+1}. ${item.name} - ${parseFloat(item.price).toLocaleString()} so'm`).join('\n');
         
-        const message = `🟢 <b>Yangi Savdo!</b>\n\n👤 Xodim: ${user.name}\n\n🛍 <b>Sotilgan tovarlar:</b>\n${itemsText}\n\n💰 Umumiy summa: <b>${totalPrice.toLocaleString()} so'm</b>\n💳 To'lov turi: ${paymentMethod === 'CASH' ? 'Naqd' : paymentMethod === 'CARD' ? 'Karta' : 'Muddatli'}`;
+        let paymentName = paymentMethod === 'CASH' ? 'Naqd' : paymentMethod === 'CARD' ? 'Karparativ' : 'Avans';
+        let amountText = `💰 Umumiy summa: <b>${totalPrice.toLocaleString()} so'm</b>`;
+        if (paymentMethod === 'INSTALLMENT') {
+          amountText += `\n💵 To'langan Avans: <b>${parsedAdvance.toLocaleString()} so'm</b>\n⚠️ Qoldiq (Qarz): <b>${balance.toLocaleString()} so'm</b>`;
+        }
+        
+        const message = `🟢 <b>Yangi Savdo!</b>\n\n👤 Xodim: ${user.name}\n\n🛍 <b>Sotilgan tovarlar:</b>\n${itemsText}\n\n${amountText}\n💳 To'lov turi: ${paymentName}`;
 
         for (const admin of admins) {
           if (admin.telegramId) {
@@ -104,7 +116,7 @@ export async function POST(req: Request) {
             
             doc.moveDown(0.5);
             const startY3 = doc.y;
-            doc.font('Helvetica').text("To'lov turi:", 30, startY3).font('Helvetica-Bold').text(paymentMethod === 'CASH' ? 'Naqd' : paymentMethod === 'CARD' ? 'Karta' : 'Muddatli', 150, startY3, { align: 'right', width: 170 });
+            doc.font('Helvetica').text("To'lov turi:", 30, startY3).font('Helvetica-Bold').text(paymentMethod === 'CASH' ? 'Naqd' : paymentMethod === 'CARD' ? 'Karparativ' : 'Avans', 150, startY3, { align: 'right', width: 170 });
             
             doc.moveDown(1.5);
             doc.moveTo(30, doc.y).lineTo(320, doc.y).strokeColor('#cccccc').stroke();
@@ -121,7 +133,14 @@ export async function POST(req: Request) {
             });
             
             doc.moveDown(1);
-            doc.fontSize(18).font('Helvetica-Bold').fillColor('black').text(`Jami: ${totalPrice.toLocaleString()} so'm`, { align: 'right' });
+            doc.fontSize(16).font('Helvetica-Bold').fillColor('black').text(`Jami: ${totalPrice.toLocaleString()} so'm`, { align: 'right' });
+            
+            if (paymentMethod === 'INSTALLMENT') {
+              doc.moveDown(0.3);
+              doc.fontSize(12).font('Helvetica').text(`Avans: ${parsedAdvance.toLocaleString()} so'm`, { align: 'right' });
+              doc.moveDown(0.3);
+              doc.fontSize(14).font('Helvetica-Bold').fillColor('red').text(`Qoldiq: ${balance.toLocaleString()} so'm`, { align: 'right' });
+            }
             
             doc.moveDown(2);
             doc.moveTo(30, doc.y).lineTo(320, doc.y).strokeColor('#cccccc').stroke();

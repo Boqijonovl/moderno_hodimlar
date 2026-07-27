@@ -279,7 +279,7 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
             <p className="text-slate-500 text-sm">Savdolar yo'q.</p>
           ) : (
             sales.map((sale) => (
-              <div key={sale.id} className="bg-slate-50 border border-slate-100 rounded-xl p-4 flex justify-between items-center">
+              <div key={sale.id} className="bg-slate-50 border border-slate-100 rounded-xl p-4 flex justify-between items-center hover:bg-slate-100 transition-colors">
                   <div>
                     <div className="font-semibold text-slate-800 text-sm">{sale.items?.length || 0} ta tovar</div>
                     <div className="text-xs text-slate-500 mt-1">{new Date(sale.createdAt).toLocaleDateString()} {new Date(sale.createdAt).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
@@ -287,11 +287,16 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
                   <div className="text-right flex items-center gap-4">
                     <div>
                       <div className="font-bold text-emerald-600 text-sm">{(sale.totalPrice || 0).toLocaleString()} so'm</div>
+                      {sale.status === 'INCOMPLETE' && (
+                        <div className="text-[10px] font-bold text-red-500 bg-red-50 px-1.5 py-0.5 rounded mt-1 text-right">
+                          Qarz: {sale.balance?.toLocaleString()} so'm
+                        </div>
+                      )}
                       <span className="text-[10px] bg-white border border-slate-200 px-2 py-0.5 rounded text-slate-500 uppercase mt-1 inline-block">
-                        {sale.paymentMethod}
+                        {sale.paymentMethod === 'CASH' ? 'Naqd' : sale.paymentMethod === 'CARD' ? 'Karparativ' : 'Avans'}
                       </span>
                     </div>
-                    <button onClick={() => deleteSale(sale.id)} className="p-1.5 bg-rose-50 text-rose-500 rounded-lg hover:bg-rose-100 transition-colors">
+                    <button onClick={() => deleteSale(sale.id)} className="p-1.5 bg-rose-50 text-rose-500 rounded-lg hover:bg-rose-100 transition-colors shadow-sm active:scale-95">
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>

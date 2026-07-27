@@ -34,7 +34,7 @@ export default function ReceiptPage(props: { params: Promise<{ id: string }> }) 
         
         {/* Header */}
         <div className="text-center mb-8 border-b-2 border-dashed border-slate-200 pb-6">
-          <h1 className="text-3xl font-black tracking-tight text-slate-900">MODERNO</h1>
+          <h1 className="text-3xl font-black tracking-tight text-slate-900">MODERNO MEBEL</h1>
           <p className="text-sm font-medium text-slate-500 tracking-widest uppercase mt-1">Sifat va Qulaylik</p>
         </div>
 
@@ -51,7 +51,7 @@ export default function ReceiptPage(props: { params: Promise<{ id: string }> }) 
           <div className="flex justify-between items-center text-sm">
             <span className="text-slate-500">To'lov turi:</span>
             <span className="font-bold">
-              {sale.paymentMethod === 'CASH' ? 'Naqd' : sale.paymentMethod === 'CARD' ? 'Karta' : 'Muddatli'}
+              {sale.paymentMethod === 'CASH' ? 'Naqd' : sale.paymentMethod === 'CARD' ? 'Karparativ' : 'Avans'}
             </span>
           </div>
           <div className="flex justify-between items-center text-sm">
@@ -80,11 +80,28 @@ export default function ReceiptPage(props: { params: Promise<{ id: string }> }) 
         {/* Total */}
         <div className="border-t-2 border-dashed border-slate-200 pt-6 mb-8">
           <div className="flex justify-between items-end px-2 print:px-0">
-            <span className="text-lg font-bold text-slate-600 uppercase">Jami To'lov:</span>
+            <span className="text-lg font-bold text-slate-600 uppercase">Jami:</span>
             <span className="text-2xl font-black text-emerald-600">
               {(sale.totalPrice || 0).toLocaleString()} so'm
             </span>
           </div>
+          
+          {sale.paymentMethod === 'INSTALLMENT' && (
+            <div className="mt-4 space-y-2 px-2 print:px-0">
+              <div className="flex justify-between items-end text-slate-700">
+                <span className="text-sm font-bold uppercase">To'langan Avans:</span>
+                <span className="text-lg font-bold">
+                  {(sale.advance || 0).toLocaleString()} so'm
+                </span>
+              </div>
+              <div className="flex justify-between items-end text-red-600">
+                <span className="text-sm font-bold uppercase">Qoldiq (Qarz):</span>
+                <span className="text-xl font-black">
+                  {(sale.balance || 0).toLocaleString()} so'm
+                </span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Footer */}

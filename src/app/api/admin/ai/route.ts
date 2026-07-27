@@ -30,9 +30,9 @@ export async function POST(req: Request) {
       include: { user: true }
     });
 
-    const totalSalesSum = sales.reduce((sum, s) => sum + s.price, 0);
+    const totalSalesSum = sales.reduce((sum, s) => sum + s.totalPrice, 0);
     const topSeller = sales.reduce((acc, curr) => {
-      acc[curr.user.name] = (acc[curr.user.name] || 0) + curr.price;
+      acc[curr.user.name] = (acc[curr.user.name] || 0) + curr.totalPrice;
       return acc;
     }, {} as Record<string, number>);
 

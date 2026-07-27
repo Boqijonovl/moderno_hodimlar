@@ -7,6 +7,7 @@ import { useTranslation, Language } from '@/lib/i18n';
 export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
   const [items, setItems] = useState<{name: string, price: string}[]>([{ name: '', price: '' }]);
   const [paymentMethod, setPaymentMethod] = useState('CASH');
+  const [advanceAmount, setAdvanceAmount] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [lastSale, setLastSale] = useState<any>(null);
@@ -64,6 +65,7 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
         body: JSON.stringify({
           items: validItems,
           paymentMethod,
+          advance: paymentMethod === 'INSTALLMENT' ? advanceAmount : undefined,
           telegramId: user?.telegramId,
           userId: user?.id,
           employeeName: user?.name,
@@ -76,6 +78,7 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
         setSuccess(true);
         if (WebApp?.HapticFeedback) WebApp.HapticFeedback.notificationOccurred('success');
         setItems([{ name: '', price: '' }]);
+        setAdvanceAmount('');
         fetchHistory();
       } else {
         if (WebApp?.HapticFeedback) WebApp.HapticFeedback.notificationOccurred('error');
@@ -92,6 +95,20 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
       if (WebApp?.HapticFeedback) WebApp.HapticFeedback.notificationOccurred('error');
     }
     setLoading(false);
+  };
+
+  const completeSale = async (id: string) => {
+    if (!confirm("Rostdan ham ushbu savdo bo'yicha to'liq to'lov qilindimi?")) return;
+    try {
+      const res = await fetch(`/api/sales/${id}/complete`, { method: 'PUT' });
+      if (res.ok) {
+        fetchHistory();
+      } else {
+        alert("Xatolik yuz berdi");
+      }
+    } catch (e) {
+      alert("Tarmoq xatosi");
+    }
   };
 
   const openPDF = (saleId?: string) => {
@@ -232,7 +249,7 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
                     : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
                   }`}
                 >
-                  Karta
+                  Karparativ
                 </button>
                 <button
                   type="button"
@@ -243,10 +260,36 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
                     : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
                   }`}
                 >
-                  Muddatli
+                  Avans
                 </button>
               </div>
             </div>
+
+            {paymentMethod === 'INSTALLMENT' && (
+              <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">
+                  To'lanayotgan Avans Summasi
+                </label>
+                <input
+                  type="number"
+                  required
+                  min="0"
+                  value={advanceAmount}
+                  onChange={(e) => setAdvanceAmount(e.target.value)}
+                  className="w-full p-4 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl focus:ring-2 focus:ring-purple-500 dark:text-white font-bold text-lg"
+                  placeholder="Avans (so'm)"
+                />
+                
+                {advanceAmount && (
+                  <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-2xl flex justify-between items-center mt-2">
+                    <span className="text-purple-600 dark:text-purple-400 font-semibold">Qoldiq (Qarz):</span>
+                    <span className="text-xl font-black text-red-600 dark:text-red-400">
+                      {(items.reduce((acc, curr) => acc + (parseFloat(curr.price) || 0), 0) - parseFloat(advanceAmount)).toLocaleString()} so'm
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
 
             <button
               type="submit"
@@ -282,22 +325,38 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
                   <div className="font-bold text-slate-800 dark:text-slate-200 text-sm">
                     {sale.items?.length || 0} ta mebel
                   </div>
-                  <div className="flex items-center gap-2 mt-1 text-xs">
+                  <div className="flex items-center gap-2 mt-1 text-xs flex-wrap">
                     <span className="text-blue-600 font-medium bg-blue-100 dark:bg-blue-900/30 px-2 py-0.5 rounded-full">
-                      {sale.paymentMethod === 'CASH' ? t('cash') : sale.paymentMethod === 'CARD' ? t('card') : t('installment')}
+                      {sale.paymentMethod === 'CASH' ? t('cash') : sale.paymentMethod === 'CARD' ? 'Karparativ' : 'Avans'}
                     </span>
                     <span className="text-slate-400">{new Date(sale.createdAt).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' })}</span>
                   </div>
+                  
+                  {sale.status === 'INCOMPLETE' && (
+                    <div className="mt-2 text-xs font-bold text-red-500 bg-red-50 px-2 py-1 rounded-lg inline-block">
+                      Tugallanmagan: {sale.balance?.toLocaleString()} so'm qarz
+                    </div>
+                  )}
                 </div>
                 <div className="text-right">
                   <div className="font-black text-emerald-600 dark:text-emerald-400">
                     {(sale.totalPrice || 0).toLocaleString()} <span className="text-xs font-normal text-emerald-600/70">so'm</span>
                   </div>
+                  
+                  {sale.status === 'INCOMPLETE' && (
+                    <button 
+                      onClick={() => completeSale(sale.id)}
+                      className="w-full bg-emerald-500 text-white text-xs font-bold px-2 py-1.5 rounded-lg mt-2 active:scale-95 transition-all shadow-sm"
+                    >
+                      To'liq to'landi
+                    </button>
+                  )}
+                  
                   <button 
                     onClick={() => openPDF(sale.id)}
-                    className="text-xs text-blue-600 font-bold hover:underline inline-flex items-center gap-1 mt-1 cursor-pointer"
+                    className="text-xs text-blue-600 font-bold hover:underline flex items-center justify-end gap-1 mt-2 cursor-pointer w-full"
                   >
-                    <FileText className="w-3 h-3" /> Chekni ko'rish
+                    <FileText className="w-3 h-3" /> Chek
                   </button>
                 </div>
               </div>

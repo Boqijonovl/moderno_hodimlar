@@ -22,7 +22,8 @@ export default function SalesAnalytics() {
       'Xodim': s.user?.name || 'Noma\'lum',
       'Mebellar': s.items?.map((i: any) => i.name).join(', ') || 'Noma\'lum',
       'Umumiy Narxi': s.totalPrice,
-      'To\'lov Turi': s.paymentMethod
+      'To\'lov Turi': s.paymentMethod === 'CASH' ? 'Naqd' : s.paymentMethod === 'CARD' ? 'Karparativ' : 'Avans',
+      'Qoldiq': s.balance || 0
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(data);
@@ -85,12 +86,19 @@ export default function SalesAnalytics() {
               <div className="text-right flex items-center gap-4">
                 <div>
                   <p className="font-bold text-emerald-600">{(sale.totalPrice || 0).toLocaleString()} so'm</p>
+                  
+                  {sale.status === 'INCOMPLETE' && (
+                    <div className="text-[10px] font-bold text-red-500 bg-red-50 px-1.5 py-0.5 rounded mt-1 text-right">
+                      Qarz: {sale.balance?.toLocaleString()} so'm
+                    </div>
+                  )}
+
                   <div className="flex justify-end gap-2 mt-1">
                     <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 font-medium">
                       {new Date(sale.createdAt).toLocaleDateString()}
                     </span>
                     <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 font-medium uppercase">
-                      {sale.paymentMethod}
+                      {sale.paymentMethod === 'CASH' ? 'Naqd' : sale.paymentMethod === 'CARD' ? 'Karparativ' : 'Avans'}
                     </span>
                   </div>
                 </div>

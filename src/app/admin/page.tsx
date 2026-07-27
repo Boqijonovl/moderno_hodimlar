@@ -46,8 +46,8 @@ export default function AdminDashboard() {
                <p className="text-amber-100 text-xs font-medium mb-1">To'lov Turlari</p>
                <div className="flex gap-4 text-sm font-semibold">
                  <span>Naqd: {(data.breakdown.cash/1000000).toFixed(1)}M</span>
-                 <span>Karta: {(data.breakdown.card/1000000).toFixed(1)}M</span>
-                 <span>Muddatli: {(data.breakdown.installment/1000000).toFixed(1)}M</span>
+                 <span>Karparativ: {(data.breakdown.card/1000000).toFixed(1)}M</span>
+                 <span>Avans: {(data.breakdown.installment/1000000).toFixed(1)}M</span>
                </div>
              </div>
              <div className="p-2 bg-white/20 rounded-lg"><Activity className="w-6 h-6" /></div>
@@ -93,7 +93,14 @@ export default function AdminDashboard() {
               </div>
               <div className="text-right">
                 <p className="text-sm font-bold text-emerald-600">{(sale.totalPrice || 0).toLocaleString()} so'm</p>
-                <p className="text-[10px] text-slate-400">{new Date(sale.createdAt).toLocaleTimeString('uz-UZ', {hour:'2-digit', minute:'2-digit'})}</p>
+                {sale.status === 'INCOMPLETE' && (
+                  <p className="text-[10px] font-bold text-red-500 bg-red-50 px-1 py-0.5 rounded inline-block mt-0.5 mb-0.5">
+                    Qarz: {sale.balance?.toLocaleString()}
+                  </p>
+                )}
+                <p className="text-[10px] text-slate-400">
+                  {new Date(sale.createdAt).toLocaleTimeString('uz-UZ', {hour:'2-digit', minute:'2-digit'})} • {sale.paymentMethod === 'CASH' ? 'Naqd' : sale.paymentMethod === 'CARD' ? 'Karparativ' : 'Avans'}
+                </p>
               </div>
             </div>
           ))}
