@@ -114,6 +114,12 @@ export async function POST(req: Request) {
             const startY2 = doc.y;
             doc.font('Helvetica').text('Sotuvchi:', 30, startY2).font('Helvetica-Bold').text(user.name, 150, startY2, { align: 'right', width: 170 });
             
+            if (user.phone) {
+              doc.moveDown(0.5);
+              const startYPhone = doc.y;
+              doc.font('Helvetica').text('Telefon:', 30, startYPhone).font('Helvetica-Bold').text(user.phone, 150, startYPhone, { align: 'right', width: 170 });
+            }
+            
             doc.moveDown(0.5);
             const startY3 = doc.y;
             doc.font('Helvetica').text("To'lov turi:", 30, startY3).font('Helvetica-Bold').text(paymentMethod === 'CASH' ? 'Naqd' : paymentMethod === 'CARD' ? 'Karparativ' : 'Avans', 150, startY3, { align: 'right', width: 170 });

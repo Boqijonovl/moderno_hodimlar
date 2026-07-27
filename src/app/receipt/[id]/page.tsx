@@ -48,6 +48,12 @@ export default function ReceiptPage(props: { params: Promise<{ id: string }> }) 
             <span className="text-slate-500">Sotuvchi:</span>
             <span className="font-bold">{sale.user?.name || 'Noma\'lum'}</span>
           </div>
+          {sale.user?.phone && (
+            <div className="flex justify-between items-center text-sm">
+              <span className="text-slate-500">Telefon:</span>
+              <span className="font-bold">{sale.user.phone}</span>
+            </div>
+          )}
           <div className="flex justify-between items-center text-sm">
             <span className="text-slate-500">To'lov turi:</span>
             <span className="font-bold">

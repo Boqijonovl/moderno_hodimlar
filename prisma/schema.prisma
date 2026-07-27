@@ -13,6 +13,7 @@ model User {
   telegramId       String       @unique
   name             String
   role             String       @default("EMPLOYEE") // ADMIN, MANAGER, EMPLOYEE
+  phone            String?
   active           Boolean      @default(true)
   canUseAttendance Boolean      @default(true)
   canUseSales      Boolean      @default(true)

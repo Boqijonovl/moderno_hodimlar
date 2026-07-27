@@ -147,6 +147,21 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
           </div>
 
           <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+            <div className="flex-1 mr-4">
+              <div className="font-semibold text-slate-800 text-sm">Telefon Raqami</div>
+              <div className="text-xs text-slate-500">Xodimning telefon raqami (chekda chiqadi)</div>
+            </div>
+            <input 
+              type="text" 
+              placeholder="+998..." 
+              value={user.phone || ''} 
+              onChange={(e) => setUser((prev: any) => ({ ...prev, phone: e.target.value }))}
+              onBlur={(e) => toggleSetting('phone', e.target.value)}
+              className="w-1/2 p-2 text-sm border-slate-200 rounded-lg bg-white outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
             <div>
               <div className="font-semibold text-slate-800 text-sm">Davomat bo'limi</div>
               <div className="text-xs text-slate-500">1-bo'limga ruxsat</div>
