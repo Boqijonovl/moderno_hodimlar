@@ -108,10 +108,32 @@ export async function POST(req: Request) {
         }
       }
 
+      const serverTime = new Date();
+      const tashkentTimeStr = serverTime.toLocaleString("en-US", {timeZone: "Asia/Tashkent"});
+      const tashkentTime = new Date(tashkentTimeStr);
+
+      const endTimeLimit = new Date(tashkentTime);
+      const [endHour, endMinute] = (user.workEndTime || "18:00").split(':').map(Number);
+      endTimeLimit.setHours(endHour, endMinute, 0, 0);
+
+      let newLateMinutes = attendance.lateMinutes || 0;
+
+      if (tashkentTime < endTimeLimit) {
+        // Vohli ketdi (Left early): qolgan vaqtni kechikishga qo'shish
+        const earlyMinutes = Math.floor((endTimeLimit.getTime() - tashkentTime.getTime()) / 60000);
+        newLateMinutes += earlyMinutes;
+      } else if (tashkentTime > endTimeLimit) {
+        // Kech ketdi (Left late): ishlagan ortiqcha vaqtni kechikishdan ayirish
+        const extraMinutes = Math.floor((tashkentTime.getTime() - endTimeLimit.getTime()) / 60000);
+        newLateMinutes -= extraMinutes;
+        if (newLateMinutes < 0) newLateMinutes = 0; // Kechikish noldan kichik bo'lmaydi
+      }
+
       await prisma.attendance.update({
         where: { id: attendance.id },
         data: { 
-          checkOutTime: new Date(),
+          checkOutTime: serverTime,
+          lateMinutes: newLateMinutes,
           reason: body.reason ? (attendance.reason ? `${attendance.reason} | Chiqishda: ${body.reason}` : `Chiqishda: ${body.reason}`) : attendance.reason 
         }
       });
