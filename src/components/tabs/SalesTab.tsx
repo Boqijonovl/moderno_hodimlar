@@ -15,6 +15,7 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [lastSale, setLastSale] = useState<any>(null);
+  const [history, setHistory] = useState<any[]>([]);
   const [receiptImage, setReceiptImage] = useState<string | null>(null);
   const receiptRef = useRef<HTMLDivElement>(null);
 
