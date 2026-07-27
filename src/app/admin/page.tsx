@@ -86,16 +86,14 @@ export default function AdminDashboard() {
         <div className="space-y-4">
           {data.recentSales.length === 0 && <p className="text-sm text-slate-500 text-center">Hozircha sotuvlar yo'q</p>}
           {data.recentSales.map((sale: any) => (
-            <div key={sale.id} className="flex justify-between items-center border-b border-slate-50 pb-3 last:border-0 last:pb-0">
+            <div key={sale.id} className="flex justify-between items-center p-3 hover:bg-slate-50 transition-colors">
               <div>
-                <p className="text-sm font-medium text-slate-800">{sale.itemName}</p>
-                <p className="text-xs text-slate-500">{sale.user.name} • {new Date(sale.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+                <p className="text-sm font-medium text-slate-800">{sale.items?.length || 0} ta tovar</p>
+                <p className="text-xs text-slate-500">{sale.user?.name}</p>
               </div>
               <div className="text-right">
-                <p className="text-sm font-bold text-emerald-600">{(sale.price).toLocaleString()}</p>
-                <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-medium">
-                  {sale.paymentMethod}
-                </span>
+                <p className="text-sm font-bold text-emerald-600">{(sale.totalPrice || 0).toLocaleString()} so'm</p>
+                <p className="text-[10px] text-slate-400">{new Date(sale.createdAt).toLocaleTimeString('uz-UZ', {hour:'2-digit', minute:'2-digit'})}</p>
               </div>
             </div>
           ))}
