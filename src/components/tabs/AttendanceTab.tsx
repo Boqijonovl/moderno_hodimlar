@@ -26,7 +26,7 @@ export default function AttendanceTab({ user, WebApp }: { user: any, WebApp: any
     }
   };
 
-  const handleCheckIn = () => {
+  const handleCheckIn = (reason?: string) => {
     if (typeof window === 'undefined' || !navigator.geolocation) {
       setMessage('Qurilmangizda GPS yo\'q yoki ruxsat etilmagan');
       return;
@@ -46,6 +46,7 @@ export default function AttendanceTab({ user, WebApp }: { user: any, WebApp: any
               lat: position.coords.latitude,
               lng: position.coords.longitude,
               name: user?.name,
+              reason
             })
           });
           const data = await res.json();
@@ -54,6 +55,15 @@ export default function AttendanceTab({ user, WebApp }: { user: any, WebApp: any
             setMessage(`Ishga kelganingiz muvaffaqiyatli qayd etildi! (${data.status})`);
             if (WebApp?.HapticFeedback) WebApp.HapticFeedback.notificationOccurred('success');
             fetchHistory();
+          } else if (res.status === 403 && data.needsReason) {
+            // Prompt for reason
+            const userReason = window.prompt(data.error);
+            if (userReason && userReason.trim()) {
+              handleCheckIn(userReason.trim());
+            } else {
+              setMessage('Izoh kiritilmadi, amaliyot bekor qilindi.');
+              if (WebApp?.HapticFeedback) WebApp.HapticFeedback.notificationOccurred('error');
+            }
           } else {
             setMessage(data.error || 'Xatolik yuz berdi');
             if (WebApp?.HapticFeedback) WebApp.HapticFeedback.notificationOccurred('error');
@@ -71,30 +81,59 @@ export default function AttendanceTab({ user, WebApp }: { user: any, WebApp: any
     );
   };
 
-  const handleCheckOut = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch('/api/attendance', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'check-out',
-          telegramId: user?.telegramId,
-        })
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setStatus('checked-out');
-        setMessage('Ishingiz muvaffaqiyatli yakunlandi!');
-        if (WebApp?.HapticFeedback) WebApp.HapticFeedback.notificationOccurred('success');
-        fetchHistory();
-      } else {
-        setMessage(data.error || 'Xatolik');
-      }
-    } catch (e) {
-      setMessage('Tarmoq xatosi');
+  const handleCheckOut = (reason?: string) => {
+    if (typeof window === 'undefined' || !navigator.geolocation) {
+      setMessage('Qurilmangizda GPS yo\'q yoki ruxsat etilmagan');
+      return;
     }
-    setLoading(false);
+    setLoading(true);
+    setMessage('Geolokatsiya olinmoqda...');
+    
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const res = await fetch('/api/attendance', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'check-out',
+              telegramId: user?.telegramId,
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
+              reason
+            })
+          });
+          const data = await res.json();
+          if (res.ok) {
+            setStatus('checked-out');
+            setMessage('Ishingiz muvaffaqiyatli yakunlandi!');
+            if (WebApp?.HapticFeedback) WebApp.HapticFeedback.notificationOccurred('success');
+            fetchHistory();
+          } else if (res.status === 403 && data.needsReason) {
+            // Prompt for reason
+            const userReason = window.prompt(data.error);
+            if (userReason && userReason.trim()) {
+              handleCheckOut(userReason.trim());
+            } else {
+              setMessage('Izoh kiritilmadi, amaliyot bekor qilindi.');
+              if (WebApp?.HapticFeedback) WebApp.HapticFeedback.notificationOccurred('error');
+            }
+          } else {
+            setMessage(data.error || 'Xatolik');
+          }
+        } catch (e) {
+          setMessage('Tarmoq xatosi');
+        }
+        setLoading(false);
+      },
+      (error) => {
+        // Allow check-out without GPS if needed by commenting out or handling differently
+        // For now, require GPS to check location
+        setMessage('GPS ga ruxsat berilmagan. Yakunlash uchun ruxsat kerak.');
+        setLoading(false);
+      },
+      { enableHighAccuracy: true }
+    );
   };
 
   return (
@@ -153,6 +192,11 @@ export default function AttendanceTab({ user, WebApp }: { user: any, WebApp: any
                     <span>|</span>
                     <span>Chiqish: {record.checkOutTime ? new Date(record.checkOutTime).toLocaleTimeString('uz-UZ', {hour: '2-digit', minute:'2-digit'}) : '--:--'}</span>
                   </div>
+                  {record.reason && (
+                    <div className="text-[10px] text-slate-400 mt-1 italic">
+                      Izoh: {record.reason}
+                    </div>
+                  )}
                 </div>
                 <div className={`px-2 py-1 rounded-md text-[10px] font-bold ${
                   record.status === 'ON_TIME' ? 'bg-emerald-100 text-emerald-700' :

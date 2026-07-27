@@ -39,8 +39,8 @@ export async function POST(req: Request) {
         { latitude: settings.storeLat, longitude: settings.storeLng }
       );
 
-      if (distance > settings.radius) {
-        return NextResponse.json({ error: `Siz do'kondan juda uzoqdasiz! Masofa: ${distance}m (Ruxsat: ${settings.radius}m)` }, { status: 403 });
+      if (distance > settings.radius && !body.reason) {
+        return NextResponse.json({ needsReason: true, error: `Do'kondan uzoqdasiz! Masofa: ${distance}m. Iltimos, sababni kiriting:` }, { status: 403 });
       }
 
       const currentTime = new Date();
@@ -56,7 +56,8 @@ export async function POST(req: Request) {
           checkInTime: currentTime,
           gpsLat: lat,
           gpsLng: lng,
-          status
+          status,
+          reason: body.reason || null
         }
       });
 
@@ -64,16 +65,35 @@ export async function POST(req: Request) {
     }
 
     if (action === 'check-out') {
+      // Find the most recent open attendance for this user
       const attendance = await prisma.attendance.findFirst({
-        where: { userId: user.id, date: today },
+        where: { userId: user.id, checkOutTime: null },
         orderBy: { createdAt: 'desc' }
       });
 
-      if (!attendance) return NextResponse.json({ error: 'No check-in found for today' }, { status: 404 });
+      if (!attendance) return NextResponse.json({ error: 'Davomat ochiq emas (Kirish qilinmagan yoki allaqachon yopilgan)' }, { status: 404 });
+
+      // If lat/lng provided, check distance for check-out as well, optionally
+      if (lat && lng) {
+        let settings = await prisma.settings.findFirst();
+        if (settings) {
+          const distance = getDistance(
+            { latitude: lat, longitude: lng },
+            { latitude: settings.storeLat, longitude: settings.storeLng }
+          );
+
+          if (distance > settings.radius && !body.reason) {
+            return NextResponse.json({ needsReason: true, error: `Do'kondan uzoqdasiz! Masofa: ${distance}m. Iltimos, sababni kiriting:` }, { status: 403 });
+          }
+        }
+      }
 
       await prisma.attendance.update({
         where: { id: attendance.id },
-        data: { checkOutTime: new Date() }
+        data: { 
+          checkOutTime: new Date(),
+          reason: body.reason ? (attendance.reason ? `${attendance.reason} | Chiqishda: ${body.reason}` : `Chiqishda: ${body.reason}`) : attendance.reason 
+        }
       });
 
       return NextResponse.json({ success: true });

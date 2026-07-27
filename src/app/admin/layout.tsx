@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Home, Users, BarChart3, Settings } from 'lucide-react';
+import { Home, Users, BarChart3, Settings, Clock } from 'lucide-react';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -14,12 +14,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <span className="text-[10px] font-medium mt-1">Asosiy</span>
         </Link>
         <Link href="/admin/attendance" className="flex flex-col items-center text-slate-500 hover:text-blue-600 transition-colors">
-          <Users className="w-6 h-6" />
+          <Clock className="w-6 h-6" />
           <span className="text-[10px] font-medium mt-1">Davomat</span>
         </Link>
         <Link href="/admin/sales" className="flex flex-col items-center text-slate-500 hover:text-blue-600 transition-colors">
           <BarChart3 className="w-6 h-6" />
           <span className="text-[10px] font-medium mt-1">Savdolar</span>
+        </Link>
+        <Link href="/admin/users" className="flex flex-col items-center text-slate-500 hover:text-blue-600 transition-colors">
+          <Users className="w-6 h-6" />
+          <span className="text-[10px] font-medium mt-1">Xodimlar</span>
         </Link>
         <Link href="/admin/settings" className="flex flex-col items-center text-slate-500 hover:text-blue-600 transition-colors">
           <Settings className="w-6 h-6" />
