@@ -72,20 +72,20 @@ export default function SettingsTab({ user, onUserUpdate }: { user: any, onUserU
       )}
 
       {/* Profile Settings */}
-      <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
-        <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
-          <User className="w-6 h-6 text-blue-600" />
+      <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-sm border border-slate-100 dark:border-slate-800">
+        <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-4 flex items-center gap-2">
+          <User className="w-6 h-6 text-blue-600 dark:text-blue-500" />
           {t('personal_info')}
         </h2>
         
         <form onSubmit={handleUpdateProfile} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">{t('name')}</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t('name')}</label>
             <input 
               type="text" 
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl p-3 outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-xl p-3 outline-none focus:ring-2 focus:ring-blue-500 transition-all"
               required
             />
           </div>
@@ -97,7 +97,7 @@ export default function SettingsTab({ user, onUserUpdate }: { user: any, onUserU
           <button 
             type="submit" 
             disabled={loading || name === user?.name}
-            className="w-full bg-slate-800 hover:bg-slate-900 disabled:bg-slate-300 text-white rounded-xl p-3 font-medium transition-all"
+            className="w-full bg-slate-800 dark:bg-slate-700 hover:bg-slate-900 dark:hover:bg-slate-600 disabled:bg-slate-300 dark:disabled:bg-slate-800 disabled:text-slate-500 text-white rounded-xl p-3 font-medium transition-all"
           >
             {loading ? t('saving') : t('save')}
           </button>
@@ -105,36 +105,35 @@ export default function SettingsTab({ user, onUserUpdate }: { user: any, onUserU
       </div>
 
       {/* App Settings */}
-      <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 space-y-4">
-        <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
-          <Settings className="w-6 h-6 text-blue-600" />
+      <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-sm border border-slate-100 dark:border-slate-800 space-y-4">
+        <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-4 flex items-center gap-2">
+          <Settings className="w-6 h-6 text-blue-600 dark:text-blue-500" />
           {t('app_settings')}
         </h2>
         
-        <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
+        <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700">
           <div className="flex items-center gap-3">
-            <Globe className="w-5 h-5 text-slate-500" />
-            <span className="text-slate-700 font-medium text-sm">{t('system_lang')}</span>
+            <Globe className="w-5 h-5 text-slate-500 dark:text-slate-400" />
+            <span className="text-slate-700 dark:text-slate-300 font-medium text-sm">{t('system_lang')}</span>
           </div>
           <select 
             value={user?.language || 'uz'} 
             onChange={handleLanguageChange}
-            className="bg-transparent text-sm font-medium outline-none text-blue-600"
+            className="bg-transparent text-sm font-medium outline-none text-blue-600 dark:text-blue-400"
           >
-            <option value="uz">O'zbekcha</option>
-            <option value="ru">Русский</option>
+            <option value="uz" className="dark:bg-slate-800">O'zbekcha</option>
+            <option value="ru" className="dark:bg-slate-800">Русский</option>
           </select>
         </div>
 
-        <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
+        <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700">
           <div className="flex items-center gap-3">
-            <Palette className="w-5 h-5 text-slate-500" />
-            <span className="text-slate-700 font-medium text-sm">{t('theme')}</span>
+            <Palette className="w-5 h-5 text-slate-500 dark:text-slate-400" />
+            <span className="text-slate-700 dark:text-slate-300 font-medium text-sm">{t('theme')}</span>
           </div>
-          <select className="bg-transparent text-sm font-medium outline-none text-blue-600">
-            <option value="light">{t('light')}</option>
-            <option value="dark">{t('dark')}</option>
-          </select>
+          <div className="text-sm font-medium text-blue-600 dark:text-blue-400">
+            Avtomatik (Telegram)
+          </div>
         </div>
       </div>
     </div>

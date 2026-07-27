@@ -136,15 +136,12 @@ export default function AttendanceTab({ user, WebApp }: { user: any, WebApp: any
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in zoom-in-95 duration-300">
-      <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
-        <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
-          <Clock className="w-6 h-6 text-blue-600" />
-          {t('menu_attendance')}
-        </h2>
+    <div className="space-y-6">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-sm border border-slate-100 dark:border-slate-800">
+        <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-2">{t('attendance')}</h2>
         
         {message && (
-          <div className="mb-4 p-3 rounded-xl bg-blue-50 text-blue-800 text-sm font-medium border border-blue-100">
+          <div className={`p-3 rounded-xl mb-4 text-sm font-medium ${message.includes('Xatolik') || message.includes('error') ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'}`}>
             {message}
           </div>
         )}
@@ -153,7 +150,7 @@ export default function AttendanceTab({ user, WebApp }: { user: any, WebApp: any
           <button 
             onClick={() => handleCheckIn()}
             disabled={status !== 'idle' || loading}
-            className="bg-emerald-500 hover:bg-emerald-600 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-2xl p-4 flex flex-col items-center gap-2 transition-all active:scale-95"
+            className="bg-emerald-500 hover:bg-emerald-600 disabled:bg-slate-200 dark:disabled:bg-slate-800 disabled:text-slate-400 dark:disabled:text-slate-500 text-white rounded-2xl p-4 flex flex-col items-center gap-2 transition-all active:scale-95"
           >
             <LogIn className="w-8 h-8" />
             <span className="font-medium text-sm">{t('check_in')}</span>
@@ -162,7 +159,7 @@ export default function AttendanceTab({ user, WebApp }: { user: any, WebApp: any
           <button 
             onClick={() => handleCheckOut()}
             disabled={status !== 'checked-in' || loading}
-            className="bg-rose-500 hover:bg-rose-600 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-2xl p-4 flex flex-col items-center gap-2 transition-all active:scale-95"
+            className="bg-rose-500 hover:bg-rose-600 disabled:bg-slate-200 dark:disabled:bg-slate-800 disabled:text-slate-400 dark:disabled:text-slate-500 text-white rounded-2xl p-4 flex flex-col items-center gap-2 transition-all active:scale-95"
           >
             <LogOut className="w-8 h-8" />
             <span className="font-medium text-sm">{t('check_out')}</span>
@@ -170,15 +167,15 @@ export default function AttendanceTab({ user, WebApp }: { user: any, WebApp: any
         </div>
       </div>
 
-      <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-sm border border-slate-100 dark:border-slate-800">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-            <Calendar className="w-6 h-6 text-blue-600" />
+          <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+            <Calendar className="w-6 h-6 text-blue-600 dark:text-blue-500" />
             {t('history')}
           </h2>
           {history.length > 0 && (
             <div className="text-right">
-              <div className="text-[10px] text-slate-500 uppercase font-bold">{t('total_late')}</div>
+              <div className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-bold">{t('total_late')}</div>
               <div className="text-sm font-bold text-rose-500">
                 {(() => {
                   let totalLate = history.reduce((sum, r) => sum + (r.lateMinutes || 0), 0);
@@ -195,15 +192,15 @@ export default function AttendanceTab({ user, WebApp }: { user: any, WebApp: any
         
         <div className="space-y-3">
           {history.length === 0 ? (
-            <p className="text-slate-500 text-center py-4 text-sm">{t('no_attendance')}</p>
+            <p className="text-slate-500 dark:text-slate-400 text-center py-4 text-sm">{t('no_attendance')}</p>
           ) : (
             history.map((record) => (
-              <div key={record.id} className="p-3 bg-slate-50 rounded-xl border border-slate-100 flex justify-between items-center">
+              <div key={record.id} className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700 flex justify-between items-center">
                 <div>
-                  <div className="font-semibold text-slate-800 text-sm">
+                  <div className="font-semibold text-slate-800 dark:text-slate-200 text-sm">
                     {new Date(record.date).toLocaleDateString('uz-UZ')}
                   </div>
-                  <div className="text-xs text-slate-500 mt-1 flex gap-2">
+                  <div className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex gap-2">
                     <span>{t('entry')}: {record.checkInTime ? new Date(record.checkInTime).toLocaleTimeString('uz-UZ', {hour: '2-digit', minute:'2-digit'}) : '--:--'}</span>
                     <span>|</span>
                     <span>{t('exit')}: {record.checkOutTime ? new Date(record.checkOutTime).toLocaleTimeString('uz-UZ', {hour: '2-digit', minute:'2-digit'}) : '--:--'}</span>

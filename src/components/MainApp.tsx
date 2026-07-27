@@ -36,6 +36,21 @@ export default function MainApp() {
         const wa = mod.default;
         setWebApp(wa);
         
+        // Handle dark mode
+        if (wa.colorScheme === 'dark') {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+        
+        wa.onEvent('themeChanged', () => {
+          if (wa.colorScheme === 'dark') {
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+          }
+        });
+
         const tgUser = wa.initDataUnsafe?.user;
         if (tgUser) {
           const telegramId = tgUser.id.toString();
@@ -103,10 +118,10 @@ export default function MainApp() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50/50 flex flex-col pb-[80px] font-sans">
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-6 shadow-lg rounded-b-3xl shrink-0 z-10 relative">
+    <main className="min-h-screen bg-slate-50/50 dark:bg-slate-950 flex flex-col pb-[80px] font-sans">
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-800 dark:to-indigo-900 text-white p-6 shadow-lg rounded-b-3xl shrink-0 z-10 relative">
         <h1 className="text-2xl font-bold tracking-tight">Moderno Mebel</h1>
-        <p className="text-blue-100 mt-1 font-medium">
+        <p className="text-blue-100 dark:text-blue-200 mt-1 font-medium">
           {currentTab === 'attendance' ? t('menu_attendance') : currentTab === 'sales' ? t('menu_sales') : t('menu_settings')}
         </p>
       </div>
@@ -127,13 +142,13 @@ export default function MainApp() {
         </AnimatePresence>
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md border-t border-slate-200/50 flex justify-around p-3 pb-safe z-50">
+      <div className="fixed bottom-0 left-0 right-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-t border-slate-200/50 dark:border-slate-800/50 flex justify-around p-3 pb-safe z-50">
         {showAttendance && (
           <button 
             onClick={() => setActiveTab('attendance')}
-            className={`flex flex-col items-center transition-all duration-300 w-20 ${currentTab === 'attendance' ? 'text-blue-600 scale-110' : 'text-slate-400 hover:text-slate-600'}`}
+            className={`flex flex-col items-center transition-all duration-300 w-20 ${currentTab === 'attendance' ? 'text-blue-600 dark:text-blue-400 scale-110' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
           >
-            <Clock className={`w-6 h-6 mb-1 ${currentTab === 'attendance' ? 'fill-blue-50' : ''}`} />
+            <Clock className={`w-6 h-6 mb-1 ${currentTab === 'attendance' ? 'fill-blue-50 dark:fill-blue-900' : ''}`} />
             <span className="text-[10px] font-bold">{t('menu_attendance')}</span>
           </button>
         )}
@@ -141,18 +156,18 @@ export default function MainApp() {
         {showSales && (
           <button 
             onClick={() => setActiveTab('sales')}
-            className={`flex flex-col items-center transition-all duration-300 w-20 ${currentTab === 'sales' ? 'text-blue-600 scale-110' : 'text-slate-400 hover:text-slate-600'}`}
+            className={`flex flex-col items-center transition-all duration-300 w-20 ${currentTab === 'sales' ? 'text-blue-600 dark:text-blue-400 scale-110' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
           >
-            <Package className={`w-6 h-6 mb-1 ${currentTab === 'sales' ? 'fill-blue-50' : ''}`} />
+            <Package className={`w-6 h-6 mb-1 ${currentTab === 'sales' ? 'fill-blue-50 dark:fill-blue-900' : ''}`} />
             <span className="text-[10px] font-bold">{t('menu_sales')}</span>
           </button>
         )}
 
         <button 
           onClick={() => setActiveTab('settings')}
-          className={`flex flex-col items-center transition-all duration-300 w-20 ${currentTab === 'settings' ? 'text-blue-600 scale-110' : 'text-slate-400 hover:text-slate-600'}`}
+          className={`flex flex-col items-center transition-all duration-300 w-20 ${currentTab === 'settings' ? 'text-blue-600 dark:text-blue-400 scale-110' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
         >
-          <SettingsIcon className={`w-6 h-6 mb-1 ${currentTab === 'settings' ? 'fill-blue-50' : ''}`} />
+          <SettingsIcon className={`w-6 h-6 mb-1 ${currentTab === 'settings' ? 'fill-blue-50 dark:fill-blue-900' : ''}`} />
           <span className="text-[10px] font-bold">{t('menu_settings')}</span>
         </button>
       </div>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { MapPin, Plus, List } from 'lucide-react';
+import { MapPin, Plus, List, Edit2, Trash2 } from 'lucide-react';
 
 export default function SettingsPage() {
   const [data, setData] = useState<any>({ settings: null, categories: [] });
@@ -55,6 +55,43 @@ export default function SettingsPage() {
       setNewCat('');
     }
     setLoading(false);
+  };
+
+  const deleteCategory = async (id: string) => {
+    if (!confirm('Kategoriyani o\'chirmoqchimisiz?')) return;
+    try {
+      const res = await fetch(`/api/categories/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setData({ ...data, categories: data.categories.filter((c: any) => c.id !== id) });
+      } else {
+        const err = await res.json();
+        alert(err.error || 'Xatolik yuz berdi');
+      }
+    } catch (e) {
+      alert('Tarmoq xatosi');
+    }
+  };
+
+  const editCategory = async (id: string, oldName: string) => {
+    const newName = prompt('Yangi nomni kiriting:', oldName);
+    if (!newName || newName === oldName) return;
+    try {
+      const res = await fetch(`/api/categories/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newName })
+      });
+      if (res.ok) {
+        setData({ 
+          ...data, 
+          categories: data.categories.map((c: any) => c.id === id ? { ...c, name: newName } : c) 
+        });
+      } else {
+        alert('Xatolik yuz berdi');
+      }
+    } catch (e) {
+      alert('Tarmoq xatosi');
+    }
   };
 
   return (
@@ -131,11 +168,19 @@ export default function SettingsPage() {
           </button>
         </div>
 
-        <div className="flex flex-wrap gap-2 mt-4">
+        <div className="flex flex-wrap gap-3 mt-4">
           {data.categories.map((c: any) => (
-            <span key={c.id} className="bg-slate-100 text-slate-700 px-3 py-1.5 rounded-lg text-sm font-medium">
-              {c.name}
-            </span>
+            <div key={c.id} className="bg-slate-100 text-slate-700 px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-2 border border-slate-200">
+              <span>{c.name}</span>
+              <div className="flex items-center gap-1 ml-2 border-l border-slate-300 pl-2">
+                <button onClick={() => editCategory(c.id, c.name)} className="text-blue-500 hover:text-blue-600 transition-colors p-1">
+                  <Edit2 className="w-3.5 h-3.5" />
+                </button>
+                <button onClick={() => deleteCategory(c.id)} className="text-rose-500 hover:text-rose-600 transition-colors p-1">
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
           ))}
         </div>
       </div>
