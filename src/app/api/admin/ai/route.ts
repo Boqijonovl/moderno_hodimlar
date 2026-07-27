@@ -53,7 +53,7 @@ export async function POST(req: Request) {
     // 2. Call Gemini API
     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-1.5-flash',
       contents: [
         { role: 'user', parts: [{ text: systemContext + '\n\nAdminning savoli: ' + message }] }
       ],

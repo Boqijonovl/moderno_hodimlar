@@ -66,6 +66,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <div className="flex-1 overflow-y-auto p-4">
         {children}
       </div>
+
+      {/* Floating AI Button */}
+      <Link 
+        href="/admin/ai" 
+        className="fixed bottom-24 right-4 z-50 bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-4 rounded-full shadow-lg hover:shadow-xl hover:scale-105 transition-all flex items-center justify-center animate-bounce-slow"
+      >
+        <Sparkles className="w-6 h-6" />
+      </Link>
       
       <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-slate-200 flex justify-around p-3 pb-safe z-50">
         <Link href="/admin" className="flex flex-col items-center text-slate-500 hover:text-blue-600 transition-colors">
@@ -86,11 +94,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </Link>
         <Link href="/admin/reports" className="flex flex-col items-center text-slate-500 hover:text-blue-600 transition-colors">
           <FileText className="w-6 h-6" />
-          <span className="text-[10px] font-medium mt-1">Hisobotlar</span>
-        </Link>
-        <Link href="/admin/ai" className="flex flex-col items-center text-blue-600 font-bold hover:text-blue-700 transition-colors scale-110">
-          <Sparkles className="w-6 h-6" />
-          <span className="text-[10px] font-medium mt-1">AI </span>
+          <span className="text-[10px] font-medium mt-1">Hisobot</span>
         </Link>
         <Link href="/admin/settings" className="flex flex-col items-center text-slate-500 hover:text-blue-600 transition-colors">
           <Settings className="w-6 h-6" />

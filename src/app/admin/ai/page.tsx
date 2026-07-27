@@ -52,7 +52,7 @@ export default function AIPage() {
         </div>
         <div>
           <h2 className="font-bold text-lg">AI Analitik</h2>
-          <p className="text-xs text-blue-100 opacity-90">Gemini 2.5 tomonidan ishlaydi</p>
+          <p className="text-xs text-blue-100 opacity-90">Gemini 1.5 tomonidan ishlaydi</p>
         </div>
       </div>
 
