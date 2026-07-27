@@ -17,9 +17,9 @@ export async function GET() {
       include: { user: true }
     });
 
-    const totalCash = sales.filter(s => s.paymentMethod === 'CASH').reduce((sum, s) => sum + s.price, 0);
-    const totalCard = sales.filter(s => s.paymentMethod === 'CARD').reduce((sum, s) => sum + s.price, 0);
-    const totalInstallment = sales.filter(s => s.paymentMethod === 'INSTALLMENT').reduce((sum, s) => sum + s.price, 0);
+    const totalCash = sales.filter(s => s.paymentMethod === 'CASH').reduce((sum, s) => sum + s.totalPrice, 0);
+    const totalCard = sales.filter(s => s.paymentMethod === 'CARD').reduce((sum, s) => sum + s.totalPrice, 0);
+    const totalInstallment = sales.filter(s => s.paymentMethod === 'INSTALLMENT').reduce((sum, s) => sum + s.totalPrice, 0);
     
     const onTime = attendance.filter(a => a.status === 'ON_TIME').length;
     const late = attendance.filter(a => a.status === 'LATE').length;
@@ -45,7 +45,7 @@ export async function GET() {
       
       const dayTotal = weekSales
         .filter(s => s.date >= dayStart && s.date <= dayEnd)
-        .reduce((sum, s) => sum + s.price, 0);
+        .reduce((sum, s) => sum + s.totalPrice, 0);
         
       chartData.push({ name: dayName, total: dayTotal });
     }

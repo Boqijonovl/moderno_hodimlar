@@ -50,7 +50,7 @@ export async function GET(req: Request) {
         return {
           user: { id: user.id, name: user.name },
           attendance: userAtt || null,
-          salesTotal: userSales.reduce((sum, s) => sum + s.price, 0),
+          salesTotal: userSales.reduce((sum, s) => sum + s.totalPrice, 0),
           salesCount: userSales.length
         };
       }).filter(u => u.attendance || u.salesCount > 0); // Only show users who were active that day
@@ -69,7 +69,7 @@ export async function GET(req: Request) {
         user: { id: user.id, name: user.name },
         totalDaysPresent: userAtts.length,
         totalLateMinutes,
-        totalSales: userSales.reduce((sum, s) => sum + s.price, 0),
+        totalSales: userSales.reduce((sum, s) => sum + s.totalPrice, 0),
         totalSalesCount: userSales.length
       };
     }).filter(u => u.totalDaysPresent > 0 || u.totalSalesCount > 0);
