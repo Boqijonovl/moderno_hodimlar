@@ -74,8 +74,16 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
         setTimeout(() => setSuccess(false), 3000);
       } else {
         if (WebApp?.HapticFeedback) WebApp.HapticFeedback.notificationOccurred('error');
+        try {
+          const errorData = await res.json();
+          alert(`Xatolik: ${errorData.error}`);
+        } catch(e) {
+          alert('Tarmoq xatosi yoki server xatosi yuz berdi');
+        }
       }
-    } catch (error) {
+    } catch (e: any) {
+      alert(`Tarmoq xatosi: ${e.message || String(e)}`);
+      console.error(e);
       if (WebApp?.HapticFeedback) WebApp.HapticFeedback.notificationOccurred('error');
     }
     setLoading(false);

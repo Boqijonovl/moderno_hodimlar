@@ -68,8 +68,8 @@ export default function AttendanceTab({ user, WebApp }: { user: any, WebApp: any
             setMessage(data.error || 'Xatolik yuz berdi');
             if (WebApp?.HapticFeedback) WebApp.HapticFeedback.notificationOccurred('error');
           }
-        } catch (e) {
-          setMessage('Tarmoq xatosi');
+        } catch (e: any) {
+          setMessage(`Tarmoq xatosi: ${e.message || String(e)}`);
         }
         setLoading(false);
       },
@@ -121,8 +121,8 @@ export default function AttendanceTab({ user, WebApp }: { user: any, WebApp: any
           } else {
             setMessage(data.error || 'Xatolik');
           }
-        } catch (e) {
-          setMessage('Tarmoq xatosi');
+        } catch (e: any) {
+          setMessage(`Tarmoq xatosi: ${e.message || String(e)}`);
         }
         setLoading(false);
       },
