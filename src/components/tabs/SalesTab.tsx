@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Send, CheckCircle2, Package, List } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Send, CheckCircle2, Package, List, Download } from 'lucide-react';
 import { useTranslation, Language } from '@/lib/i18n';
+import html2canvas from 'html2canvas';
 
 export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
   const [categories, setCategories] = useState<{id: string, name: string}[]>([]);
@@ -14,7 +15,9 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
   });
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [lastSale, setLastSale] = useState<any>(null);
   const [history, setHistory] = useState<any[]>([]);
+  const receiptRef = useRef<HTMLDivElement>(null);
 
   const t = useTranslation(user?.language as Language);
 
@@ -70,11 +73,12 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
       });
 
       if (res.ok) {
+        const newSale = await res.json();
+        setLastSale(newSale);
         setSuccess(true);
         if (WebApp?.HapticFeedback) WebApp.HapticFeedback.notificationOccurred('success');
         setFormData(prev => ({ ...prev, itemName: '', price: '' }));
         fetchHistory();
-        setTimeout(() => setSuccess(false), 3000);
       } else {
         if (WebApp?.HapticFeedback) WebApp.HapticFeedback.notificationOccurred('error');
         try {
@@ -92,6 +96,21 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
     setLoading(false);
   };
 
+  const downloadReceipt = async () => {
+    if (receiptRef.current) {
+      try {
+        const canvas = await html2canvas(receiptRef.current, { scale: 3, backgroundColor: '#ffffff' });
+        const image = canvas.toDataURL("image/png");
+        const link = document.createElement('a');
+        link.href = image;
+        link.download = `Chek_${lastSale?.itemName || 'Savdo'}.png`;
+        link.click();
+      } catch (err) {
+        console.error("Failed to generate receipt", err);
+      }
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-sm border border-slate-100 dark:border-slate-800">
@@ -101,10 +120,66 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
         </h2>
         
         {success ? (
-          <div className="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 p-8 rounded-2xl flex flex-col items-center justify-center border border-emerald-100 dark:border-emerald-800 animate-in fade-in zoom-in">
-            <CheckCircle2 className="w-16 h-16 mb-4 text-emerald-500" />
-            <h3 className="text-lg font-bold">{t('success')}</h3>
-            <p className="text-sm mt-1 text-center">{t('success_msg')}</p>
+          <div className="flex flex-col items-center animate-in fade-in zoom-in">
+            <div className="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 p-8 rounded-2xl flex flex-col items-center justify-center border border-emerald-100 dark:border-emerald-800 w-full mb-4">
+              <CheckCircle2 className="w-16 h-16 mb-4 text-emerald-500" />
+              <h3 className="text-lg font-bold">{t('success')}</h3>
+              <p className="text-sm mt-1 text-center">{t('success_msg')}</p>
+            </div>
+            
+            {/* Hidden Receipt for html2canvas */}
+            <div className="absolute left-[-9999px] top-[-9999px]">
+              <div ref={receiptRef} className="w-[350px] bg-white p-6 rounded-xl shadow-lg border border-slate-200 text-slate-900 font-sans">
+                <div className="text-center mb-6 border-b border-dashed border-slate-300 pb-4">
+                  <h1 className="text-2xl font-black tracking-tight text-slate-800">MODERNO MEBEL</h1>
+                  <p className="text-sm text-slate-500 mt-1">Sifat va Qulaylik</p>
+                </div>
+                <div className="space-y-3 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Sana:</span>
+                    <span className="font-semibold">{new Date().toLocaleString('uz-UZ')}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Sotuvchi:</span>
+                    <span className="font-semibold">{user?.name}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">To'lov turi:</span>
+                    <span className="font-semibold uppercase">{lastSale?.paymentMethod === 'CASH' ? 'Naqd' : lastSale?.paymentMethod === 'CARD' ? 'Karta' : 'Muddatli'}</span>
+                  </div>
+                </div>
+                <div className="mt-6 mb-6 border-t border-b border-dashed border-slate-300 py-4">
+                  <div className="font-bold text-slate-800 mb-1">{lastSale?.itemName}</div>
+                  <div className="text-xs text-slate-500 mb-2">{lastSale?.category?.name || 'Kategoriya'}</div>
+                  <div className="text-right text-lg font-black text-slate-800">
+                    {lastSale?.price ? lastSale.price.toLocaleString() : '0'} so'm
+                  </div>
+                </div>
+                <div className="text-center text-xs text-slate-500 italic">
+                  Xaridingiz uchun rahmat!<br/>
+                  Yana kutib qolamiz.
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 w-full">
+              <button 
+                onClick={downloadReceipt}
+                className="bg-slate-800 text-white font-bold p-3 rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-all"
+              >
+                <Download className="w-5 h-5" />
+                Chek
+              </button>
+              <button 
+                onClick={() => {
+                  setSuccess(false);
+                  setLastSale(null);
+                }}
+                className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold p-3 rounded-xl active:scale-95 transition-all"
+              >
+                Yangi Savdo
+              </button>
+            </div>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">

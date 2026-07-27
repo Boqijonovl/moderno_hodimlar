@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { Home, Users, BarChart3, Settings, Clock, ArrowLeft, Bell, FileText } from 'lucide-react';
+import { Home, Users, BarChart3, Settings, Clock, ArrowLeft, Bell, FileText, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -87,6 +87,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <Link href="/admin/reports" className="flex flex-col items-center text-slate-500 hover:text-blue-600 transition-colors">
           <FileText className="w-6 h-6" />
           <span className="text-[10px] font-medium mt-1">Hisobotlar</span>
+        </Link>
+        <Link href="/admin/ai" className="flex flex-col items-center text-blue-600 font-bold hover:text-blue-700 transition-colors scale-110">
+          <Sparkles className="w-6 h-6" />
+          <span className="text-[10px] font-medium mt-1">AI </span>
         </Link>
         <Link href="/admin/settings" className="flex flex-col items-center text-slate-500 hover:text-blue-600 transition-colors">
           <Settings className="w-6 h-6" />

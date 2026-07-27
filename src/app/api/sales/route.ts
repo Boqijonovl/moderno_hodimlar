@@ -21,23 +21,23 @@ export async function POST(req: Request) {
       include: { category: true }
     });
 
-    // Send notification to Admin (optional, just for completeness)
+    // Send notification to all Admins
     try {
       if (process.env.BOT_TOKEN) {
         const bot = new Telegraf(process.env.BOT_TOKEN);
-        const adminId = process.env.ADMIN_TELEGRAM_ID; 
-        if (adminId) {
-          await bot.telegram.sendMessage(
-            adminId, 
-            `💰 <b>Yangi Sotuv!</b>\n\nSotuvchi: ${user.name}\nMebel: ${itemName}\nKategoriya: ${sale.category.name}\nNarxi: ${price.toLocaleString()} so'm\nTo'lov: ${paymentMethod}`, 
-            { parse_mode: 'HTML' }
-          );
+        const admins = await prisma.user.findMany({ where: { role: 'ADMIN' } });
+        
+        const message = `🟢 <b>Yangi Savdo!</b>\n\n👤 Xodim: ${user.name}\n🏷 Mebel: ${itemName} (${sale.category.name})\n💰 Narxi: ${price.toLocaleString()} so'm\n💳 To'lov turi: ${paymentMethod === 'CASH' ? 'Naqd' : paymentMethod === 'CARD' ? 'Karta' : 'Muddatli'}`;
+
+        for (const admin of admins) {
+          if (admin.telegramId) {
+            await bot.telegram.sendMessage(admin.telegramId, message, { parse_mode: 'HTML' }).catch(() => {});
+          }
         }
       }
     } catch (e) {
       console.error('Failed to send notification', e);
     }
-
     return NextResponse.json(sale);
   } catch (error) {
     return NextResponse.json({ error: 'Failed to create sale' }, { status: 500 });
