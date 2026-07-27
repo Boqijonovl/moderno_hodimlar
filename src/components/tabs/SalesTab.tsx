@@ -288,11 +288,11 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
                 <div>
                   <div className="font-semibold text-slate-800 dark:text-slate-200 text-sm">{sale.itemName}</div>
                   <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">
-                    {new Date(sale.date).toLocaleDateString('uz-UZ')} {new Date(sale.date).toLocaleTimeString('uz-UZ', {hour: '2-digit', minute:'2-digit'})}
+                    {new Date(sale.date || sale.createdAt || new Date()).toLocaleDateString('uz-UZ')} {new Date(sale.date || sale.createdAt || new Date()).toLocaleTimeString('uz-UZ', {hour: '2-digit', minute:'2-digit'})}
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="font-bold text-emerald-600 dark:text-emerald-400 text-sm">{sale.price.toLocaleString()} so'm</div>
+                  <div className="font-bold text-emerald-600 dark:text-emerald-400 text-sm">{(sale.price || 0).toLocaleString()} so'm</div>
                   <div className="text-[10px] text-slate-500 dark:text-slate-400 uppercase mt-1">
                     {sale.paymentMethod === 'CASH' ? t('cash') : sale.paymentMethod === 'CARD' ? t('card') : t('installment')}
                   </div>

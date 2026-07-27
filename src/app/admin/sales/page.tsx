@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Download, BarChart2 } from 'lucide-react';
+import { Download, BarChart2, Trash2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 
@@ -19,8 +19,8 @@ export default function SalesAnalytics() {
     
     const data = sales.map(s => ({
       'Sana': new Date(s.createdAt).toLocaleString(),
-      'Xodim': s.user.name,
-      'Kategoriya': s.category.name,
+      'Xodim': s.user?.name || 'Noma\'lum',
+      'Kategoriya': s.category?.name || 'Noma\'lum',
       'Mebel Nomi': s.itemName,
       'Narxi': s.price,
       'To\'lov Turi': s.paymentMethod
@@ -32,6 +32,22 @@ export default function SalesAnalytics() {
     const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
     const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8' });
     saveAs(blob, `Savdolar_${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
+
+  const deleteSale = async (id: string) => {
+    if (!confirm("Haqiqatan ham bu savdoni o'chirmoqchimisiz?")) return;
+    
+    try {
+      const res = await fetch(`/api/admin/sales/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setSales(sales.filter(s => s.id !== id));
+      } else {
+        alert("O'chirishda xatolik yuz berdi");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Tarmoq xatosi");
+    }
   };
 
   return (
@@ -58,25 +74,34 @@ export default function SalesAnalytics() {
         <div className="divide-y divide-slate-100">
           {sales.length === 0 && <div className="p-8 text-center text-slate-500">Hozircha sotuvlar yo'q</div>}
           {sales.map(sale => (
-            <div key={sale.id} className="p-4 flex justify-between items-center hover:bg-slate-50 transition-colors">
+            <div key={sale.id} className="p-4 flex justify-between items-center hover:bg-slate-50 transition-colors relative group">
               <div>
                 <p className="font-medium text-slate-800">{sale.itemName}</p>
                 <div className="flex items-center gap-2 mt-1 text-xs">
-                  <span className="text-blue-600 font-medium">{sale.category.name}</span>
+                  <span className="text-blue-600 font-medium">{sale.category?.name || 'Noma\'lum'}</span>
                   <span className="text-slate-300">•</span>
-                  <span className="text-slate-500">{sale.user.name}</span>
+                  <span className="text-slate-500">{sale.user?.name || 'Noma\'lum'}</span>
                 </div>
               </div>
-              <div className="text-right">
-                <p className="font-bold text-emerald-600">{(sale.price).toLocaleString()} so'm</p>
-                <div className="flex justify-end gap-2 mt-1">
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 font-medium">
-                    {new Date(sale.createdAt).toLocaleDateString()}
-                  </span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 font-medium uppercase">
-                    {sale.paymentMethod}
-                  </span>
+              <div className="text-right flex items-center gap-4">
+                <div>
+                  <p className="font-bold text-emerald-600">{(sale.price || 0).toLocaleString()} so'm</p>
+                  <div className="flex justify-end gap-2 mt-1">
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 font-medium">
+                      {new Date(sale.createdAt).toLocaleDateString()}
+                    </span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 font-medium uppercase">
+                      {sale.paymentMethod}
+                    </span>
+                  </div>
                 </div>
+                <button 
+                  onClick={() => deleteSale(sale.id)}
+                  className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors active:scale-95"
+                  title="O'chirish"
+                >
+                  <Trash2 className="w-5 h-5" />
+                </button>
               </div>
             </div>
           ))}
