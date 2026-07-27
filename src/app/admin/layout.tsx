@@ -10,6 +10,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const lastCheckedRef = useRef<string>(new Date().toISOString());
 
   useEffect(() => {
+    // Check for Telegram WebApp environment
+    if (typeof window !== 'undefined') {
+      import('@twa-dev/sdk').then((mod) => {
+        const wa = mod.default;
+        if (!wa.initDataUnsafe?.user) {
+          window.location.href = '/';
+        }
+      }).catch(() => {
+        window.location.href = '/';
+      });
+    }
+
     const interval = setInterval(async () => {
       try {
         const res = await fetch('/api/sales');

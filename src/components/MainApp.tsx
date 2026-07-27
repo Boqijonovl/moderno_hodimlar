@@ -58,8 +58,8 @@ export default function MainApp() {
           fetchUser(telegramId, fallbackName);
           wa.expand();
         } else {
-          // Mock data for browser testing
-          fetchUser('1037362053', 'Test User'); 
+          // Block browser access
+          setUser({ blocked_by_browser: true });
         }
       });
     }
@@ -83,6 +83,23 @@ export default function MainApp() {
           transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
           className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full"
         />
+      </div>
+    );
+  }
+
+  // Block browser access
+  if (user.blocked_by_browser) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 text-center">
+        <div className="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mb-6 shadow-sm">
+          <svg className="w-12 h-12 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+          </svg>
+        </div>
+        <h1 className="text-2xl font-black text-slate-800 mb-2">Telegram orqali kiring</h1>
+        <p className="text-slate-500 font-medium max-w-xs leading-relaxed">
+          Ushbu tizim xavfsizlik maqsadida faqat Telegram bot orqali ishlashga mo'ljallangan.
+        </p>
       </div>
     );
   }

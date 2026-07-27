@@ -332,31 +332,33 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
                     <span className="text-slate-400">{new Date(sale.createdAt).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' })}</span>
                   </div>
                   
-                  {sale.status === 'INCOMPLETE' && (
-                    <div className="mt-2 text-xs font-bold text-red-500 bg-red-50 px-2 py-1 rounded-lg inline-block">
-                      Tugallanmagan: {sale.balance?.toLocaleString()} so'm qarz
+                  {(sale.status === 'INCOMPLETE' || (sale.paymentMethod === 'INSTALLMENT' && sale.balance > 0)) && (
+                    <div className="mt-3 flex flex-col gap-1">
+                      <div className="text-[10px] font-black text-rose-600 bg-rose-100 dark:bg-rose-900/30 dark:text-rose-400 px-3 py-1.5 rounded-xl border border-rose-200 dark:border-rose-800/50 inline-block w-fit shadow-sm">
+                        ⚠️ Qarz: {sale.balance?.toLocaleString()} so'm
+                      </div>
                     </div>
                   )}
                 </div>
-                <div className="text-right">
-                  <div className="font-black text-emerald-600 dark:text-emerald-400">
+                <div className="text-right flex flex-col items-end">
+                  <div className="font-black text-emerald-600 dark:text-emerald-400 text-lg">
                     {(sale.totalPrice || 0).toLocaleString()} <span className="text-xs font-normal text-emerald-600/70">so'm</span>
                   </div>
                   
-                  {sale.status === 'INCOMPLETE' && (
+                  {(sale.status === 'INCOMPLETE' || (sale.paymentMethod === 'INSTALLMENT' && sale.balance > 0)) && (
                     <button 
                       onClick={() => completeSale(sale.id)}
-                      className="w-full bg-emerald-500 text-white text-xs font-bold px-2 py-1.5 rounded-lg mt-2 active:scale-95 transition-all shadow-sm"
+                      className="mt-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs font-bold px-4 py-2 rounded-xl active:scale-95 transition-all shadow-md shadow-emerald-500/20 flex items-center justify-center gap-1 w-full"
                     >
-                      To'liq to'landi
+                      <CheckCircle2 className="w-4 h-4" /> To'liq to'landi
                     </button>
                   )}
                   
                   <button 
                     onClick={() => openPDF(sale.id)}
-                    className="text-xs text-blue-600 font-bold hover:underline flex items-center justify-end gap-1 mt-2 cursor-pointer w-full"
+                    className="text-xs text-blue-600 font-bold hover:underline flex items-center justify-end gap-1 mt-3 cursor-pointer w-full"
                   >
-                    <FileText className="w-3 h-3" /> Chek
+                    <FileText className="w-4 h-4" /> Chekni ko'rish
                   </button>
                 </div>
               </div>
