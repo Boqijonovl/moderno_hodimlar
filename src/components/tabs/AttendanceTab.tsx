@@ -152,7 +152,7 @@ export default function AttendanceTab({ user, WebApp }: { user: any, WebApp: any
 
         <div className="grid grid-cols-2 gap-4">
           <button 
-            onClick={handleCheckIn}
+            onClick={() => handleCheckIn()}
             disabled={status !== 'idle' || loading}
             className="bg-emerald-500 hover:bg-emerald-600 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-2xl p-4 flex flex-col items-center gap-2 transition-all active:scale-95"
           >
@@ -161,7 +161,7 @@ export default function AttendanceTab({ user, WebApp }: { user: any, WebApp: any
           </button>
           
           <button 
-            onClick={handleCheckOut}
+            onClick={() => handleCheckOut()}
             disabled={status !== 'checked-in' || loading}
             className="bg-rose-500 hover:bg-rose-600 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-2xl p-4 flex flex-col items-center gap-2 transition-all active:scale-95"
           >
