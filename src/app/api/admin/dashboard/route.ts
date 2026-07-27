@@ -59,7 +59,7 @@ export async function GET() {
       recentSales: await prisma.sale.findMany({
         take: 5,
         orderBy: { createdAt: 'desc' },
-        include: { user: true, category: true }
+        include: { user: true, items: true }
       })
     });
   } catch (error) {

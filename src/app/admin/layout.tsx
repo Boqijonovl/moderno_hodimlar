@@ -48,8 +48,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </div>
             <div>
               <h3 className="font-bold">Yangi Savdo!</h3>
-              <p className="text-sm opacity-90">{newSale.user?.name} tomonidan <b>{newSale.itemName}</b> sotildi.</p>
-              <p className="font-bold mt-1">{(newSale.price).toLocaleString()} so'm</p>
+              <p className="text-sm opacity-90">{newSale.user?.name} tomonidan <b>{newSale.items?.length || 0} ta mebel</b> sotildi.</p>
+              <p className="font-bold mt-1">{(newSale.totalPrice || 0).toLocaleString()} so'm</p>
             </div>
           </motion.div>
         )}

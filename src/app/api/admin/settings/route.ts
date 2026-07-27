@@ -4,8 +4,7 @@ import { prisma } from '@/lib/prisma';
 export async function GET() {
   try {
     const settings = await prisma.settings.findFirst();
-    const categories = await prisma.category.findMany();
-    return NextResponse.json({ settings, categories });
+    return NextResponse.json({ settings, categories: [] });
   } catch (error) {
     return NextResponse.json({ error: 'Error' }, { status: 500 });
   }
@@ -29,13 +28,6 @@ export async function POST(req: Request) {
         });
       }
       return NextResponse.json(settings);
-    }
-
-    if (action === 'add_category') {
-      const category = await prisma.category.create({
-        data: { name: payload.name }
-      });
-      return NextResponse.json(category);
     }
 
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 });

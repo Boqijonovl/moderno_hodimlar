@@ -20,9 +20,8 @@ export default function SalesAnalytics() {
     const data = sales.map(s => ({
       'Sana': new Date(s.createdAt).toLocaleString(),
       'Xodim': s.user?.name || 'Noma\'lum',
-      'Kategoriya': s.category?.name || 'Noma\'lum',
-      'Mebel Nomi': s.itemName,
-      'Narxi': s.price,
+      'Mebellar': s.items?.map((i: any) => i.name).join(', ') || 'Noma\'lum',
+      'Umumiy Narxi': s.totalPrice,
       'To\'lov Turi': s.paymentMethod
     }));
 
@@ -76,16 +75,16 @@ export default function SalesAnalytics() {
           {sales.map(sale => (
             <div key={sale.id} className="p-4 flex justify-between items-center hover:bg-slate-50 transition-colors relative group">
               <div>
-                <p className="font-medium text-slate-800">{sale.itemName}</p>
+                <p className="font-medium text-slate-800">{sale.items?.length || 0} ta mebel</p>
                 <div className="flex items-center gap-2 mt-1 text-xs">
-                  <span className="text-blue-600 font-medium">{sale.category?.name || 'Noma\'lum'}</span>
+                  <span className="text-blue-600 font-medium max-w-[150px] truncate">{sale.items?.map((i: any) => i.name).join(', ') || 'Noma\'lum'}</span>
                   <span className="text-slate-300">•</span>
                   <span className="text-slate-500">{sale.user?.name || 'Noma\'lum'}</span>
                 </div>
               </div>
               <div className="text-right flex items-center gap-4">
                 <div>
-                  <p className="font-bold text-emerald-600">{(sale.price || 0).toLocaleString()} so'm</p>
+                  <p className="font-bold text-emerald-600">{(sale.totalPrice || 0).toLocaleString()} so'm</p>
                   <div className="flex justify-end gap-2 mt-1">
                     <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 font-medium">
                       {new Date(sale.createdAt).toLocaleDateString()}

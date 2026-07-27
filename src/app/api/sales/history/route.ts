@@ -14,11 +14,12 @@ export async function GET(req: Request) {
       where: {
         user: { telegramId }
       },
-      include: {
-        category: true
+      orderBy: {
+        createdAt: 'desc'
       },
-      orderBy: { date: 'desc' },
-      take: 50
+      include: {
+        items: true
+      }
     });
 
     return NextResponse.json({ sales });
