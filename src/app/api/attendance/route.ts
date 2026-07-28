@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getDistance } from 'geolib';
+import { Telegraf } from 'telegraf';
 
 export async function POST(req: Request) {
   try {
@@ -81,6 +82,22 @@ export async function POST(req: Request) {
         }
       });
 
+      try {
+        if (process.env.BOT_TOKEN) {
+          const bot = new Telegraf(process.env.BOT_TOKEN);
+          const admins = await prisma.user.findMany({ where: { role: 'ADMIN' } });
+          const message = `🟢 <b>Ishga keldi!</b>\n\n👤 Xodim: ${user.name}\n🕒 Vaqt: ${tashkentTime.toLocaleTimeString('uz-UZ', {hour:'2-digit', minute:'2-digit'})}\n📊 Holat: ${status === 'ON_TIME' ? 'Vaqtida' : 'Kechikkan'}${lateMinutes > 0 ? ` (${lateMinutes} daqiqa)` : ''}${body.reason ? `\n📝 Izoh: ${body.reason}` : ''}`;
+          
+          for (const admin of admins) {
+            if (admin.telegramId) {
+              await bot.telegram.sendMessage(admin.telegramId, message, { parse_mode: 'HTML' }).catch(() => {});
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Check-in notification failed', e);
+      }
+
       return NextResponse.json({ success: true, status: status === 'ON_TIME' ? 'Vaqtida' : 'Kechikkan' });
     }
 
@@ -137,6 +154,22 @@ export async function POST(req: Request) {
           reason: body.reason ? (attendance.reason ? `${attendance.reason} | Chiqishda: ${body.reason}` : `Chiqishda: ${body.reason}`) : attendance.reason 
         }
       });
+
+      try {
+        if (process.env.BOT_TOKEN) {
+          const bot = new Telegraf(process.env.BOT_TOKEN);
+          const admins = await prisma.user.findMany({ where: { role: 'ADMIN' } });
+          const message = `🔴 <b>Ishdan ketdi!</b>\n\n👤 Xodim: ${user.name}\n🕒 Vaqt: ${tashkentTime.toLocaleTimeString('uz-UZ', {hour:'2-digit', minute:'2-digit'})}${body.reason ? `\n📝 Izoh: ${body.reason}` : ''}`;
+          
+          for (const admin of admins) {
+            if (admin.telegramId) {
+              await bot.telegram.sendMessage(admin.telegramId, message, { parse_mode: 'HTML' }).catch(() => {});
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Check-out notification failed', e);
+      }
 
       return NextResponse.json({ success: true });
     }

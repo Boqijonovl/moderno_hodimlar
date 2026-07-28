@@ -22,7 +22,17 @@ export default function AttendanceTab({ user, WebApp }: { user: any, WebApp: any
       const res = await fetch(`/api/attendance/history?telegramId=${user.telegramId}`);
       if (res.ok) {
         const data = await res.json();
-        setHistory(data.attendances || []);
+        const records = data.attendances || [];
+        setHistory(records);
+        
+        const today = new Date().toDateString();
+        const openRecord = records.find((r: any) => !r.checkOutTime && new Date(r.date).toDateString() === today);
+        
+        if (openRecord) {
+          setStatus('checked-in');
+        } else {
+          setStatus('idle');
+        }
       }
     } catch (e) {
       console.error(e);
