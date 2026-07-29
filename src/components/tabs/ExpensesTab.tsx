@@ -127,7 +127,7 @@ export default function ExpensesTab({ user, WebApp }: { user: any, WebApp: any }
                     : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
                 }`}
               >
-                Karparativ
+                Karta
               </button>
               <button
                 type="button"
@@ -138,7 +138,7 @@ export default function ExpensesTab({ user, WebApp }: { user: any, WebApp: any }
                     : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
                 }`}
               >
-                Avans
+                Karparativ
               </button>
             </div>
           </div>
@@ -178,7 +178,7 @@ export default function ExpensesTab({ user, WebApp }: { user: any, WebApp: any }
                   </div>
                   <div className="flex items-center gap-2 mt-1 text-xs flex-wrap">
                     <span className="text-blue-600 font-medium bg-blue-100 dark:bg-blue-900/30 px-2 py-0.5 rounded-full">
-                      {expense.paymentMethod === 'CASH' ? 'Naqd' : expense.paymentMethod === 'CARD' ? 'Karparativ' : 'Avans'}
+                      {expense.paymentMethod === 'CASH' ? 'Naqd' : expense.paymentMethod === 'CARD' ? 'Karta' : 'Karparativ'}
                     </span>
                     <span className="text-slate-400">{new Date(expense.createdAt).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' })}</span>
                   </div>

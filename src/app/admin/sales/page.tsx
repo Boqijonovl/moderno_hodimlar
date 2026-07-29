@@ -74,40 +74,40 @@ export default function SalesAnalytics() {
         <div className="divide-y divide-slate-100">
           {sales.length === 0 && <div className="p-8 text-center text-slate-500">Hozircha sotuvlar yo'q</div>}
           {sales.map(sale => (
-            <div key={sale.id} className="p-4 flex justify-between items-center hover:bg-slate-50 transition-colors relative group">
-              <div>
+            <div key={sale.id} className="p-4 flex justify-between items-start hover:bg-slate-50 transition-colors gap-3">
+              <div className="min-w-0 flex-1">
                 <p className="font-medium text-slate-800">{sale.items?.length || 0} ta mebel</p>
-                <div className="flex items-center gap-2 mt-1 text-xs">
-                  <span className="text-blue-600 font-medium max-w-[150px] truncate">{sale.items?.map((i: any) => i.name).join(', ') || 'Noma\'lum'}</span>
-                  <span className="text-slate-300">•</span>
-                  <span className="text-slate-500">{sale.user?.name || 'Noma\'lum'}</span>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mt-1 text-xs">
+                  <span className="text-blue-600 font-medium truncate w-full sm:max-w-[200px] block" title={sale.items?.map((i: any) => i.name).join(', ')}>{sale.items?.map((i: any) => i.name).join(', ') || 'Noma\'lum'}</span>
+                  <span className="hidden sm:inline text-slate-300">•</span>
+                  <span className="text-slate-500 truncate">{sale.user?.name || 'Noma\'lum'}</span>
                 </div>
               </div>
-              <div className="text-right flex items-center gap-4">
-                <div>
-                  <p className="font-bold text-emerald-600">{(sale.totalPrice || 0).toLocaleString()} so'm</p>
+              <div className="text-right flex items-center gap-2 shrink-0">
+                <div className="flex flex-col items-end">
+                  <p className="font-bold text-emerald-600 text-sm sm:text-base">{(sale.totalPrice || 0).toLocaleString()} so'm</p>
                   
                   {(sale.status === 'INCOMPLETE' || (sale.paymentMethod === 'INSTALLMENT' && sale.balance > 0)) && (
-                    <div className="text-[10px] font-bold text-rose-500 bg-rose-50 px-2 py-1 rounded-md mt-1 text-right shadow-sm border border-rose-100">
+                    <div className="text-[10px] font-bold text-rose-500 bg-rose-50 px-2 py-1 rounded-md mt-1 shadow-sm border border-rose-100 whitespace-nowrap">
                       ⚠️ Qarz: {sale.balance?.toLocaleString()} so'm
                     </div>
                   )}
 
-                  <div className="flex justify-end gap-2 mt-1">
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 font-medium">
+                  <div className="flex gap-1 mt-1 flex-wrap justify-end">
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 font-medium whitespace-nowrap">
                       {new Date(sale.createdAt).toLocaleDateString()}
                     </span>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 font-medium uppercase">
-                      {sale.paymentMethod === 'CASH' ? 'Naqd' : sale.paymentMethod === 'CARD' ? 'Karparativ' : 'Avans'}
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 font-medium uppercase whitespace-nowrap">
+                      {sale.paymentMethod === 'CASH' ? 'Naqd' : sale.paymentMethod === 'CARD' ? 'Karta' : 'Karparativ'}
                     </span>
                   </div>
                 </div>
                 <button 
                   onClick={() => deleteSale(sale.id)}
-                  className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors active:scale-95"
+                  className="p-1.5 sm:p-2 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors active:scale-95 shrink-0"
                   title="O'chirish"
                 >
-                  <Trash2 className="w-5 h-5" />
+                  <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
                 </button>
               </div>
             </div>
