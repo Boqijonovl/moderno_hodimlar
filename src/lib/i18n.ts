@@ -11,6 +11,14 @@ export const translations = {
     admin_panel_desc: "Barcha xodimlar, davomat va savdolar statistikasini boshqarish.",
     go_to_panel: "Panelga O'tish",
     
+    // Expenses
+    menu_expenses: "Xarajatlar",
+    add_expense: "Xarajat Kiritish",
+    expense_reason: "Xarajat izohi (Nimaga)",
+    expense_reason_placeholder: "Masalan: Tushlik uchun, Yo'l kira...",
+    expense_amount_placeholder: "0 so'm",
+    expense_no_history: "Xarajatlar yo'q.",
+
     // Home
     welcome: "Xush kelibsiz",
     open_app: "Ilovani ochish uchun quyidagi tugmani bosing!",
@@ -76,6 +84,14 @@ export const translations = {
     admin_panel_desc: "Управление сотрудниками, посещаемостью и продажами.",
     go_to_panel: "Перейти в Панель",
     
+    // Expenses
+    menu_expenses: "Расходы",
+    add_expense: "Добавить Расход",
+    expense_reason: "Причина расхода (На что)",
+    expense_reason_placeholder: "Например: На обед, Проезд...",
+    expense_amount_placeholder: "0 сум",
+    expense_no_history: "Нет расходов.",
+
     // Home
     welcome: "Добро пожаловать",
     open_app: "Нажмите кнопку ниже, чтобы открыть приложение!",

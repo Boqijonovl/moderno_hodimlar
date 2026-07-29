@@ -73,17 +73,9 @@ export async function POST(req: Request) {
         // Send confirmation to the Employee
         try {
           if (user.telegramId) {
-            const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://moderno-bot-web.vercel.app';
             await bot.telegram.sendMessage(
               user.telegramId,
-              `🎉 Sotuv muvaffaqiyatli saqlandi!\n\n🌐 Pastdagi tugmani bosib Veb-Chek orqali oson ko'rishingiz mumkin.`,
-              {
-                reply_markup: {
-                  inline_keyboard: [
-                    [{ text: "🌐 Veb-Chekni Ochish", url: `${appUrl}/receipt/${sale.id}` }]
-                  ]
-                }
-              }
+              `🎉 Sotuv muvaffaqiyatli saqlandi!`
             ).catch((e) => console.error("Error sending receipt to user:", e));
           }
         } catch (e) {

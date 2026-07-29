@@ -143,7 +143,7 @@ export default function MainApp() {
       <div className="bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-800 dark:to-indigo-900 text-white p-6 shadow-lg rounded-b-3xl shrink-0 z-10 relative">
         <h1 className="text-2xl font-bold tracking-tight">Moderno Mebel</h1>
         <p className="text-blue-100 dark:text-blue-200 mt-1 font-medium">
-          {currentTab === 'attendance' ? t('menu_attendance') : currentTab === 'sales' ? t('menu_sales') : currentTab === 'expenses' ? 'Xarajatlar' : t('menu_settings')}
+          {currentTab === 'attendance' ? t('menu_attendance') : currentTab === 'sales' ? t('menu_sales') : currentTab === 'expenses' ? t('menu_expenses') : t('menu_settings')}
         </p>
       </div>
 
@@ -191,7 +191,7 @@ export default function MainApp() {
             className={`flex flex-col items-center transition-all duration-300 w-20 ${currentTab === 'expenses' ? 'text-blue-600 dark:text-blue-400 scale-110' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
           >
             <Wallet className={`w-6 h-6 mb-1 ${currentTab === 'expenses' ? 'fill-blue-50 dark:fill-blue-900' : ''}`} />
-            <span className="text-[10px] font-bold">Xarajatlar</span>
+            <span className="text-[10px] font-bold">{t('menu_expenses')}</span>
           </button>
         )}
 
