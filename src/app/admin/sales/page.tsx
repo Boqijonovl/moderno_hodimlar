@@ -177,13 +177,16 @@ export default function SalesAnalytics() {
                 <div key={expense.id} className="p-4 flex justify-between items-start hover:bg-slate-50 transition-colors gap-3">
                   <div className="min-w-0 flex-1">
                     <p className="font-medium text-slate-800">{expense.reason}</p>
-                    <div className="flex items-center gap-2 mt-1 text-xs">
-                      <span className="text-slate-500 truncate">{expense.user?.name || 'Noma\'lum'}</span>
+                    <div className="flex items-center gap-1 mt-1 text-xs">
+                      <span className="text-slate-400">Xodim:</span>
+                      <span className="text-slate-600 font-medium truncate">{expense.user?.name || 'Noma\'lum'}</span>
                     </div>
                   </div>
                   <div className="text-right flex items-center gap-2 shrink-0">
                     <div className="flex flex-col items-end">
-                      <p className="font-bold text-rose-600 text-sm sm:text-base">-(expense.amount || 0).toLocaleString() so'm</p>
+                      <p className="font-bold text-rose-600 text-sm sm:text-base">
+                        -{(expense.amount || 0).toLocaleString()} so'm
+                      </p>
 
                       <div className="flex gap-1 mt-1 flex-wrap justify-end">
                         <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 font-medium whitespace-nowrap">
