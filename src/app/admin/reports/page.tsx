@@ -101,6 +101,8 @@ export default function ReportsPage() {
                     <th className="p-3 text-center">Kechikish/Overtaym</th>
                     <th className="p-3 text-center">Sotuv Soni</th>
                     <th className="p-3 text-right">Jami Savdo</th>
+                    <th className="p-3 text-right text-rose-500">Xarajat</th>
+                    <th className="p-3 text-right text-blue-600">Sof Daromad</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -121,7 +123,9 @@ export default function ReportsPage() {
                         </span>
                       </td>
                       <td className="p-3 text-center text-slate-600">{m.totalSalesCount}</td>
-                      <td className="p-3 text-right font-bold text-emerald-600">{(m.totalSales).toLocaleString()} so'm</td>
+                      <td className="p-3 text-right font-bold text-emerald-600">{(m.totalSales).toLocaleString()}</td>
+                      <td className="p-3 text-right font-bold text-rose-500">{m.totalExpenses > 0 ? `-${(m.totalExpenses).toLocaleString()}` : '0'}</td>
+                      <td className="p-3 text-right font-black text-blue-600">{(m.totalSales - m.totalExpenses).toLocaleString()} so'm</td>
                     </tr>
                   ))}
                 </tbody>
@@ -153,7 +157,8 @@ export default function ReportsPage() {
                         <th className="p-2 text-center">Keldi</th>
                         <th className="p-2 text-center">Ketdi</th>
                         <th className="p-2 text-center">Holat</th>
-                        <th className="p-2 text-right pr-3">Savdo</th>
+                        <th className="p-2 text-right">Savdo</th>
+                        <th className="p-2 text-right pr-3">Xarajat</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-50 text-sm">
@@ -174,8 +179,11 @@ export default function ReportsPage() {
                               <span className="text-slate-400 text-xs">Kelmagan</span>
                             )}
                           </td>
-                          <td className="p-2 text-right pr-3 font-bold text-emerald-600">
+                          <td className="p-2 text-right font-bold text-emerald-600">
                             {d.salesTotal > 0 ? `${(d.salesTotal).toLocaleString()}` : '-'}
+                          </td>
+                          <td className="p-2 text-right pr-3 font-bold text-rose-500">
+                            {d.expensesTotal > 0 ? `-${(d.expensesTotal).toLocaleString()}` : '-'}
                           </td>
                         </tr>
                       ))}

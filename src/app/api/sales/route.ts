@@ -70,94 +70,24 @@ export async function POST(req: Request) {
           }
         }
 
-        // Generate PDF receipt for the Employee
+        // Send confirmation to the Employee
         try {
-          await new Promise<void>((resolve) => {
-            const PDFDocument = require('pdfkit');
-            const doc = new PDFDocument({ size: [350, 450 + (items.length * 20)], margin: 30 });
-            const buffers: Buffer[] = [];
-            
-            doc.on('data', buffers.push.bind(buffers));
-            
-            doc.on('end', async () => {
-              const pdfData = Buffer.concat(buffers);
-              if (user.telegramId) {
-                const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://moderno-bot-web.vercel.app';
-                await bot.telegram.sendDocument(user.telegramId, {
-                  source: pdfData,
-                  filename: `Chek_${new Date().getTime()}.pdf`
-                }, {
-                  caption: `🎉 Sotuv muvaffaqiyatli saqlandi!\n\n📄 Sizning elektron chekingiz (PDF) tayyor.\n🌐 Agarda PDF ochilmasa, pastdagi tugmani bosib Veb-Chek orqali oson ko'rishingiz mumkin.`,
-                  reply_markup: {
-                    inline_keyboard: [
-                      [{ text: "🌐 Veb-Chekni Ochish", url: `${appUrl}/receipt/${sale.id}` }]
-                    ]
-                  }
-                }).catch((e) => console.error("Error sending PDF:", e));
+          if (user.telegramId) {
+            const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://moderno-bot-web.vercel.app';
+            await bot.telegram.sendMessage(
+              user.telegramId,
+              `🎉 Sotuv muvaffaqiyatli saqlandi!\n\n🌐 Pastdagi tugmani bosib Veb-Chek orqali oson ko'rishingiz mumkin.`,
+              {
+                reply_markup: {
+                  inline_keyboard: [
+                    [{ text: "🌐 Veb-Chekni Ochish", url: `${appUrl}/receipt/${sale.id}` }]
+                  ]
+                }
               }
-              resolve();
-            });
-
-            // Draw PDF
-            doc.fontSize(22).font('Helvetica-Bold').text('MODERNO MEBEL', { align: 'center' });
-            doc.fontSize(10).font('Helvetica').fillColor('gray').text('Sifat va Qulaylik', { align: 'center' });
-            
-            doc.moveDown(2);
-            doc.moveTo(30, doc.y).lineTo(320, doc.y).strokeColor('#cccccc').stroke();
-            doc.moveDown(1);
-            
-            doc.fontSize(12).fillColor('black');
-            const startY1 = doc.y;
-            doc.text('Sana:', 30, startY1).font('Helvetica-Bold').text(new Date().toLocaleString('uz-UZ'), 150, startY1, { align: 'right', width: 170 });
-            
-            doc.moveDown(0.5);
-            const startY2 = doc.y;
-            doc.font('Helvetica').text('Sotuvchi:', 30, startY2).font('Helvetica-Bold').text(user.name, 150, startY2, { align: 'right', width: 170 });
-            
-            if (user.phone) {
-              doc.moveDown(0.5);
-              const startYPhone = doc.y;
-              doc.font('Helvetica').text('Telefon:', 30, startYPhone).font('Helvetica-Bold').text(user.phone, 150, startYPhone, { align: 'right', width: 170 });
-            }
-            
-            doc.moveDown(0.5);
-            const startY3 = doc.y;
-            doc.font('Helvetica').text("To'lov turi:", 30, startY3).font('Helvetica-Bold').text(paymentMethod === 'CASH' ? 'Naqd' : paymentMethod === 'CARD' ? 'Karparativ' : 'Avans', 150, startY3, { align: 'right', width: 170 });
-            
-            doc.moveDown(1.5);
-            doc.moveTo(30, doc.y).lineTo(320, doc.y).strokeColor('#cccccc').stroke();
-            doc.moveDown(1);
-            
-            doc.fontSize(14).font('Helvetica-Bold').text('Tovarlar:', { align: 'left' });
-            doc.moveDown(0.5);
-            
-            items.forEach((item: any) => {
-              const y = doc.y;
-              doc.fontSize(12).font('Helvetica').fillColor('black').text(item.name, 30, y, { width: 150 });
-              doc.font('Helvetica-Bold').text(`${parseFloat(item.price).toLocaleString()} so'm`, 180, y, { align: 'right', width: 140 });
-              doc.moveDown(0.5);
-            });
-            
-            doc.moveDown(1);
-            doc.fontSize(16).font('Helvetica-Bold').fillColor('black').text(`Jami: ${totalPrice.toLocaleString()} so'm`, { align: 'right' });
-            
-            if (paymentMethod === 'INSTALLMENT') {
-              doc.moveDown(0.3);
-              doc.fontSize(12).font('Helvetica').text(`Avans: ${parsedAdvance.toLocaleString()} so'm`, { align: 'right' });
-              doc.moveDown(0.3);
-              doc.fontSize(14).font('Helvetica-Bold').fillColor('red').text(`Qoldiq: ${balance.toLocaleString()} so'm`, { align: 'right' });
-            }
-            
-            doc.moveDown(2);
-            doc.moveTo(30, doc.y).lineTo(320, doc.y).strokeColor('#cccccc').stroke();
-            doc.moveDown(1);
-            
-            doc.fontSize(10).font('Helvetica-Oblique').fillColor('gray').text('Xaridingiz uchun rahmat!\nYana kutib qolamiz.', { align: 'center' });
-            
-            doc.end();
-          });
-        } catch (pdfErr) {
-          console.error("Failed to generate PDF", pdfErr);
+            ).catch((e) => console.error("Error sending receipt to user:", e));
+          }
+        } catch (e) {
+          console.error("Failed to notify user", e);
         }
       }
     } catch (e) {

@@ -6,7 +6,7 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
     const params = await props.params;
     const { id } = params;
     const body = await req.json();
-    const { active, role, canUseAttendance, canUseSales, workStartTime, workEndTime, phone } = body;
+    const { active, role, canUseAttendance, canUseSales, canUseExpenses, workStartTime, workEndTime, phone } = body;
 
     const user = await prisma.user.update({
       where: { id },
@@ -15,6 +15,7 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
         role: role !== undefined ? role : undefined,
         canUseAttendance: canUseAttendance !== undefined ? canUseAttendance : undefined,
         canUseSales: canUseSales !== undefined ? canUseSales : undefined,
+        canUseExpenses: canUseExpenses !== undefined ? canUseExpenses : undefined,
         workStartTime: workStartTime !== undefined ? workStartTime : undefined,
         workEndTime: workEndTime !== undefined ? workEndTime : undefined,
         phone: phone !== undefined ? phone : undefined

@@ -187,6 +187,19 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
             </button>
           </div>
 
+          <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+            <div>
+              <div className="font-semibold text-slate-800 text-sm">Xarajatlar bo'limi</div>
+              <div className="text-xs text-slate-500">3-bo'limga ruxsat</div>
+            </div>
+            <button 
+              onClick={() => toggleSetting('canUseExpenses', !user.canUseExpenses)}
+              className={`w-12 h-6 rounded-full transition-colors relative ${user.canUseExpenses !== false ? 'bg-emerald-500' : 'bg-slate-300'}`}
+            >
+              <div className={`w-5 h-5 bg-white rounded-full absolute top-0.5 transition-all ${user.canUseExpenses !== false ? 'left-6.5 right-0.5' : 'left-0.5'}`} style={{ transform: user.canUseExpenses !== false ? 'translateX(24px)' : 'translateX(0)' }}></div>
+            </button>
+          </div>
+
           <div className="p-3 bg-slate-50 rounded-xl space-y-3">
             <div className="font-semibold text-slate-800 text-sm border-b border-slate-200 pb-2">Ish vaqti grafigi</div>
             

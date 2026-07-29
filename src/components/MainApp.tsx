@@ -1,15 +1,16 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Clock, Package, Settings as SettingsIcon } from 'lucide-react';
+import { Clock, Package, Wallet, Settings as SettingsIcon } from 'lucide-react';
 import AttendanceTab from '@/components/tabs/AttendanceTab';
 import SalesTab from '@/components/tabs/SalesTab';
+import ExpensesTab from '@/components/tabs/ExpensesTab';
 import SettingsTab from '@/components/tabs/SettingsTab';
 import { useTranslation, Language } from '@/lib/i18n';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function MainApp() {
-  const [activeTab, setActiveTab] = useState<'attendance' | 'sales' | 'settings'>('attendance');
+  const [activeTab, setActiveTab] = useState<'attendance' | 'sales' | 'expenses' | 'settings'>('attendance');
   const [user, setUser] = useState<any>(null);
   const [WebApp, setWebApp] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -126,12 +127,15 @@ export default function MainApp() {
   // Handle active tab permissions
   const showAttendance = user.canUseAttendance !== false;
   const showSales = user.canUseSales !== false;
+  const showExpenses = user.canUseExpenses !== false;
   
   let currentTab = activeTab;
   if (!showAttendance && currentTab === 'attendance') {
-    currentTab = showSales ? 'sales' : 'settings';
+    currentTab = showSales ? 'sales' : showExpenses ? 'expenses' : 'settings';
   } else if (!showSales && currentTab === 'sales') {
-    currentTab = showAttendance ? 'attendance' : 'settings';
+    currentTab = showAttendance ? 'attendance' : showExpenses ? 'expenses' : 'settings';
+  } else if (!showExpenses && currentTab === 'expenses') {
+    currentTab = showAttendance ? 'attendance' : showSales ? 'sales' : 'settings';
   }
 
   return (
@@ -139,7 +143,7 @@ export default function MainApp() {
       <div className="bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-800 dark:to-indigo-900 text-white p-6 shadow-lg rounded-b-3xl shrink-0 z-10 relative">
         <h1 className="text-2xl font-bold tracking-tight">Moderno Mebel</h1>
         <p className="text-blue-100 dark:text-blue-200 mt-1 font-medium">
-          {currentTab === 'attendance' ? t('menu_attendance') : currentTab === 'sales' ? t('menu_sales') : t('menu_settings')}
+          {currentTab === 'attendance' ? t('menu_attendance') : currentTab === 'sales' ? t('menu_sales') : currentTab === 'expenses' ? 'Xarajatlar' : t('menu_settings')}
         </p>
       </div>
 
@@ -154,6 +158,7 @@ export default function MainApp() {
           >
             {currentTab === 'attendance' && showAttendance && <AttendanceTab user={user} WebApp={WebApp} />}
             {currentTab === 'sales' && showSales && <SalesTab user={user} WebApp={WebApp} />}
+            {currentTab === 'expenses' && showExpenses && <ExpensesTab user={user} WebApp={WebApp} />}
             {currentTab === 'settings' && <SettingsTab user={user} onUserUpdate={handleUserUpdate} />}
           </motion.div>
         </AnimatePresence>
@@ -177,6 +182,16 @@ export default function MainApp() {
           >
             <Package className={`w-6 h-6 mb-1 ${currentTab === 'sales' ? 'fill-blue-50 dark:fill-blue-900' : ''}`} />
             <span className="text-[10px] font-bold">{t('menu_sales')}</span>
+          </button>
+        )}
+
+        {showExpenses && (
+          <button 
+            onClick={() => setActiveTab('expenses')}
+            className={`flex flex-col items-center transition-all duration-300 w-20 ${currentTab === 'expenses' ? 'text-blue-600 dark:text-blue-400 scale-110' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
+          >
+            <Wallet className={`w-6 h-6 mb-1 ${currentTab === 'expenses' ? 'fill-blue-50 dark:fill-blue-900' : ''}`} />
+            <span className="text-[10px] font-bold">Xarajatlar</span>
           </button>
         )}
 
