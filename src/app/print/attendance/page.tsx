@@ -41,15 +41,15 @@ function PrintAttendanceContent() {
         </div>
 
         {/* Content */}
-        <div className="mb-8 overflow-x-auto w-full">
-          <table className="w-full text-left border-collapse min-w-[500px]">
+        <div className="mb-8">
+          <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-gray-100 print:bg-gray-200 text-xs md:text-sm">
-                <th className="p-2 md:p-3 border border-gray-300 font-bold text-gray-800">№</th>
-                <th className="p-2 md:p-3 border border-gray-300 font-bold text-gray-800">Xodim Ismi</th>
-                <th className="p-2 md:p-3 border border-gray-300 font-bold text-gray-800">Kelgan Vaqti</th>
-                <th className="p-2 md:p-3 border border-gray-300 font-bold text-gray-800">Ketgan Vaqti</th>
-                <th className="p-2 md:p-3 border border-gray-300 font-bold text-gray-800">Holat</th>
+              <tr className="bg-gray-100 print:bg-gray-200">
+                <th className="p-3 border border-gray-300 font-bold text-gray-800">№</th>
+                <th className="p-3 border border-gray-300 font-bold text-gray-800">Xodim Ismi</th>
+                <th className="p-3 border border-gray-300 font-bold text-gray-800">Kelgan Vaqti</th>
+                <th className="p-3 border border-gray-300 font-bold text-gray-800">Ketgan Vaqti</th>
+                <th className="p-3 border border-gray-300 font-bold text-gray-800">Holat</th>
               </tr>
             </thead>
             <tbody>
@@ -71,12 +71,12 @@ function PrintAttendanceContent() {
                 };
 
                 return (
-                  <tr key={att.id} className="hover:bg-gray-50 print:break-inside-avoid text-xs md:text-sm">
-                    <td className="p-2 md:p-3 border border-gray-300 text-gray-600 font-medium">{index + 1}</td>
-                    <td className="p-2 md:p-3 border border-gray-300 font-bold text-gray-800">{att.user?.name || 'Noma\'lum'}</td>
-                    <td className="p-2 md:p-3 border border-gray-300 text-gray-700">{formatTime(att.checkInTime)}</td>
-                    <td className="p-2 md:p-3 border border-gray-300 text-gray-700">{formatTime(att.checkOutTime)}</td>
-                    <td className={`p-2 md:p-3 border border-gray-300 font-bold ${statusColor}`}>
+                  <tr key={att.id} className="hover:bg-gray-50 print:break-inside-avoid">
+                    <td className="p-3 border border-gray-300 text-gray-600 text-sm font-medium">{index + 1}</td>
+                    <td className="p-3 border border-gray-300 font-bold text-gray-800">{att.user?.name || 'Noma\'lum'}</td>
+                    <td className="p-3 border border-gray-300 text-gray-700">{formatTime(att.checkInTime)}</td>
+                    <td className="p-3 border border-gray-300 text-gray-700">{formatTime(att.checkOutTime)}</td>
+                    <td className={`p-3 border border-gray-300 font-bold ${statusColor}`}>
                       {statusText}
                     </td>
                   </tr>
