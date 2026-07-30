@@ -48,35 +48,31 @@ export default function PrintExpensesPage() {
         </div>
 
         {/* Content */}
-        <div className="mb-8">
-          <table className="w-full text-left border-collapse text-sm">
+        <div className="mb-8 overflow-x-auto w-full">
+          <table className="w-full text-left border-collapse min-w-[500px]">
             <thead>
-              <tr className="bg-gray-100 print:bg-gray-200">
-                <th className="p-3 border border-gray-300 font-bold text-gray-800">№</th>
-                <th className="p-3 border border-gray-300 font-bold text-gray-800">Sana</th>
-                <th className="p-3 border border-gray-300 font-bold text-gray-800">Xodim</th>
-                <th className="p-3 border border-gray-300 font-bold text-gray-800">Izoh (Sabab)</th>
-                <th className="p-3 border border-gray-300 font-bold text-gray-800 text-right">Summa (so'm)</th>
-                <th className="p-3 border border-gray-300 font-bold text-gray-800 text-right">To'lov turi</th>
+              <tr className="bg-gray-100 print:bg-gray-200 text-xs md:text-sm">
+                <th className="p-2 md:p-3 border border-gray-300 font-bold text-gray-800">№</th>
+                <th className="p-2 md:p-3 border border-gray-300 font-bold text-gray-800">Sana</th>
+                <th className="p-2 md:p-3 border border-gray-300 font-bold text-gray-800">Xodim</th>
+                <th className="p-2 md:p-3 border border-gray-300 font-bold text-gray-800">Izoh</th>
+                <th className="p-2 md:p-3 border border-gray-300 font-bold text-gray-800 text-right">Summa</th>
+                <th className="p-2 md:p-3 border border-gray-300 font-bold text-gray-800">To'lov Turi</th>
               </tr>
             </thead>
             <tbody>
-              {data.map((expense: any, index: number) => {
-                let paymentType = 'Naqd';
-                if (expense.paymentMethod === 'CARD') paymentType = 'Karta';
-                if (expense.paymentMethod === 'CORPORATE') paymentType = 'Karparativ';
-
-                return (
-                  <tr key={expense.id} className="hover:bg-gray-50 print:break-inside-avoid">
-                    <td className="p-3 border border-gray-300 text-gray-600 font-medium">{index + 1}</td>
-                    <td className="p-3 border border-gray-300 text-gray-700 whitespace-nowrap">{new Date(expense.createdAt).toLocaleString('uz-UZ', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'})}</td>
-                    <td className="p-3 border border-gray-300 font-bold text-gray-800">{expense.user?.name || 'Noma\'lum'}</td>
-                    <td className="p-3 border border-gray-300 text-gray-700">{expense.reason}</td>
-                    <td className="p-3 border border-gray-300 text-gray-900 font-bold text-right">{expense.amount?.toLocaleString()}</td>
-                    <td className="p-3 border border-gray-300 text-gray-700 text-right">{paymentType}</td>
-                  </tr>
-                );
-              })}
+              {data.map((expense: any, index: number) => (
+                <tr key={expense.id} className="hover:bg-gray-50 print:break-inside-avoid text-xs md:text-sm">
+                  <td className="p-2 md:p-3 border border-gray-300 text-gray-600 font-medium">{index + 1}</td>
+                  <td className="p-2 md:p-3 border border-gray-300 text-gray-700">{new Date(expense.createdAt).toLocaleString('uz-UZ', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'})}</td>
+                  <td className="p-2 md:p-3 border border-gray-300 font-bold text-gray-800">{expense.user?.name || 'Noma\'lum'}</td>
+                  <td className="p-2 md:p-3 border border-gray-300 text-gray-700">{expense.reason || '-'}</td>
+                  <td className="p-2 md:p-3 border border-gray-300 text-red-600 font-bold text-right">{expense.amount?.toLocaleString()} so'm</td>
+                  <td className="p-2 md:p-3 border border-gray-300 font-bold text-gray-700">
+                    {expense.paymentMethod === 'CASH' ? 'Naqd' : expense.paymentMethod === 'CARD' ? 'Karta' : 'Karparativ'}
+                  </td>
+                </tr>
+              ))}
               {data.length === 0 && (
                 <tr>
                   <td colSpan={6} className="p-4 text-center text-gray-500 italic">Ma'lumot topilmadi</td>

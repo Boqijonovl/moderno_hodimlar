@@ -65,26 +65,26 @@ function PrintReportsContent() {
         </div>
 
         {/* Content */}
-        <div className="mb-8">
+        <div className="mb-8 overflow-x-auto w-full">
           <h2 className="text-xl font-bold text-gray-800 mb-4 border-b border-gray-200 pb-2">Xodimlar Kesimida Hisobot</h2>
-          <table className="w-full text-left border-collapse text-sm">
+          <table className="w-full text-left border-collapse min-w-[600px]">
             <thead>
-              <tr className="bg-gray-100 print:bg-gray-200">
-                <th className="p-3 border border-gray-300 font-bold text-gray-800">№</th>
-                <th className="p-3 border border-gray-300 font-bold text-gray-800">Xodim</th>
-                <th className="p-3 border border-gray-300 font-bold text-gray-800 text-right">Qilgan Savdosi</th>
-                <th className="p-3 border border-gray-300 font-bold text-gray-800 text-right">Oylik Maosh (2.5%)</th>
-                <th className="p-3 border border-gray-300 font-bold text-gray-800 text-center">Davomat</th>
+              <tr className="bg-gray-100 print:bg-gray-200 text-xs md:text-sm">
+                <th className="p-2 md:p-3 border border-gray-300 font-bold text-gray-800">№</th>
+                <th className="p-2 md:p-3 border border-gray-300 font-bold text-gray-800">Xodim</th>
+                <th className="p-2 md:p-3 border border-gray-300 font-bold text-gray-800 text-right">Qilgan Savdosi</th>
+                <th className="p-2 md:p-3 border border-gray-300 font-bold text-gray-800 text-right">Oylik Maosh (2.5%)</th>
+                <th className="p-2 md:p-3 border border-gray-300 font-bold text-gray-800 text-center">Davomat</th>
               </tr>
             </thead>
             <tbody>
               {users.map((u: any, i: number) => (
-                <tr key={u.user.id} className="hover:bg-gray-50 print:break-inside-avoid">
-                  <td className="p-3 border border-gray-300 text-gray-600 font-medium">{i + 1}</td>
-                  <td className="p-3 border border-gray-300 font-bold text-gray-800">{u.user.name}</td>
-                  <td className="p-3 border border-gray-300 text-emerald-600 font-bold text-right">{formatCurrency(u.totalSales)}</td>
-                  <td className="p-3 border border-gray-300 text-blue-600 font-bold text-right">{formatCurrency(u.totalSales * 0.025)}</td>
-                  <td className="p-3 border border-gray-300 text-center">
+                <tr key={u.user.id} className="hover:bg-gray-50 print:break-inside-avoid text-xs md:text-sm">
+                  <td className="p-2 md:p-3 border border-gray-300 text-gray-600 font-medium">{i + 1}</td>
+                  <td className="p-2 md:p-3 border border-gray-300 font-bold text-gray-800">{u.user.name}</td>
+                  <td className="p-2 md:p-3 border border-gray-300 text-emerald-600 font-bold text-right">{formatCurrency(u.totalSales)}</td>
+                  <td className="p-2 md:p-3 border border-gray-300 text-blue-600 font-bold text-right">{formatCurrency(u.totalSales * 0.025)}</td>
+                  <td className="p-2 md:p-3 border border-gray-300 text-center">
                     <span className="text-green-600 font-bold">{u.totalDaysPresent} kun</span>
                     <br />
                     <span className="text-yellow-600 font-bold">{u.totalLateMinutes} daq kechikish</span>

@@ -58,43 +58,40 @@ export default function PrintSalesPage() {
         </div>
 
         {/* Content */}
-        <div className="mb-8">
-          <table className="w-full text-left border-collapse text-sm">
+        <div className="mb-8 overflow-x-auto w-full">
+          <table className="w-full text-left border-collapse min-w-[600px]">
             <thead>
-              <tr className="bg-gray-100 print:bg-gray-200">
-                <th className="p-3 border border-gray-300 font-bold text-gray-800">№</th>
-                <th className="p-3 border border-gray-300 font-bold text-gray-800">Sana</th>
-                <th className="p-3 border border-gray-300 font-bold text-gray-800">Xodim</th>
-                <th className="p-3 border border-gray-300 font-bold text-gray-800">Mebellar</th>
-                <th className="p-3 border border-gray-300 font-bold text-gray-800 text-right">Summa (so'm)</th>
-                <th className="p-3 border border-gray-300 font-bold text-gray-800 text-right">To'lov turi</th>
+              <tr className="bg-gray-100 print:bg-gray-200 text-xs md:text-sm">
+                <th className="p-2 md:p-3 border border-gray-300 font-bold text-gray-800">№</th>
+                <th className="p-2 md:p-3 border border-gray-300 font-bold text-gray-800">Sana</th>
+                <th className="p-2 md:p-3 border border-gray-300 font-bold text-gray-800">Xodim</th>
+                <th className="p-2 md:p-3 border border-gray-300 font-bold text-gray-800">Mebellar</th>
+                <th className="p-2 md:p-3 border border-gray-300 font-bold text-gray-800 text-right">Summa</th>
+                <th className="p-2 md:p-3 border border-gray-300 font-bold text-gray-800">To'lov Turi</th>
+                <th className="p-2 md:p-3 border border-gray-300 font-bold text-gray-800 text-right">Qoldiq</th>
               </tr>
             </thead>
             <tbody>
-              {data.map((sale: any, index: number) => {
-                let paymentType = 'Naqd';
-                if (sale.paymentMethod === 'CARD') paymentType = 'Karta / Karparativ';
-                if (sale.paymentMethod === 'INSTALLMENT') paymentType = 'Nasiya / Avansli';
-
-                return (
-                  <tr key={sale.id} className="hover:bg-gray-50 print:break-inside-avoid">
-                    <td className="p-3 border border-gray-300 text-gray-600 font-medium">{index + 1}</td>
-                    <td className="p-3 border border-gray-300 text-gray-700 whitespace-nowrap">{new Date(sale.createdAt).toLocaleString('uz-UZ', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'})}</td>
-                    <td className="p-3 border border-gray-300 font-bold text-gray-800">{sale.user?.name || 'Noma\'lum'}</td>
-                    <td className="p-3 border border-gray-300 text-gray-700">{sale.items?.map((i: any) => i.name).join(', ') || '-'}</td>
-                    <td className="p-3 border border-gray-300 text-gray-900 font-bold text-right">
-                      {sale.totalPrice?.toLocaleString()}
-                      {sale.balance > 0 && (
-                        <div className="text-red-500 text-xs mt-1">Qarz: {sale.balance?.toLocaleString()}</div>
-                      )}
-                    </td>
-                    <td className="p-3 border border-gray-300 text-gray-700 text-right">{paymentType}</td>
-                  </tr>
-                );
-              })}
+              {data.map((sale: any, index: number) => (
+                <tr key={sale.id} className="hover:bg-gray-50 print:break-inside-avoid text-xs md:text-sm">
+                  <td className="p-2 md:p-3 border border-gray-300 text-gray-600 font-medium">{index + 1}</td>
+                  <td className="p-2 md:p-3 border border-gray-300 text-gray-700">{new Date(sale.createdAt).toLocaleString('uz-UZ', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'})}</td>
+                  <td className="p-2 md:p-3 border border-gray-300 font-bold text-gray-800">{sale.user?.name || 'Noma\'lum'}</td>
+                  <td className="p-2 md:p-3 border border-gray-300 text-gray-700">
+                    {sale.items?.map((i: any) => i.name).join(', ') || 'Noma\'lum'}
+                  </td>
+                  <td className="p-2 md:p-3 border border-gray-300 text-emerald-600 font-bold text-right">{formatCurrency(sale.totalPrice)}</td>
+                  <td className="p-2 md:p-3 border border-gray-300 font-bold text-gray-700">
+                    {sale.paymentMethod === 'CASH' ? 'Naqd' : sale.paymentMethod === 'CARD' ? 'Karta' : 'Karparativ'}
+                  </td>
+                  <td className="p-2 md:p-3 border border-gray-300 text-amber-600 font-bold text-right">
+                    {formatCurrency(sale.balance || 0)}
+                  </td>
+                </tr>
+              ))}
               {data.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="p-4 text-center text-gray-500 italic">Ma'lumot topilmadi</td>
+                  <td colSpan={7} className="p-4 text-center text-gray-500 italic">Ma'lumot topilmadi</td>
                 </tr>
               )}
             </tbody>
