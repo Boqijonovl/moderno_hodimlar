@@ -2,9 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { YMaps, Map, Placemark, Circle } from '@pbe/react-yandex-maps';
-import { MapPin, Clock, Download, Edit2, X, Trash2 } from 'lucide-react';
-import * as XLSX from 'xlsx';
-import { saveAs } from 'file-saver';
+import { MapPin, Clock, Edit2, X, Trash2, Printer } from 'lucide-react';
 
 export default function AttendancePage() {
   const [data, setData] = useState<any>(null);
@@ -91,25 +89,14 @@ export default function AttendancePage() {
     }
   };
 
-  const exportToExcel = () => {
+  const printReport = () => {
     if (!data || data.attendance.length === 0) return alert("Davomat yo'q");
     
-    const excelData = data.attendance.map((a: any) => ({
-      'Sana': new Date(a.date).toLocaleDateString(),
-      'Xodim': a.user.name,
-      'Kelgan Vaqti': a.checkInTime ? new Date(a.checkInTime).toLocaleTimeString() : '',
-      'Ketgan Vaqti': a.checkOutTime ? new Date(a.checkOutTime).toLocaleTimeString() : '',
-      'Holat': a.status === 'ON_TIME' ? 'Vaqtida' : a.status === 'LATE' ? 'Kechikkan' : 'Kelmagan',
-      'Kechikish (daqiqa)': a.lateMinutes || 0,
-      'Izoh': a.reason || ''
-    }));
-
-    const worksheet = XLSX.utils.json_to_sheet(excelData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Davomat');
-    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-    const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8' });
-    saveAs(blob, `Davomat_${new Date().toISOString().split('T')[0]}.xlsx`);
+    let url = '/print/attendance';
+    if (currentDate) {
+      url += `?date=${currentDate}`;
+    }
+    window.open(url, '_blank');
   };
 
   if (!data) return <div className="p-8 text-center text-slate-500">Yuklanmoqda...</div>;
@@ -122,11 +109,11 @@ export default function AttendancePage() {
           <p className="text-slate-500 text-sm">Bugungi xodimlar ro'yxati va xarita</p>
         </div>
         <button 
-          onClick={exportToExcel}
-          className="bg-emerald-500 text-white p-2 rounded-xl flex items-center gap-2 hover:bg-emerald-600 transition-colors shadow-sm active:scale-95"
+          onClick={printReport}
+          className="bg-blue-600 text-white p-2 rounded-xl flex items-center gap-2 hover:bg-blue-700 transition-colors shadow-sm active:scale-95"
         >
-          <Download className="w-5 h-5" />
-          <span className="text-sm font-medium">Excel</span>
+          <Printer className="w-5 h-5" />
+          <span className="text-sm font-medium">Chop etish</span>
         </button>
       </div>
 

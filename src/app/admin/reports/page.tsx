@@ -1,9 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Calendar, FileText, Download } from 'lucide-react';
-import * as XLSX from 'xlsx';
-import { saveAs } from 'file-saver';
+import { Calendar, FileText, Printer } from 'lucide-react';
 
 export default function ReportsPage() {
   const [data, setData] = useState<any>(null);
@@ -32,23 +30,9 @@ export default function ReportsPage() {
     setLoading(false);
   };
 
-  const exportMonthlyExcel = () => {
+  const printReport = () => {
     if (!data || data.monthly.length === 0) return alert("Ma'lumot yo'q");
-    
-    const excelData = data.monthly.map((m: any) => ({
-      'Xodim': m.user.name,
-      'Kelgan kunlari': m.totalDaysPresent,
-      'Kechikish/Overtaym (daqiqa)': m.totalLateMinutes,
-      'Sotuvlar Soni': m.totalSalesCount,
-      'Umumiy Savdo': m.totalSales
-    }));
-
-    const worksheet = XLSX.utils.json_to_sheet(excelData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, `Oylik_${selectedMonth}`);
-    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-    const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8' });
-    saveAs(blob, `Oylik_Hisobot_${selectedMonth}.xlsx`);
+    window.open(`/print/reports?month=${selectedMonth}`, '_blank');
   };
 
   if (!data && loading) return <div className="p-8 text-center text-slate-500">Yuklanmoqda...</div>;
@@ -73,11 +57,11 @@ export default function ReportsPage() {
             </select>
           )}
           <button 
-            onClick={exportMonthlyExcel}
-            className="bg-emerald-500 text-white p-2 rounded-xl flex items-center gap-2 hover:bg-emerald-600 transition-colors shadow-sm active:scale-95"
+            onClick={printReport}
+            className="bg-blue-600 text-white p-2 rounded-xl flex items-center gap-2 hover:bg-blue-700 transition-colors shadow-sm active:scale-95"
           >
-            <Download className="w-5 h-5" />
-            <span className="text-sm font-medium hidden sm:inline">Excel</span>
+            <Printer className="w-5 h-5" />
+            <span className="text-sm font-medium hidden sm:inline">Chop etish</span>
           </button>
         </div>
       </div>

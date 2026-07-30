@@ -1,9 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Download, BarChart2, Trash2, Wallet, Package } from 'lucide-react';
-import * as XLSX from 'xlsx';
-import { saveAs } from 'file-saver';
+import { BarChart2, Trash2, Wallet, Package, Printer } from 'lucide-react';
 
 export default function SalesAnalytics() {
   const [sales, setSales] = useState<any[]>([]);
@@ -20,38 +18,13 @@ export default function SalesAnalytics() {
       .then(setExpenses);
   }, []);
 
-  const exportToExcel = () => {
+  const printReport = () => {
     if (activeTab === 'sales') {
       if (sales.length === 0) return alert("Sotuvlar yo'q");
-      const data = sales.map(s => ({
-        'Sana': new Date(s.createdAt).toLocaleString(),
-        'Xodim': s.user?.name || 'Noma\'lum',
-        'Mebellar': s.items?.map((i: any) => i.name).join(', ') || 'Noma\'lum',
-        'Umumiy Narxi': s.totalPrice,
-        'To\'lov Turi': s.paymentMethod === 'CASH' ? 'Naqd' : s.paymentMethod === 'CARD' ? 'Karta' : 'Karparativ',
-        'Qoldiq': s.balance || 0
-      }));
-      const worksheet = XLSX.utils.json_to_sheet(data);
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, 'Savdolar');
-      const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-      const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8' });
-      saveAs(blob, `Savdolar_${new Date().toISOString().split('T')[0]}.xlsx`);
+      window.open('/print/sales', '_blank');
     } else {
       if (expenses.length === 0) return alert("Xarajatlar yo'q");
-      const data = expenses.map(e => ({
-        'Sana': new Date(e.createdAt).toLocaleString(),
-        'Xodim': e.user?.name || 'Noma\'lum',
-        'Izoh': e.reason,
-        'Summa': e.amount,
-        'To\'lov Turi': e.paymentMethod === 'CASH' ? 'Naqd' : e.paymentMethod === 'CARD' ? 'Karta' : 'Karparativ',
-      }));
-      const worksheet = XLSX.utils.json_to_sheet(data);
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, 'Xarajatlar');
-      const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-      const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8' });
-      saveAs(blob, `Xarajatlar_${new Date().toISOString().split('T')[0]}.xlsx`);
+      window.open('/print/expenses', '_blank');
     }
   };
 
@@ -87,11 +60,11 @@ export default function SalesAnalytics() {
           <p className="text-slate-500 text-sm">Daromad va Xarajatlar ro'yxati</p>
         </div>
         <button 
-          onClick={exportToExcel}
-          className="bg-emerald-500 text-white p-2 rounded-xl flex items-center gap-2 hover:bg-emerald-600 transition-colors shadow-sm active:scale-95"
+          onClick={printReport}
+          className="bg-blue-600 text-white p-2 rounded-xl flex items-center gap-2 hover:bg-blue-700 transition-colors shadow-sm active:scale-95"
         >
-          <Download className="w-5 h-5" />
-          <span className="text-sm font-medium">Excel</span>
+          <Printer className="w-5 h-5" />
+          <span className="text-sm font-medium">Chop etish</span>
         </button>
       </div>
 
