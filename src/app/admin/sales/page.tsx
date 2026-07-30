@@ -21,10 +21,20 @@ export default function SalesAnalytics() {
   const printReport = () => {
     if (activeTab === 'sales') {
       if (sales.length === 0) return alert("Sotuvlar yo'q");
-      window.open('/print/sales', '_blank');
+      const url = `${window.location.origin}/print/sales`;
+      if (typeof window !== 'undefined' && (window as any).Telegram?.WebApp?.openLink) {
+        (window as any).Telegram.WebApp.openLink(url);
+      } else {
+        window.open(url, '_blank');
+      }
     } else {
       if (expenses.length === 0) return alert("Xarajatlar yo'q");
-      window.open('/print/expenses', '_blank');
+      const url = `${window.location.origin}/print/expenses`;
+      if (typeof window !== 'undefined' && (window as any).Telegram?.WebApp?.openLink) {
+        (window as any).Telegram.WebApp.openLink(url);
+      } else {
+        window.open(url, '_blank');
+      }
     }
   };
 

@@ -92,11 +92,16 @@ export default function AttendancePage() {
   const printReport = () => {
     if (!data || data.attendance.length === 0) return alert("Davomat yo'q");
     
-    let url = '/print/attendance';
+    let url = `${window.location.origin}/print/attendance`;
     if (currentDate) {
       url += `?date=${currentDate}`;
     }
-    window.open(url, '_blank');
+    
+    if (typeof window !== 'undefined' && (window as any).Telegram?.WebApp?.openLink) {
+      (window as any).Telegram.WebApp.openLink(url);
+    } else {
+      window.open(url, '_blank');
+    }
   };
 
   if (!data) return <div className="p-8 text-center text-slate-500">Yuklanmoqda...</div>;

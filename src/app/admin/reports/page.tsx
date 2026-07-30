@@ -32,7 +32,12 @@ export default function ReportsPage() {
 
   const printReport = () => {
     if (!data || data.monthly.length === 0) return alert("Ma'lumot yo'q");
-    window.open(`/print/reports?month=${selectedMonth}`, '_blank');
+    const url = `${window.location.origin}/print/reports?month=${selectedMonth}`;
+    if (typeof window !== 'undefined' && (window as any).Telegram?.WebApp?.openLink) {
+      (window as any).Telegram.WebApp.openLink(url);
+    } else {
+      window.open(url, '_blank');
+    }
   };
 
   if (!data && loading) return <div className="p-8 text-center text-slate-500">Yuklanmoqda...</div>;
