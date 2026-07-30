@@ -2,13 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { YMaps, Map, Placemark, Circle } from '@pbe/react-yandex-maps';
-import { MapPin, Clock, Download, Edit2, X } from 'lucide-react';
+import { MapPin, Clock, Download, Edit2, X, Trash2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 
 export default function AttendancePage() {
   const [data, setData] = useState<any>(null);
   const [selectedLocation, setSelectedLocation] = useState<any>(null);
+  const [currentDate, setCurrentDate] = useState<string>('');
   
   // Edit modal state
   const [editingAtt, setEditingAtt] = useState<any>(null);
@@ -17,8 +18,9 @@ export default function AttendancePage() {
   const [editStatus, setEditStatus] = useState('ON_TIME');
   const [isSaving, setIsSaving] = useState(false);
 
-  const fetchData = () => {
-    fetch('/api/admin/attendance')
+  const fetchData = (date?: string) => {
+    const url = date ? `/api/admin/attendance?date=${date}` : '/api/admin/attendance';
+    fetch(url)
       .then(res => res.json())
       .then(setData);
   };
@@ -61,7 +63,7 @@ export default function AttendancePage() {
       
       if (res.ok) {
         setEditingAtt(null);
-        fetchData(); // Refresh data to see changes
+        fetchData(currentDate); // Refresh data to see changes
       } else {
         alert("Saqlashda xatolik yuz berdi.");
       }
@@ -70,6 +72,22 @@ export default function AttendancePage() {
       alert("Tarmoq xatosi.");
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleDelete = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    if (!confirm("Haqiqatan ham bu davomatni o'chirmoqchimisiz?")) return;
+    
+    try {
+      const res = await fetch(`/api/admin/attendance/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        fetchData(currentDate);
+      } else {
+        alert("O'chirishda xatolik.");
+      }
+    } catch (error) {
+      console.error(error);
     }
   };
 
@@ -147,8 +165,31 @@ export default function AttendancePage() {
         </div>
       </div>
 
+      <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+        <button 
+          onClick={() => { setCurrentDate(''); fetchData(''); }}
+          className={`shrink-0 px-4 py-2 rounded-xl font-bold text-sm transition-colors ${!currentDate ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'}`}
+        >
+          Bugun
+        </button>
+        {data.historyDates?.map((d: string) => {
+          const dateStr = new Date(d).toISOString().split('T')[0];
+          const todayStr = new Date().toISOString().split('T')[0];
+          if (dateStr === todayStr) return null; // Hide today from history
+          return (
+            <button
+              key={dateStr}
+              onClick={() => { setCurrentDate(dateStr); fetchData(dateStr); }}
+              className={`shrink-0 px-4 py-2 rounded-xl font-bold text-sm transition-colors ${currentDate === dateStr ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'}`}
+            >
+              {new Date(d).toLocaleDateString('uz-UZ')}
+            </button>
+          )
+        })}
+      </div>
+
       <div className="space-y-3">
-        {data.attendance.length === 0 && <p className="text-center text-sm text-slate-500">Bugun hech kim ishga kelmadi</p>}
+        {data.attendance.length === 0 && <p className="text-center text-sm text-slate-500">{!currentDate ? 'Bugun' : 'Bu kunda'} hech kim ishga kelmadi</p>}
         {data.attendance.map((att: any) => (
           <div 
             key={att.id} 
@@ -191,6 +232,13 @@ export default function AttendancePage() {
                   title="Tahrirlash"
                 >
                   <Edit2 className="w-4 h-4" />
+                </button>
+                <button 
+                  onClick={(e) => handleDelete(e, att.id)}
+                  className="p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg transition-colors"
+                  title="O'chirish"
+                >
+                  <Trash2 className="w-4 h-4" />
                 </button>
                 {att.gpsLat && (
                   <MapPin className={`w-4 h-4 ${selectedLocation?.lat === att.gpsLat ? 'text-blue-500' : 'text-slate-300'}`} />
