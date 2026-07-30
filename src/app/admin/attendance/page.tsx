@@ -55,8 +55,8 @@ export default function AttendancePage() {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          checkInTime: editCheckIn || null,
-          checkOutTime: editCheckOut || null,
+          checkInTime: editCheckIn ? new Date(editCheckIn).toISOString() : null,
+          checkOutTime: editCheckOut ? new Date(editCheckOut).toISOString() : null,
           status: editStatus,
         }),
       });
