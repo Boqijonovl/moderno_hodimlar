@@ -2,19 +2,76 @@
 
 import { useState, useEffect } from 'react';
 import { YMaps, Map, Placemark, Circle } from '@pbe/react-yandex-maps';
-import { MapPin, Clock, Download } from 'lucide-react';
+import { MapPin, Clock, Download, Edit2, X } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 
 export default function AttendancePage() {
   const [data, setData] = useState<any>(null);
   const [selectedLocation, setSelectedLocation] = useState<any>(null);
+  
+  // Edit modal state
+  const [editingAtt, setEditingAtt] = useState<any>(null);
+  const [editCheckIn, setEditCheckIn] = useState('');
+  const [editCheckOut, setEditCheckOut] = useState('');
+  const [editStatus, setEditStatus] = useState('ON_TIME');
+  const [isSaving, setIsSaving] = useState(false);
 
-  useEffect(() => {
+  const fetchData = () => {
     fetch('/api/admin/attendance')
       .then(res => res.json())
       .then(setData);
+  };
+
+  useEffect(() => {
+    fetchData();
   }, []);
+
+  const openEditModal = (att: any) => {
+    setEditingAtt(att);
+    // Format for datetime-local input (YYYY-MM-DDThh:mm)
+    const formatForInput = (dateStr: string) => {
+      if (!dateStr) return '';
+      const d = new Date(dateStr);
+      // adjust for local timezone offset
+      d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+      return d.toISOString().slice(0, 16);
+    };
+    
+    setEditCheckIn(formatForInput(att.checkInTime));
+    setEditCheckOut(formatForInput(att.checkOutTime));
+    setEditStatus(att.status || 'ON_TIME');
+  };
+
+  const handleEditSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingAtt) return;
+    
+    setIsSaving(true);
+    try {
+      const res = await fetch(`/api/admin/attendance/${editingAtt.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          checkInTime: editCheckIn || null,
+          checkOutTime: editCheckOut || null,
+          status: editStatus,
+        }),
+      });
+      
+      if (res.ok) {
+        setEditingAtt(null);
+        fetchData(); // Refresh data to see changes
+      } else {
+        alert("Saqlashda xatolik yuz berdi.");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Tarmoq xatosi.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const exportToExcel = () => {
     if (!data || data.attendance.length === 0) return alert("Davomat yo'q");
@@ -120,20 +177,94 @@ export default function AttendancePage() {
                 )}
               </div>
             </div>
-            <div className="text-right flex flex-col items-end gap-1">
+            <div className="text-right flex flex-col items-end gap-2">
               <span className={`text-[10px] px-2 py-1 rounded-md font-bold uppercase tracking-wider
                 ${att.status === 'ON_TIME' ? 'bg-emerald-50 text-emerald-600' : 
                   att.status === 'LATE' ? 'bg-amber-50 text-amber-600' : 'bg-rose-50 text-rose-600'}
               `}>
                 {att.status === 'ON_TIME' ? 'Vaqtida' : att.status === 'LATE' ? 'Kechikkan' : 'Kelmagan'}
               </span>
-              {att.gpsLat && (
-                <MapPin className={`w-4 h-4 ${selectedLocation?.lat === att.gpsLat ? 'text-blue-500' : 'text-slate-300'}`} />
-              )}
+              <div className="flex gap-2 mt-1 items-center">
+                <button 
+                  onClick={(e) => { e.stopPropagation(); openEditModal(att); }}
+                  className="p-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
+                  title="Tahrirlash"
+                >
+                  <Edit2 className="w-4 h-4" />
+                </button>
+                {att.gpsLat && (
+                  <MapPin className={`w-4 h-4 ${selectedLocation?.lat === att.gpsLat ? 'text-blue-500' : 'text-slate-300'}`} />
+                )}
+              </div>
             </div>
           </div>
         ))}
       </div>
+
+      {/* Edit Modal */}
+      {editingAtt && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl">
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h3 className="font-bold text-lg text-slate-800">Vaqtni Tahrirlash</h3>
+                <p className="text-sm text-slate-500">{editingAtt.user.name}</p>
+              </div>
+              <button 
+                onClick={() => setEditingAtt(null)}
+                className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            
+            <form onSubmit={handleEditSave} className="space-y-4">
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Kelgan Vaqti</label>
+                <input 
+                  type="datetime-local" 
+                  value={editCheckIn}
+                  onChange={(e) => setEditCheckIn(e.target.value)}
+                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Ketgan Vaqti</label>
+                <input 
+                  type="datetime-local" 
+                  value={editCheckOut}
+                  onChange={(e) => setEditCheckOut(e.target.value)}
+                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Holat</label>
+                <select 
+                  value={editStatus}
+                  onChange={(e) => setEditStatus(e.target.value)}
+                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                >
+                  <option value="ON_TIME">Vaqtida (On Time)</option>
+                  <option value="LATE">Kechikkan (Late)</option>
+                  <option value="ABSENT">Kelmagan (Absent)</option>
+                </select>
+              </div>
+
+              <div className="pt-4">
+                <button 
+                  type="submit"
+                  disabled={isSaving}
+                  className="w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 active:scale-95 transition-all disabled:opacity-70"
+                >
+                  {isSaving ? "Saqlanmoqda..." : "Saqlash"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
