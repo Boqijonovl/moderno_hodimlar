@@ -28,6 +28,27 @@ export async function GET(req: Request) {
       orderBy: { checkInTime: 'desc' }
     });
 
+    const activeUsers = await prisma.user.findMany({
+      where: { active: true, canUseAttendance: true }
+    });
+
+    const attendanceUserIds = new Set(attendance.map(a => a.userId));
+
+    const mockAttendances = activeUsers
+      .filter(u => !attendanceUserIds.has(u.id))
+      .map(u => ({
+        id: `mock-${u.id}-${targetDate.getTime()}`,
+        userId: u.id,
+        user: u,
+        date: targetDate,
+        checkInTime: null,
+        checkOutTime: null,
+        status: 'ABSENT',
+        lateMinutes: 0
+      }));
+
+    const fullAttendance = [...attendance, ...mockAttendances];
+
     const settings = await prisma.settings.findFirst();
 
     const historyData = await prisma.attendance.findMany({
@@ -38,7 +59,7 @@ export async function GET(req: Request) {
     });
 
     return NextResponse.json({
-      attendance,
+      attendance: fullAttendance,
       historyDates: historyData.map(d => d.date),
       store: settings ? { lat: settings.storeLat, lng: settings.storeLng, radius: settings.radius } : { lat: 41.311081, lng: 69.240562, radius: 50 }
     });
