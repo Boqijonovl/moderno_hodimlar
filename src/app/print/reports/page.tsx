@@ -73,7 +73,7 @@ function PrintReportsContent() {
                 <th className="p-3 border border-gray-300 font-bold text-gray-800">№</th>
                 <th className="p-3 border border-gray-300 font-bold text-gray-800">Xodim</th>
                 <th className="p-3 border border-gray-300 font-bold text-gray-800 text-right">Qilgan Savdosi</th>
-                <th className="p-3 border border-gray-300 font-bold text-gray-800 text-right">Oylik Maosh (2.5%)</th>
+                <th className="p-3 border border-gray-300 font-bold text-gray-800 text-right">Xarajatlar</th>
                 <th className="p-3 border border-gray-300 font-bold text-gray-800 text-center">Davomat</th>
               </tr>
             </thead>
@@ -83,7 +83,7 @@ function PrintReportsContent() {
                   <td className="p-3 border border-gray-300 text-gray-600 font-medium">{i + 1}</td>
                   <td className="p-3 border border-gray-300 font-bold text-gray-800">{u.user.name}</td>
                   <td className="p-3 border border-gray-300 text-emerald-600 font-bold text-right">{formatCurrency(u.totalSales)}</td>
-                  <td className="p-3 border border-gray-300 text-blue-600 font-bold text-right">{formatCurrency(u.totalSales * 0.025)}</td>
+                  <td className="p-3 border border-gray-300 text-rose-600 font-bold text-right">{formatCurrency(u.totalExpenses)}</td>
                   <td className="p-3 border border-gray-300 text-center">
                     <span className="text-green-600 font-bold">{u.totalDaysPresent} kun</span>
                     <br />
