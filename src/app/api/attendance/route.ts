@@ -61,32 +61,79 @@ export async function POST(req: Request) {
       const [startHour, startMinute] = (user.workStartTime || "09:00").split(':').map(Number);
       onTimeLimit.setHours(startHour, startMinute, 0, 0);
 
-      const isLate = tashkentTime > onTimeLimit;
-      const status = isLate ? 'LATE' : 'ON_TIME';
+      const endTimeLimit = new Date(tashkentTime);
+      const [endHour, endMinute] = (user.workEndTime || "18:00").split(':').map(Number);
+      endTimeLimit.setHours(endHour, endMinute, 0, 0);
 
-      let lateMinutes = 0;
-      if (isLate) {
-        lateMinutes = Math.floor((tashkentTime.getTime() - onTimeLimit.getTime()) / 60000);
-      }
-
-      const attendance = await prisma.attendance.create({
-        data: {
-          userId: user.id,
+      // Check if they already have a closed attendance for TODAY
+      const closedAttendance = await prisma.attendance.findFirst({
+        where: { 
+          userId: user.id, 
           date: today,
-          checkInTime: serverTime, // Save actual server UTC time in DB for consistency
-          gpsLat: lat,
-          gpsLng: lng,
-          status,
-          lateMinutes,
-          reason: body.reason || null
-        }
+          checkOutTime: { not: null }
+        },
+        orderBy: { createdAt: 'desc' }
       });
+
+      let status = 'ON_TIME';
+      let lateMinutes = 0;
+      let isReopening = false;
+
+      if (closedAttendance) {
+        // Reopen it
+        isReopening = true;
+        let penaltyToReverse = 0;
+        
+        if (tashkentTime < endTimeLimit) {
+           penaltyToReverse = Math.floor((endTimeLimit.getTime() - tashkentTime.getTime()) / 60000);
+        }
+
+        lateMinutes = (closedAttendance.lateMinutes || 0) - penaltyToReverse;
+        if (lateMinutes < 0) lateMinutes = 0;
+
+        await prisma.attendance.update({
+          where: { id: closedAttendance.id },
+          data: {
+             checkOutTime: null,
+             lateMinutes: lateMinutes,
+             reason: body.reason ? (closedAttendance.reason ? `${closedAttendance.reason} | Qaytdi: ${body.reason}` : `Qaytdi: ${body.reason}`) : closedAttendance.reason
+          }
+        });
+        
+        status = closedAttendance.status; // Keep original status
+      } else {
+        const isLate = tashkentTime > onTimeLimit;
+        status = isLate ? 'LATE' : 'ON_TIME';
+
+        if (isLate) {
+          lateMinutes = Math.floor((tashkentTime.getTime() - onTimeLimit.getTime()) / 60000);
+        }
+
+        await prisma.attendance.create({
+          data: {
+            userId: user.id,
+            date: today,
+            checkInTime: serverTime, // Save actual server UTC time in DB for consistency
+            gpsLat: lat,
+            gpsLng: lng,
+            status,
+            lateMinutes,
+            reason: body.reason || null
+          }
+        });
+      }
 
       try {
         if (process.env.BOT_TOKEN) {
           const bot = new Telegraf(process.env.BOT_TOKEN);
           const admins = await prisma.user.findMany({ where: { role: 'ADMIN' } });
-          const message = `🟢 <b>Ishga keldi!</b>\n\n👤 Xodim: ${user.name}\n🕒 Vaqt: ${tashkentTime.toLocaleTimeString('uz-UZ', {hour:'2-digit', minute:'2-digit'})}\n📊 Holat: ${status === 'ON_TIME' ? 'Vaqtida' : 'Kechikkan'}${lateMinutes > 0 ? ` (${lateMinutes} daqiqa)` : ''}${body.reason ? `\n📝 Izoh: ${body.reason}` : ''}`;
+          let message = ``;
+          
+          if (isReopening) {
+            message = `🔄 <b>Ishga qaytdi!</b>\n\n👤 Xodim: ${user.name}\n🕒 Vaqt: ${tashkentTime.toLocaleTimeString('uz-UZ', {hour:'2-digit', minute:'2-digit'})}${body.reason ? `\n📝 Izoh: ${body.reason}` : ''}`;
+          } else {
+            message = `🟢 <b>Ishga keldi!</b>\n\n👤 Xodim: ${user.name}\n🕒 Vaqt: ${tashkentTime.toLocaleTimeString('uz-UZ', {hour:'2-digit', minute:'2-digit'})}\n📊 Holat: ${status === 'ON_TIME' ? 'Vaqtida' : 'Kechikkan'}${lateMinutes > 0 ? ` (${lateMinutes} daqiqa)` : ''}${body.reason ? `\n📝 Izoh: ${body.reason}` : ''}`;
+          }
           
           for (const admin of admins) {
             if (admin.telegramId) {
@@ -98,7 +145,7 @@ export async function POST(req: Request) {
         console.error('Check-in notification failed', e);
       }
 
-      return NextResponse.json({ success: true, status: status === 'ON_TIME' ? 'Vaqtida' : 'Kechikkan' });
+      return NextResponse.json({ success: true, status: isReopening ? 'Qaytdi' : (status === 'ON_TIME' ? 'Vaqtida' : 'Kechikkan') });
     }
 
     if (action === 'check-out') {
