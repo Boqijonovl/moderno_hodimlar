@@ -30,6 +30,12 @@ export default function ExpensesTab({ user, WebApp }: { user: any, WebApp: any }
     }
   };
 
+  const formatNumber = (val: string) => {
+    const raw = val.replace(/\D/g, '');
+    if (!raw) return '';
+    return Number(raw).toLocaleString('uz-UZ').replace(/,/g, ' ');
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!reason || !amount) {
@@ -45,7 +51,7 @@ export default function ExpensesTab({ user, WebApp }: { user: any, WebApp: any }
         body: JSON.stringify({
           telegramId: user?.telegramId,
           reason,
-          amount,
+          amount: amount.replace(/\s/g, ''),
           paymentMethod
         })
       });
@@ -92,11 +98,11 @@ export default function ExpensesTab({ user, WebApp }: { user: any, WebApp: any }
               {t('price')}
             </label>
             <input
-              type="number"
+              type="text"
+              inputMode="numeric"
               required
-              min="0"
               value={amount}
-              onChange={(e) => setAmount(e.target.value)}
+              onChange={(e) => setAmount(formatNumber(e.target.value))}
               className="w-full p-4 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl focus:ring-2 focus:ring-blue-500 dark:text-white font-bold text-lg"
               placeholder={t('expense_amount_placeholder')}
             />

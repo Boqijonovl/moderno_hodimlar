@@ -36,6 +36,14 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
     setItems(prev => [...prev, { name: '', price: '' }]);
   };
 
+  const formatNumber = (val: string) => {
+    const raw = val.replace(/\D/g, '');
+    if (!raw) return '';
+    return Number(raw).toLocaleString('uz-UZ').replace(/,/g, ' ');
+  };
+
+  const parseNumber = (val: string) => parseFloat(val.replace(/\s/g, '')) || 0;
+
   const handleRemoveItem = (index: number) => {
     setItems(prev => prev.filter((_, i) => i !== index));
   };
@@ -63,9 +71,9 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          items: validItems,
+          items: validItems.map(item => ({ ...item, price: item.price.replace(/\s/g, '') })),
           paymentMethod,
-          advance: paymentMethod === 'INSTALLMENT' ? advanceAmount : undefined,
+          advance: paymentMethod === 'INSTALLMENT' ? advanceAmount.replace(/\s/g, '') : undefined,
           telegramId: user?.telegramId,
           userId: user?.id,
           employeeName: user?.name,
@@ -183,11 +191,11 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
                       placeholder="Mebel nomi (masalan: Lider Stol)"
                     />
                     <input
-                      type="number"
+                      type="text"
+                      inputMode="numeric"
                       required
-                      min="0"
                       value={item.price}
-                      onChange={(e) => handleItemChange(index, 'price', e.target.value)}
+                      onChange={(e) => handleItemChange(index, 'price', formatNumber(e.target.value))}
                       className="w-full p-4 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl focus:ring-2 focus:ring-blue-500 dark:text-white font-bold text-lg"
                       placeholder="Narxi (so'm)"
                     />
@@ -219,7 +227,7 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
               <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-2xl flex justify-between items-center mt-2 mb-4">
                 <span className="text-blue-600 dark:text-blue-400 font-semibold">Umumiy Summa:</span>
                 <span className="text-xl font-black text-blue-700 dark:text-blue-300">
-                  {items.reduce((acc, curr) => acc + (parseFloat(curr.price) || 0), 0).toLocaleString()} so'm
+                  {items.reduce((acc, curr) => acc + parseNumber(curr.price), 0).toLocaleString()} so'm
                 </span>
               </div>
             )}
@@ -271,11 +279,11 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
                   To'lanayotgan Avans Summasi
                 </label>
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="numeric"
                   required
-                  min="0"
                   value={advanceAmount}
-                  onChange={(e) => setAdvanceAmount(e.target.value)}
+                  onChange={(e) => setAdvanceAmount(formatNumber(e.target.value))}
                   className="w-full p-4 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl focus:ring-2 focus:ring-purple-500 dark:text-white font-bold text-lg"
                   placeholder="Avans (so'm)"
                 />
@@ -284,7 +292,7 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
                   <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-2xl flex justify-between items-center mt-2">
                     <span className="text-purple-600 dark:text-purple-400 font-semibold">Qoldiq (Qarz):</span>
                     <span className="text-xl font-black text-red-600 dark:text-red-400">
-                      {(items.reduce((acc, curr) => acc + (parseFloat(curr.price) || 0), 0) - parseFloat(advanceAmount)).toLocaleString()} so'm
+                      {(items.reduce((acc, curr) => acc + parseNumber(curr.price), 0) - parseNumber(advanceAmount)).toLocaleString()} so'm
                     </span>
                   </div>
                 )}
