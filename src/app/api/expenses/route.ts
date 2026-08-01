@@ -71,14 +71,18 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Missing telegramId' }, { status: 400 });
     }
 
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
     const expenses = await prisma.expense.findMany({
       where: {
-        user: { telegramId }
+        user: { telegramId },
+        createdAt: { gte: startOfMonth }
       },
       orderBy: {
         createdAt: 'desc'
       },
-      take: 30
+      take: 100
     });
 
     return NextResponse.json({ expenses });

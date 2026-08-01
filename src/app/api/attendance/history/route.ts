@@ -10,12 +10,16 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Missing telegramId' }, { status: 400 });
     }
 
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
     const attendances = await prisma.attendance.findMany({
       where: {
-        user: { telegramId }
+        user: { telegramId },
+        date: { gte: startOfMonth }
       },
       orderBy: { date: 'desc' },
-      take: 30
+      take: 100 // increased take since we filter by month
     });
 
     return NextResponse.json({ attendances });
