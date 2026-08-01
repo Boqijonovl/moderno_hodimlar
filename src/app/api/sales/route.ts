@@ -91,8 +91,13 @@ export async function POST(req: Request) {
         for (const order of sale.orders) {
           if (order.assignedTo && order.assignedTo.telegramId) {
             const dateStr = order.deadline ? new Date(order.deadline).toLocaleDateString('uz-UZ') : 'Noma\'lum';
-            const orderMessage = `📦 <b>Sizga yangi buyurtma biriktirildi!</b>\n\n📝 <b>Mebel:</b> ${order.name}\n💬 <b>Izoh:</b> ${order.description || '-'}\n📅 <b>Muddat:</b> ${dateStr}\n👤 <b>Savdoni kiritdi:</b> ${user.name}`;
-            await bot.telegram.sendMessage(order.assignedTo.telegramId, orderMessage, { parse_mode: 'HTML' }).catch(() => {});
+            const orderMessage = `📦 <b>Sizga yangi buyurtma biriktirildi!</b>\n\n📝 <b>Mebel nomi:</b> ${order.name}\n💬 <b>Izohi:</b> ${order.description || 'Yo\'q'}\n📅 <b>Muddati:</b> ${dateStr}\n👤 <b>Savdoni kiritdi:</b> ${user.name}`;
+            
+            try {
+              await bot.telegram.sendMessage(order.assignedTo.telegramId, orderMessage, { parse_mode: 'HTML' });
+            } catch (err) {
+              console.error("Usta xabar yuborishda xatolik:", err);
+            }
           }
         }
 
