@@ -140,6 +140,22 @@ export async function POST(req: Request) {
               await bot.telegram.sendMessage(admin.telegramId, message, { parse_mode: 'HTML' }).catch(() => {});
             }
           }
+
+          // Worker notification for pending orders
+          if (user.telegramId) {
+            const pendingOrders = await prisma.order.findMany({
+              where: { assignedToId: user.id, status: { not: 'COMPLETED' } }
+            });
+
+            if (pendingOrders.length > 0) {
+              let ordersText = `📦 <b>Sizning buyurtmalaringiz:</b>\n\n`;
+              pendingOrders.forEach((o: any, i: number) => {
+                const dStr = o.deadline ? new Date(o.deadline).toLocaleDateString('uz-UZ') : 'Noma\'lum';
+                ordersText += `${i+1}. <b>${o.name}</b> (Muddat: ${dStr})\n   Holati: ${o.status === 'PENDING' ? 'Kutilmoqda' : 'Jarayonda'}\n`;
+              });
+              await bot.telegram.sendMessage(user.telegramId, ordersText, { parse_mode: 'HTML' }).catch(() => {});
+            }
+          }
         }
       } catch (e) {
         console.error('Check-in notification failed', e);

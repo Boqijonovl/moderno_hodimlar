@@ -30,6 +30,9 @@ export async function POST(req: Request) {
     const balance = totalPrice - parsedAdvance;
     const status = balance > 0 ? 'INCOMPLETE' : 'COMPLETED';
 
+    const saleItems = items.filter((item: any) => !item.isOrder);
+    const orderItems = items.filter((item: any) => item.isOrder);
+
     const sale = await prisma.sale.create({
       data: {
         userId: user.id,
@@ -39,13 +42,23 @@ export async function POST(req: Request) {
         status,
         paymentMethod,
         items: {
-          create: items.map((item: any) => ({
+          create: saleItems.map((item: any) => ({
             name: item.name,
             price: parseFloat(item.price)
           }))
+        },
+        orders: {
+          create: orderItems.map((item: any) => ({
+            name: item.name,
+            price: parseFloat(item.price),
+            description: item.description || null,
+            deadline: item.deadline ? new Date(item.deadline) : null,
+            assignedToId: item.assignedToId || null,
+            creatorId: user.id
+          }))
         }
       },
-      include: { items: true }
+      include: { items: true, orders: { include: { assignedTo: true } } }
     });
 
     // Send notification to all Admins
@@ -54,7 +67,11 @@ export async function POST(req: Request) {
         const bot = new Telegraf(process.env.BOT_TOKEN);
         const admins = await prisma.user.findMany({ where: { role: 'ADMIN' } });
         
-        let itemsText = items.map((item: any, i: number) => `${i+1}. ${item.name} - ${parseFloat(item.price).toLocaleString()} so'm`).join('\n');
+        let itemsText = items.map((item: any, i: number) => {
+          let text = `${i+1}. ${item.name} - ${parseFloat(item.price).toLocaleString()} so'm`;
+          if (item.isOrder) text += ` (📦 Buyurtma)`;
+          return text;
+        }).join('\n');
         
         let paymentName = paymentMethod === 'CASH' ? 'Naqd' : paymentMethod === 'CARD' ? 'Karparativ' : 'Avans';
         let amountText = `💰 Umumiy summa: <b>${totalPrice.toLocaleString()} so'm</b>`;
@@ -67,6 +84,15 @@ export async function POST(req: Request) {
         for (const admin of admins) {
           if (admin.telegramId) {
             await bot.telegram.sendMessage(admin.telegramId, message, { parse_mode: 'HTML' }).catch(() => {});
+          }
+        }
+
+        // Notify assigned employees for orders
+        for (const order of sale.orders) {
+          if (order.assignedTo && order.assignedTo.telegramId) {
+            const dateStr = order.deadline ? new Date(order.deadline).toLocaleDateString('uz-UZ') : 'Noma\'lum';
+            const orderMessage = `📦 <b>Sizga yangi buyurtma biriktirildi!</b>\n\n📝 <b>Mebel:</b> ${order.name}\n💬 <b>Izoh:</b> ${order.description || '-'}\n📅 <b>Muddat:</b> ${dateStr}\n👤 <b>Savdoni kiritdi:</b> ${user.name}`;
+            await bot.telegram.sendMessage(order.assignedTo.telegramId, orderMessage, { parse_mode: 'HTML' }).catch(() => {});
           }
         }
 

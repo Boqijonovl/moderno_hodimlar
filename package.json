@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@google/genai": "^2.13.0",
+    "@hello-pangea/dnd": "^18.0.1",
     "@pbe/react-yandex-maps": "^1.2.5",
     "@prisma/client": "^6.19.3",
     "@twa-dev/sdk": "^8.0.2",

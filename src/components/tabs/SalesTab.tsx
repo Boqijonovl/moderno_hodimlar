@@ -5,18 +5,20 @@ import { Send, CheckCircle2, Package, Plus, Trash2, FileText, List } from 'lucid
 import { useTranslation, Language } from '@/lib/i18n';
 
 export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
-  const [items, setItems] = useState<{name: string, price: string}[]>([{ name: '', price: '' }]);
+  const [items, setItems] = useState<{name: string, price: string, isOrder: boolean, description: string, deadline: string, assignedToId: string}[]>([{ name: '', price: '', isOrder: false, description: '', deadline: '', assignedToId: '' }]);
   const [paymentMethod, setPaymentMethod] = useState('CASH');
   const [advanceAmount, setAdvanceAmount] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [lastSale, setLastSale] = useState<any>(null);
   const [history, setHistory] = useState<any[]>([]);
+  const [employees, setEmployees] = useState<{id: string, name: string}[]>([]);
 
   const t = useTranslation(user?.language as Language);
 
   useEffect(() => {
     fetchHistory();
+    fetch('/api/employees').then(res => res.json()).then(data => setEmployees(data)).catch(() => {});
   }, [user]);
 
   const fetchHistory = async () => {
@@ -33,7 +35,7 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
   };
 
   const handleAddItem = () => {
-    setItems(prev => [...prev, { name: '', price: '' }]);
+    setItems(prev => [...prev, { name: '', price: '', isOrder: false, description: '', deadline: '', assignedToId: '' }]);
   };
 
   const formatNumber = (val: string) => {
@@ -48,10 +50,10 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
     setItems(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleItemChange = (index: number, field: 'name' | 'price', value: string) => {
+  const handleItemChange = (index: number, field: string, value: any) => {
     setItems(prev => {
       const newItems = [...prev];
-      newItems[index][field] = value;
+      (newItems[index] as any)[field] = value;
       return newItems;
     });
   };
@@ -85,7 +87,7 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
         setLastSale(newSale);
         setSuccess(true);
         if (WebApp?.HapticFeedback) WebApp.HapticFeedback.notificationOccurred('success');
-        setItems([{ name: '', price: '' }]);
+        setItems([{ name: '', price: '', isOrder: false, description: '', deadline: '', assignedToId: '' }]);
         setAdvanceAmount('');
         fetchHistory();
       } else {
@@ -180,35 +182,88 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
               </label>
               
               {items.map((item, index) => (
-                <div key={index} className="flex gap-2 items-start relative animate-in slide-in-from-bottom-2">
-                  <div className="flex-1 space-y-2">
-                    <input
-                      type="text"
-                      required
-                      value={item.name}
-                      onChange={(e) => handleItemChange(index, 'name', e.target.value)}
-                      className="w-full p-4 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl focus:ring-2 focus:ring-blue-500 dark:text-white"
-                      placeholder="Mebel nomi (masalan: Lider Stol)"
-                    />
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      required
-                      value={item.price}
-                      onChange={(e) => handleItemChange(index, 'price', formatNumber(e.target.value))}
-                      className="w-full p-4 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl focus:ring-2 focus:ring-blue-500 dark:text-white font-bold text-lg"
-                      placeholder="Narxi (so'm)"
-                    />
+                <div key={index} className="flex flex-col gap-2 relative animate-in slide-in-from-bottom-2 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-2xl border border-slate-100 dark:border-slate-700">
+                  <div className="flex gap-2 items-start w-full">
+                    <div className="flex-1 space-y-2">
+                      <input
+                        type="text"
+                        required
+                        value={item.name}
+                        onChange={(e) => handleItemChange(index, 'name', e.target.value)}
+                        className="w-full p-4 bg-white dark:bg-slate-800 border-none rounded-2xl focus:ring-2 focus:ring-blue-500 dark:text-white"
+                        placeholder="Mebel nomi (masalan: Lider Stol)"
+                      />
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        required
+                        value={item.price}
+                        onChange={(e) => handleItemChange(index, 'price', formatNumber(e.target.value))}
+                        className="w-full p-4 bg-white dark:bg-slate-800 border-none rounded-2xl focus:ring-2 focus:ring-blue-500 dark:text-white font-bold text-lg"
+                        placeholder="Narxi (so'm)"
+                      />
+                    </div>
+                    
+                    {items.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveItem(index)}
+                        className="p-4 bg-red-50 text-red-500 rounded-2xl hover:bg-red-100 transition-colors mt-0 h-fit"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                    )}
                   </div>
                   
-                  {items.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveItem(index)}
-                      className="p-4 bg-red-50 text-red-500 rounded-2xl hover:bg-red-100 transition-colors mt-0"
-                    >
-                      <Trash2 className="w-5 h-5" />
-                    </button>
+                  <div className="w-full mt-2">
+                    <label className="flex items-center gap-2 text-sm font-bold text-slate-700 dark:text-slate-300 cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        checked={item.isOrder} 
+                        onChange={(e) => handleItemChange(index, 'isOrder', e.target.checked)}
+                        className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      📦 Buyurtmaga berish
+                    </label>
+                  </div>
+                  
+                  {item.isOrder && (
+                    <div className="w-full space-y-3 mt-3 animate-in slide-in-from-top-2 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-2xl border border-blue-100 dark:border-blue-900/30">
+                      <div>
+                        <label className="block text-xs font-bold text-blue-700 dark:text-blue-300 mb-1">Izoh (Rang, o'lcham, mato)</label>
+                        <textarea
+                          value={item.description}
+                          onChange={(e) => handleItemChange(index, 'description', e.target.value)}
+                          className="w-full p-3 bg-white dark:bg-slate-800 border-none rounded-xl focus:ring-2 focus:ring-blue-500 text-sm dark:text-white"
+                          placeholder="Mebel bo'yicha maxsus talablar..."
+                          rows={2}
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-bold text-blue-700 dark:text-blue-300 mb-1">Muddat</label>
+                          <input
+                            type="date"
+                            value={item.deadline}
+                            onChange={(e) => handleItemChange(index, 'deadline', e.target.value)}
+                            className="w-full p-3 bg-white dark:bg-slate-800 border-none rounded-xl focus:ring-2 focus:ring-blue-500 text-sm dark:text-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-blue-700 dark:text-blue-300 mb-1">Usta biriktirish</label>
+                          <select
+                            value={item.assignedToId}
+                            onChange={(e) => handleItemChange(index, 'assignedToId', e.target.value)}
+                            className="w-full p-3 bg-white dark:bg-slate-800 border-none rounded-xl focus:ring-2 focus:ring-blue-500 text-sm dark:text-white"
+                          >
+                            <option value="">- Tanlang -</option>
+                            {employees.map(emp => (
+                              <option key={emp.id} value={emp.id}>{emp.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                    </div>
                   )}
                 </div>
               ))}

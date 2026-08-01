@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { Home, Users, BarChart3, Settings, Clock, ArrowLeft, Bell, FileText, Sparkles } from 'lucide-react';
+import { Home, Users, BarChart3, Settings, Clock, ArrowLeft, Bell, FileText, Sparkles, PackageSearch } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -99,6 +99,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <Link href="/admin/sales" className="flex flex-col items-center text-slate-500 hover:text-blue-600 transition-colors">
           <BarChart3 className="w-6 h-6" />
           <span className="text-[10px] font-medium mt-1">Savdolar</span>
+        </Link>
+        <Link href="/admin/orders" className="flex flex-col items-center text-slate-500 hover:text-blue-600 transition-colors">
+          <PackageSearch className="w-6 h-6" />
+          <span className="text-[10px] font-medium mt-1">Buyurtmalar</span>
         </Link>
         <Link href="/admin/users" className="flex flex-col items-center text-slate-500 hover:text-blue-600 transition-colors">
           <Users className="w-6 h-6" />

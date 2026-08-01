@@ -5,12 +5,13 @@ import { Clock, Package, Wallet, Settings as SettingsIcon } from 'lucide-react';
 import AttendanceTab from '@/components/tabs/AttendanceTab';
 import SalesTab from '@/components/tabs/SalesTab';
 import ExpensesTab from '@/components/tabs/ExpensesTab';
+import OrdersTab from '@/components/tabs/OrdersTab';
 import SettingsTab from '@/components/tabs/SettingsTab';
 import { useTranslation, Language } from '@/lib/i18n';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function MainApp() {
-  const [activeTab, setActiveTab] = useState<'attendance' | 'sales' | 'expenses' | 'settings'>('attendance');
+  const [activeTab, setActiveTab] = useState<'attendance' | 'sales' | 'expenses' | 'orders' | 'settings'>('attendance');
   const [user, setUser] = useState<any>(null);
   const [WebApp, setWebApp] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -143,7 +144,7 @@ export default function MainApp() {
       <div className="bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-800 dark:to-indigo-900 text-white p-6 shadow-lg rounded-b-3xl shrink-0 z-10 relative">
         <h1 className="text-2xl font-bold tracking-tight">Moderno Mebel</h1>
         <p className="text-blue-100 dark:text-blue-200 mt-1 font-medium">
-          {currentTab === 'attendance' ? t('menu_attendance') : currentTab === 'sales' ? t('menu_sales') : currentTab === 'expenses' ? t('menu_expenses') : t('menu_settings')}
+          {currentTab === 'attendance' ? t('menu_attendance') : currentTab === 'sales' ? t('menu_sales') : currentTab === 'expenses' ? t('menu_expenses') : currentTab === 'orders' ? 'Buyurtmalar' : t('menu_settings')}
         </p>
       </div>
 
@@ -159,6 +160,7 @@ export default function MainApp() {
             {currentTab === 'attendance' && showAttendance && <AttendanceTab user={user} WebApp={WebApp} />}
             {currentTab === 'sales' && showSales && <SalesTab user={user} WebApp={WebApp} />}
             {currentTab === 'expenses' && showExpenses && <ExpensesTab user={user} WebApp={WebApp} />}
+            {currentTab === 'orders' && <OrdersTab user={user} WebApp={WebApp} />}
             {currentTab === 'settings' && <SettingsTab user={user} onUserUpdate={handleUserUpdate} />}
           </motion.div>
         </AnimatePresence>
@@ -168,7 +170,7 @@ export default function MainApp() {
         {showAttendance && (
           <button 
             onClick={() => setActiveTab('attendance')}
-            className={`flex flex-col items-center transition-all duration-300 w-20 ${currentTab === 'attendance' ? 'text-blue-600 dark:text-blue-400 scale-110' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
+            className={`flex flex-col items-center transition-all duration-300 w-16 sm:w-20 ${currentTab === 'attendance' ? 'text-blue-600 dark:text-blue-400 scale-110' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
           >
             <Clock className={`w-6 h-6 mb-1 ${currentTab === 'attendance' ? 'fill-blue-50 dark:fill-blue-900' : ''}`} />
             <span className="text-[10px] font-bold">{t('menu_attendance')}</span>
@@ -178,7 +180,7 @@ export default function MainApp() {
         {showSales && (
           <button 
             onClick={() => setActiveTab('sales')}
-            className={`flex flex-col items-center transition-all duration-300 w-20 ${currentTab === 'sales' ? 'text-blue-600 dark:text-blue-400 scale-110' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
+            className={`flex flex-col items-center transition-all duration-300 w-16 sm:w-20 ${currentTab === 'sales' ? 'text-blue-600 dark:text-blue-400 scale-110' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
           >
             <Package className={`w-6 h-6 mb-1 ${currentTab === 'sales' ? 'fill-blue-50 dark:fill-blue-900' : ''}`} />
             <span className="text-[10px] font-bold">{t('menu_sales')}</span>
@@ -188,7 +190,7 @@ export default function MainApp() {
         {showExpenses && (
           <button 
             onClick={() => setActiveTab('expenses')}
-            className={`flex flex-col items-center transition-all duration-300 w-20 ${currentTab === 'expenses' ? 'text-blue-600 dark:text-blue-400 scale-110' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
+            className={`flex flex-col items-center transition-all duration-300 w-16 sm:w-20 ${currentTab === 'expenses' ? 'text-blue-600 dark:text-blue-400 scale-110' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
           >
             <Wallet className={`w-6 h-6 mb-1 ${currentTab === 'expenses' ? 'fill-blue-50 dark:fill-blue-900' : ''}`} />
             <span className="text-[10px] font-bold">{t('menu_expenses')}</span>
@@ -196,8 +198,16 @@ export default function MainApp() {
         )}
 
         <button 
+          onClick={() => setActiveTab('orders')}
+          className={`flex flex-col items-center transition-all duration-300 w-16 sm:w-20 ${currentTab === 'orders' ? 'text-blue-600 dark:text-blue-400 scale-110' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
+        >
+          <PackageSearch className={`w-6 h-6 mb-1 ${currentTab === 'orders' ? 'fill-blue-50 dark:fill-blue-900' : ''}`} />
+          <span className="text-[10px] font-bold">Buyurtmalar</span>
+        </button>
+
+        <button 
           onClick={() => setActiveTab('settings')}
-          className={`flex flex-col items-center transition-all duration-300 w-20 ${currentTab === 'settings' ? 'text-blue-600 dark:text-blue-400 scale-110' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
+          className={`flex flex-col items-center transition-all duration-300 w-16 sm:w-20 ${currentTab === 'settings' ? 'text-blue-600 dark:text-blue-400 scale-110' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
         >
           <SettingsIcon className={`w-6 h-6 mb-1 ${currentTab === 'settings' ? 'fill-blue-50 dark:fill-blue-900' : ''}`} />
           <span className="text-[10px] font-bold">{t('menu_settings')}</span>
