@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { PackageSearch, Clock, MapPin, User as UserIcon, Calendar } from 'lucide-react';
+import { PackageSearch, Clock, MapPin, User as UserIcon, Calendar, Trash2 } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 
 export default function AdminOrdersPage() {
@@ -35,6 +35,21 @@ export default function AdminOrdersPage() {
       fetchOrders();
     } catch (e) {
       console.error(e);
+    }
+  };
+
+  const deleteOrder = async (id: string) => {
+    if (!confirm("Haqiqatan ham ushbu buyurtmani o'chirasizmi?")) return;
+    try {
+      const res = await fetch(`/api/orders/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setOrders(prev => prev.filter(o => o.id !== id));
+      } else {
+        alert("O'chirishda xatolik yuz berdi");
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Tarmoq xatosi');
     }
   };
 
@@ -134,10 +149,15 @@ export default function AdminOrdersPage() {
                             }`}
                           >
                             <div className="flex justify-between items-start mb-2">
-                              <h4 className="font-bold text-sm text-slate-800 dark:text-slate-200">{order.name}</h4>
-                              <span className="text-xs font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 px-2 py-1 rounded-full">
-                                {order.price.toLocaleString()} so'm
-                              </span>
+                              <div>
+                                <h4 className="font-bold text-sm text-slate-800 dark:text-slate-200">{order.name}</h4>
+                                <span className="text-xs font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 px-2 py-1 rounded-full mt-1 inline-block">
+                                  {order.price.toLocaleString()} so'm
+                                </span>
+                              </div>
+                              <button onClick={() => deleteOrder(order.id)} className="p-1.5 text-rose-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg transition-colors">
+                                <Trash2 className="w-4 h-4" />
+                              </button>
                             </div>
                             
                             {order.description && (

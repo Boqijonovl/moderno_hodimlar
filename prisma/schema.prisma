@@ -18,6 +18,7 @@ model User {
   canUseAttendance Boolean      @default(true)
   canUseSales      Boolean      @default(true)
   canUseExpenses   Boolean      @default(true)
+  canUseOrders     Boolean      @default(true)
   workStartTime    String       @default("09:00")
   workEndTime      String       @default("18:00")
   language         String       @default("uz") // uz, ru

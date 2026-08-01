@@ -129,14 +129,17 @@ export default function MainApp() {
   const showAttendance = user.canUseAttendance !== false;
   const showSales = user.canUseSales !== false;
   const showExpenses = user.canUseExpenses !== false;
+  const showOrders = user.canUseOrders !== false;
   
   let currentTab = activeTab;
   if (!showAttendance && currentTab === 'attendance') {
-    currentTab = showSales ? 'sales' : showExpenses ? 'expenses' : 'settings';
+    currentTab = showSales ? 'sales' : showExpenses ? 'expenses' : showOrders ? 'orders' : 'settings';
   } else if (!showSales && currentTab === 'sales') {
-    currentTab = showAttendance ? 'attendance' : showExpenses ? 'expenses' : 'settings';
+    currentTab = showAttendance ? 'attendance' : showExpenses ? 'expenses' : showOrders ? 'orders' : 'settings';
   } else if (!showExpenses && currentTab === 'expenses') {
-    currentTab = showAttendance ? 'attendance' : showSales ? 'sales' : 'settings';
+    currentTab = showAttendance ? 'attendance' : showSales ? 'sales' : showOrders ? 'orders' : 'settings';
+  } else if (!showOrders && currentTab === 'orders') {
+    currentTab = showAttendance ? 'attendance' : showSales ? 'sales' : showExpenses ? 'expenses' : 'settings';
   }
 
   return (
@@ -160,7 +163,7 @@ export default function MainApp() {
             {currentTab === 'attendance' && showAttendance && <AttendanceTab user={user} WebApp={WebApp} />}
             {currentTab === 'sales' && showSales && <SalesTab user={user} WebApp={WebApp} />}
             {currentTab === 'expenses' && showExpenses && <ExpensesTab user={user} WebApp={WebApp} />}
-            {currentTab === 'orders' && <OrdersTab user={user} WebApp={WebApp} />}
+            {currentTab === 'orders' && showOrders && <OrdersTab user={user} WebApp={WebApp} />}
             {currentTab === 'settings' && <SettingsTab user={user} onUserUpdate={handleUserUpdate} />}
           </motion.div>
         </AnimatePresence>
@@ -197,13 +200,15 @@ export default function MainApp() {
           </button>
         )}
 
-        <button 
-          onClick={() => setActiveTab('orders')}
-          className={`flex flex-col items-center transition-all duration-300 w-16 sm:w-20 ${currentTab === 'orders' ? 'text-blue-600 dark:text-blue-400 scale-110' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
-        >
-          <PackageSearch className={`w-6 h-6 mb-1 ${currentTab === 'orders' ? 'fill-blue-50 dark:fill-blue-900' : ''}`} />
-          <span className="text-[10px] font-bold">Buyurtmalar</span>
-        </button>
+        {showOrders && (
+          <button 
+            onClick={() => setActiveTab('orders')}
+            className={`flex flex-col items-center transition-all duration-300 w-16 sm:w-20 ${currentTab === 'orders' ? 'text-blue-600 dark:text-blue-400 scale-110' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
+          >
+            <PackageSearch className={`w-6 h-6 mb-1 ${currentTab === 'orders' ? 'fill-blue-50 dark:fill-blue-900' : ''}`} />
+            <span className="text-[10px] font-bold">Buyurtmalar</span>
+          </button>
+        )}
 
         <button 
           onClick={() => setActiveTab('settings')}
