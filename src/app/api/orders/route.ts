@@ -4,11 +4,14 @@ import { prisma } from '@/lib/prisma';
 export async function GET(req: Request) {
   try {
     const url = new URL(req.url);
-    const assignedToId = url.searchParams.get('assignedToId');
+    const userId = url.searchParams.get('userId');
 
     const whereClause: any = {};
-    if (assignedToId) {
-      whereClause.assignedToId = assignedToId;
+    if (userId) {
+      whereClause.OR = [
+        { assignedToId: userId },
+        { creatorId: userId }
+      ];
       whereClause.status = { not: 'COMPLETED' }; // mostly employees only want active ones
     }
 

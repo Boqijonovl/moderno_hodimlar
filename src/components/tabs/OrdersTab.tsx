@@ -17,7 +17,7 @@ export default function OrdersTab({ user, WebApp }: { user: any, WebApp: any }) 
   const fetchOrders = async () => {
     if (!user?.id) return;
     try {
-      const res = await fetch(`/api/orders?assignedToId=${user.id}`);
+      const res = await fetch(`/api/orders?userId=${user.id}`);
       if (res.ok) {
         const data = await res.json();
         setOrders(data);
@@ -110,16 +110,20 @@ export default function OrdersTab({ user, WebApp }: { user: any, WebApp: any }) 
                       <div className={`flex items-center gap-1 ${isOverdue(order.deadline) ? 'text-rose-500' : isToday(order.deadline) ? 'text-amber-500' : 'text-slate-500'}`}>
                         {isOverdue(order.deadline) || isToday(order.deadline) ? <AlertCircle className="w-4 h-4" /> : <Clock className="w-4 h-4" />}
                         Muddat: {new Date(order.deadline).toLocaleDateString('uz-UZ')}
-                        {isOverdue(order.deadline) && ' (Muddati o\'tgan)'}
-                        {isToday(order.deadline) && ' (Bugun tayyor bo\'lishi kerak)'}
                       </div>
                     ) : (
                       <div className="text-slate-500">Muddat belgilanmagan</div>
                     )}
                   </div>
+                  
+                  {order.creatorId === user.id && order.assignedToId !== user.id && (
+                    <div className="mt-2 text-xs font-bold text-blue-600 bg-blue-50 dark:bg-blue-900/30 px-3 py-1.5 rounded-lg inline-block">
+                      👷‍♂️ Usta: {order.assignedTo?.name || 'Biriktirilmagan'}
+                    </div>
+                  )}
                 </div>
 
-                {order.status !== 'COMPLETED' && (
+                {order.status !== 'COMPLETED' && order.assignedToId === user.id && (
                   <div className="bg-white dark:bg-slate-900/50 p-3 border-t border-slate-100 dark:border-slate-800 flex gap-2">
                     {order.status === 'PENDING' && (
                       <button 

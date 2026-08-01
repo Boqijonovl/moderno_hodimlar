@@ -2,8 +2,9 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { Telegraf } from 'telegraf';
 
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
+export async function PUT(req: Request, props: { params: Promise<{ id: string }> }) {
   try {
+    const params = await props.params;
     const { status, userId } = await req.json();
 
     const order = await prisma.order.findUnique({
@@ -14,8 +15,9 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     if (!order) return NextResponse.json({ error: 'Order not found' }, { status: 404 });
 
     // The user requested that ONLY the assigned employee can change the status
+    // but now creator should also be able to see it. However, the rule was "faqatgina biriktirilgan hodim o'zgartira oladi boshqa hech kim".
+    // So creator can SEE but NOT UPDATE. Let's keep update restriction.
     if (userId && order.assignedToId !== userId) {
-      // Let's also allow admins to bypass if necessary, but strictly adhering to rule:
       const requestingUser = await prisma.user.findUnique({ where: { id: userId } });
       if (requestingUser?.role !== 'ADMIN') {
         return NextResponse.json({ error: 'Faqat biriktirilgan usta holatni o\'zgartira oladi!' }, { status: 403 });
@@ -46,8 +48,9 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   }
 }
 
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: Request, props: { params: Promise<{ id: string }> }) {
   try {
+    const params = await props.params;
     await prisma.order.delete({
       where: { id: params.id }
     });
