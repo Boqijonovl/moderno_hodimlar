@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Clock, Package, Wallet, Settings as SettingsIcon } from 'lucide-react';
+import { Clock, Package, Wallet, Settings as SettingsIcon, PackageSearch } from 'lucide-react';
 import AttendanceTab from '@/components/tabs/AttendanceTab';
 import SalesTab from '@/components/tabs/SalesTab';
 import ExpensesTab from '@/components/tabs/ExpensesTab';
