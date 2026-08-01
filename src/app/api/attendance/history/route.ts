@@ -10,16 +10,28 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Missing telegramId' }, { status: 400 });
     }
 
+    const monthParam = searchParams.get('month'); // YYYY-MM
     const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    
+    let startOfMonth: Date;
+    let endOfMonth: Date;
+
+    if (monthParam) {
+      const [year, month] = monthParam.split('-').map(Number);
+      startOfMonth = new Date(year, month - 1, 1);
+      endOfMonth = new Date(year, month, 0, 23, 59, 59, 999);
+    } else {
+      startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+    }
 
     const attendances = await prisma.attendance.findMany({
       where: {
         user: { telegramId },
-        date: { gte: startOfMonth }
+        date: { gte: startOfMonth, lte: endOfMonth }
       },
       orderBy: { date: 'desc' },
-      take: 100 // increased take since we filter by month
+      take: 100
     });
 
     return NextResponse.json({ attendances });

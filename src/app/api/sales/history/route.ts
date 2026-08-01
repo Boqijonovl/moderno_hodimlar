@@ -10,18 +10,35 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Missing telegramId' }, { status: 400 });
     }
 
+    const monthParam = searchParams.get('month');
     const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    
+    let startOfMonth: Date;
+    let endOfMonth: Date;
+
+    if (monthParam) {
+      const [year, month] = monthParam.split('-').map(Number);
+      startOfMonth = new Date(year, month - 1, 1);
+      endOfMonth = new Date(year, month, 0, 23, 59, 59, 999);
+    } else {
+      startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+    }
+    
+    const whereClause: any = { user: { telegramId } };
+    
+    if (monthParam) {
+      whereClause.createdAt = { gte: startOfMonth, lte: endOfMonth };
+    } else {
+      whereClause.OR = [
+        { createdAt: { gte: startOfMonth, lte: endOfMonth } },
+        { balance: { gt: 0 } },
+        { status: 'INCOMPLETE' }
+      ];
+    }
 
     const sales = await prisma.sale.findMany({
-      where: {
-        user: { telegramId },
-        OR: [
-          { createdAt: { gte: startOfMonth } },
-          { balance: { gt: 0 } },
-          { status: 'INCOMPLETE' }
-        ]
-      },
+      where: whereClause,
       orderBy: {
         createdAt: 'desc'
       },

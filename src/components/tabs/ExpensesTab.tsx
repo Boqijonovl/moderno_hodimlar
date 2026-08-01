@@ -10,17 +10,19 @@ export default function ExpensesTab({ user, WebApp }: { user: any, WebApp: any }
   const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'CARD' | 'ADVANCE'>('CASH');
   const [loading, setLoading] = useState(false);
   const [history, setHistory] = useState<any[]>([]);
+  const [selectedMonth, setSelectedMonth] = useState('');
 
   const t = useTranslation(user?.language as Language);
 
   useEffect(() => {
     fetchHistory();
-  }, [user]);
+  }, [user, selectedMonth]);
 
   const fetchHistory = async () => {
     if (!user?.telegramId) return;
     try {
-      const res = await fetch(`/api/expenses?telegramId=${user.telegramId}`);
+      const url = `/api/expenses?telegramId=${user.telegramId}${selectedMonth ? `&month=${selectedMonth}` : ''}`;
+      const res = await fetch(url);
       if (res.ok) {
         const data = await res.json();
         setHistory(data.expenses || []);
@@ -167,10 +169,28 @@ export default function ExpensesTab({ user, WebApp }: { user: any, WebApp: any }
       </div>
 
       <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-sm border border-slate-100 dark:border-slate-800">
-        <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-4 flex items-center gap-2">
-          <List className="w-6 h-6 text-blue-600 dark:text-blue-500" />
-          {t('history')}
-        </h2>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+            <List className="w-6 h-6 text-blue-600 dark:text-blue-500" />
+            {t('history')}
+          </h2>
+          <div className="flex flex-col items-end gap-2">
+            <input 
+              type="month" 
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+              className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm font-semibold border-none focus:ring-2 focus:ring-blue-500 dark:text-white"
+            />
+            {history.length > 0 && (
+              <div className="text-right">
+                <div className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-bold">Umumiy Xarajat</div>
+                <div className="text-sm font-bold text-rose-500">
+                  {history.reduce((sum, item) => sum + (item.amount || 0), 0).toLocaleString()} so'm
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
         
         <div className="space-y-3">
           {history.length === 0 ? (

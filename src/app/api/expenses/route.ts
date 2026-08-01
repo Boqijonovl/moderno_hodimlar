@@ -71,13 +71,25 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Missing telegramId' }, { status: 400 });
     }
 
+    const monthParam = searchParams.get('month');
     const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    
+    let startOfMonth: Date;
+    let endOfMonth: Date;
+
+    if (monthParam) {
+      const [year, month] = monthParam.split('-').map(Number);
+      startOfMonth = new Date(year, month - 1, 1);
+      endOfMonth = new Date(year, month, 0, 23, 59, 59, 999);
+    } else {
+      startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+    }
 
     const expenses = await prisma.expense.findMany({
       where: {
         user: { telegramId },
-        createdAt: { gte: startOfMonth }
+        createdAt: { gte: startOfMonth, lte: endOfMonth }
       },
       orderBy: {
         createdAt: 'desc'

@@ -9,17 +9,19 @@ export default function AttendanceTab({ user, WebApp }: { user: any, WebApp: any
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [history, setHistory] = useState<any[]>([]);
+  const [selectedMonth, setSelectedMonth] = useState('');
 
   const t = useTranslation(user?.language as Language);
 
   useEffect(() => {
     fetchHistory();
-  }, [user]);
+  }, [user, selectedMonth]);
 
   const fetchHistory = async () => {
     if (!user?.telegramId) return;
     try {
-      const res = await fetch(`/api/attendance/history?telegramId=${user.telegramId}`);
+      const url = `/api/attendance/history?telegramId=${user.telegramId}${selectedMonth ? `&month=${selectedMonth}` : ''}`;
+      const res = await fetch(url);
       if (res.ok) {
         const data = await res.json();
         const records = data.attendances || [];
@@ -183,21 +185,29 @@ export default function AttendanceTab({ user, WebApp }: { user: any, WebApp: any
             <Calendar className="w-6 h-6 text-blue-600 dark:text-blue-500" />
             {t('history')}
           </h2>
-          {history.length > 0 && (
-            <div className="text-right">
-              <div className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-bold">{t('total_late')}</div>
-              <div className="text-sm font-bold text-rose-500">
-                {(() => {
-                  let totalLate = history.reduce((sum, r) => sum + (r.lateMinutes || 0), 0);
-                  if (totalLate < 0) totalLate = 0;
-                  if (totalLate === 0) return `0 ${t('minute')}`;
-                  const h = Math.floor(totalLate / 60);
-                  const m = totalLate % 60;
-                  return h > 0 ? `${h} ${t('hour')} ${m} ${t('minute')}` : `${m} ${t('minute')}`;
-                })()}
+          <div className="flex flex-col items-end gap-2">
+            <input 
+              type="month" 
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+              className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm font-semibold border-none focus:ring-2 focus:ring-blue-500 dark:text-white"
+            />
+            {history.length > 0 && (
+              <div className="text-right">
+                <div className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-bold">{t('total_late')}</div>
+                <div className="text-sm font-bold text-rose-500">
+                  {(() => {
+                    let totalLate = history.reduce((sum, r) => sum + (r.lateMinutes || 0), 0);
+                    if (totalLate < 0) totalLate = 0;
+                    if (totalLate === 0) return `0 ${t('minute')}`;
+                    const h = Math.floor(totalLate / 60);
+                    const m = totalLate % 60;
+                    return h > 0 ? `${h} ${t('hour')} ${m} ${t('minute')}` : `${m} ${t('minute')}`;
+                  })()}
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
         
         <div className="space-y-3">
