@@ -89,8 +89,8 @@ export async function POST(req: Request) {
         }
 
         lateMinutes = (closedAttendance.lateMinutes || 0) - penaltyToReverse;
-        if (lateMinutes < 0) lateMinutes = 0;
-
+        // Allow negative lateMinutes to accumulate extra time
+        
         await prisma.attendance.update({
           where: { id: closedAttendance.id },
           data: {
@@ -206,7 +206,7 @@ export async function POST(req: Request) {
         // Kech ketdi (Left late): ishlagan ortiqcha vaqtni kechikishdan ayirish
         const extraMinutes = Math.floor((tashkentTime.getTime() - endTimeLimit.getTime()) / 60000);
         newLateMinutes -= extraMinutes;
-        if (newLateMinutes < 0) newLateMinutes = 0; // Kechikish noldan kichik bo'lmaydi
+        // Allow negative balance to carry over
       }
 
       await prisma.attendance.update({
