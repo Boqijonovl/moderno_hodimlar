@@ -196,10 +196,8 @@ export default function AttendanceTab({ user, WebApp }: { user: any, WebApp: any
               <div className="text-right">
                 {(() => {
                   let totalLate = history.reduce((sum, r) => sum + (r.lateMinutes || 0), 0);
-                  const isExtra = totalLate < 0;
-                  const absMinutes = Math.abs(totalLate);
                   
-                  if (totalLate === 0) {
+                  if (totalLate <= 0) {
                     return (
                       <>
                         <div className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-bold">{t('total_late')}</div>
@@ -208,16 +206,16 @@ export default function AttendanceTab({ user, WebApp }: { user: any, WebApp: any
                     );
                   }
                   
-                  const h = Math.floor(absMinutes / 60);
-                  const m = absMinutes % 60;
+                  const h = Math.floor(totalLate / 60);
+                  const m = totalLate % 60;
                   const timeStr = h > 0 ? `${h} ${t('hour')} ${m} ${t('minute')}` : `${m} ${t('minute')}`;
                   
                   return (
                     <>
-                      <div className={`text-[10px] uppercase font-bold ${isExtra ? 'text-emerald-500' : 'text-slate-500 dark:text-slate-400'}`}>
-                        {isExtra ? "Qo'shimcha vaqt" : t('total_late')}
+                      <div className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400">
+                        {t('total_late')}
                       </div>
-                      <div className={`text-sm font-bold ${isExtra ? 'text-emerald-600' : 'text-rose-500'}`}>
+                      <div className="text-sm font-bold text-rose-500">
                         {timeStr}
                       </div>
                     </>

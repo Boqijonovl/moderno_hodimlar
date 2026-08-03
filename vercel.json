@@ -1,0 +1,16 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/reminders?type=attendance",
+      "schedule": "0 4 * * *"
+    },
+    {
+      "path": "/api/cron/reminders?type=orders",
+      "schedule": "0 4 * * *"
+    },
+    {
+      "path": "/api/cron/reminders?type=orders",
+      "schedule": "0 9 * * *"
+    }
+  ]
+}
