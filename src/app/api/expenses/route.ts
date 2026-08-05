@@ -42,7 +42,7 @@ export async function POST(req: Request) {
         const bot = new Telegraf(process.env.BOT_TOKEN);
         const admins = await prisma.user.findMany({ where: { role: 'ADMIN' } });
         
-        let paymentName = paymentMethod === 'CASH' ? 'Naqd' : paymentMethod === 'CARD' ? 'Karta' : 'Karparativ';
+        let paymentName = paymentMethod;
         const message = `💸 <b>Yangi Xarajat!</b>\n\n👤 Xodim: ${user.name}\n📝 Izoh: ${reason}\n💰 Summa: <b>${parsedAmount.toLocaleString()} so'm</b>\n💳 To'lov turi: ${paymentName}`;
 
         for (const admin of admins) {

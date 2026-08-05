@@ -7,7 +7,7 @@ import { useTranslation, Language } from '@/lib/i18n';
 export default function ExpensesTab({ user, WebApp }: { user: any, WebApp: any }) {
   const [reason, setReason] = useState('');
   const [amount, setAmount] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'CARD' | 'ADVANCE'>('CASH');
+  const [paymentMethod, setPaymentMethod] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [history, setHistory] = useState<any[]>([]);
   const [selectedMonth, setSelectedMonth] = useState('');
@@ -19,8 +19,8 @@ export default function ExpensesTab({ user, WebApp }: { user: any, WebApp: any }
     fetchHistory();
     fetch('/api/payment-methods').then(res => res.json()).then(data => {
       setPaymentMethods(data);
-      if (data.length > 0 && paymentMethod === 'CASH') {
-        setPaymentMethod(data[0].name as any);
+      if (data.length > 0 && !paymentMethod) {
+        setPaymentMethod(data[0].name);
       }
     }).catch(() => {});
   }, [user, selectedMonth]);
@@ -68,7 +68,7 @@ export default function ExpensesTab({ user, WebApp }: { user: any, WebApp: any }
         if (WebApp?.HapticFeedback) WebApp.HapticFeedback.notificationOccurred('success');
         setReason('');
         setAmount('');
-        if (paymentMethods.length > 0) setPaymentMethod(paymentMethods[0].name as any);
+        if (paymentMethods.length > 0) setPaymentMethod(paymentMethods[0].name);
         fetchHistory();
       } else {
         if (WebApp?.HapticFeedback) WebApp.HapticFeedback.notificationOccurred('error');
@@ -126,7 +126,7 @@ export default function ExpensesTab({ user, WebApp }: { user: any, WebApp: any }
                 <button
                   key={pm.id}
                   type="button"
-                  onClick={() => setPaymentMethod(pm.name as any)}
+                  onClick={() => setPaymentMethod(pm.name)}
                   className={`p-3 rounded-2xl font-bold text-sm transition-all ${
                     paymentMethod === pm.name
                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30' 
@@ -194,7 +194,7 @@ export default function ExpensesTab({ user, WebApp }: { user: any, WebApp: any }
                   </div>
                   <div className="flex items-center gap-2 mt-1 text-xs flex-wrap">
                     <span className="text-blue-600 font-medium bg-blue-100 dark:bg-blue-900/30 px-2 py-0.5 rounded-full">
-                      {expense.paymentMethod === 'CASH' ? t('cash') : expense.paymentMethod === 'CARD' ? t('card') : expense.paymentMethod === 'ADVANCE' ? 'Karparativ' : expense.paymentMethod}
+                      {expense.paymentMethod}
                     </span>
                     <span className="text-slate-400">{new Date(expense.createdAt).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' })}</span>
                   </div>
