@@ -43,7 +43,8 @@ export async function GET(req: Request) {
         createdAt: 'desc'
       },
       include: {
-        items: true
+        items: true,
+        payments: true
       },
       take: 100
     });

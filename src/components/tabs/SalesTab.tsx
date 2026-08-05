@@ -6,8 +6,7 @@ import { useTranslation, Language } from '@/lib/i18n';
 
 export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
   const [items, setItems] = useState<{name: string, price: string, isOrder: boolean, description: string, deadline: string, assignedToId: string}[]>([{ name: '', price: '', isOrder: false, description: '', deadline: '', assignedToId: '' }]);
-  const [paymentMethod, setPaymentMethod] = useState('CASH');
-  const [advanceAmount, setAdvanceAmount] = useState('');
+  const [paymentAmounts, setPaymentAmounts] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [lastSale, setLastSale] = useState<any>(null);
@@ -15,6 +14,11 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
   const [employees, setEmployees] = useState<{id: string, name: string}[]>([]);
   const [selectedMonth, setSelectedMonth] = useState('');
   const [paymentMethods, setPaymentMethods] = useState<{id: string, name: string}[]>([]);
+  
+  // Debt modal state
+  const [payDebtModal, setPayDebtModal] = useState<{saleId: string, balance: number} | null>(null);
+  const [debtPayAmount, setDebtPayAmount] = useState('');
+  const [debtPayMethod, setDebtPayMethod] = useState('');
 
   const t = useTranslation(user?.language as Language);
 
@@ -23,8 +27,8 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
     fetch('/api/employees').then(res => res.json()).then(data => setEmployees(data)).catch(() => {});
     fetch('/api/payment-methods').then(res => res.json()).then(data => {
       setPaymentMethods(data);
-      if (data.length > 0 && paymentMethod === 'CASH') {
-        setPaymentMethod(data[0].name);
+      if (data.length > 0) {
+        setDebtPayMethod(data[0].name);
       }
     }).catch(() => {});
   }, [user, selectedMonth]);
@@ -67,6 +71,21 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
     });
   };
 
+  const handlePaymentAmountChange = (method: string, val: string) => {
+    setPaymentAmounts(prev => ({
+      ...prev,
+      [method]: formatNumber(val)
+    }));
+  };
+
+  const calculateTotalPaid = () => {
+    return Object.values(paymentAmounts).reduce((acc, curr) => acc + parseNumber(curr), 0);
+  };
+
+  const calculateTotalItems = () => {
+    return items.reduce((acc, curr) => acc + parseNumber(curr.price), 0);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -76,6 +95,10 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
       return;
     }
     
+    const paymentDetails = Object.entries(paymentAmounts)
+      .map(([method, amountStr]) => ({ method, amount: parseNumber(amountStr) }))
+      .filter(p => p.amount > 0);
+
     setLoading(true);
     try {
       const res = await fetch('/api/sales', {
@@ -83,8 +106,7 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           items: validItems.map(item => ({ ...item, price: item.price.replace(/\s/g, '') })),
-          paymentMethod,
-          advance: paymentMethod.toLowerCase().includes('avans') || paymentMethod.toLowerCase().includes('nasiya') || paymentMethod === 'INSTALLMENT' ? advanceAmount.replace(/\s/g, '') : undefined,
+          paymentDetails,
           telegramId: user?.telegramId,
           userId: user?.id,
           employeeName: user?.name,
@@ -97,7 +119,7 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
         setSuccess(true);
         if (WebApp?.HapticFeedback) WebApp.HapticFeedback.notificationOccurred('success');
         setItems([{ name: '', price: '', isOrder: false, description: '', deadline: '', assignedToId: '' }]);
-        setAdvanceAmount('');
+        setPaymentAmounts({});
         fetchHistory();
       } else {
         if (WebApp?.HapticFeedback) WebApp.HapticFeedback.notificationOccurred('error');
@@ -116,11 +138,24 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
     setLoading(false);
   };
 
-  const completeSale = async (id: string) => {
-    if (!confirm("Rostdan ham ushbu savdo bo'yicha to'liq to'lov qilindimi?")) return;
+  const payDebt = async () => {
+    if (!payDebtModal || !debtPayAmount || !debtPayMethod) return;
+    
+    const amount = parseNumber(debtPayAmount);
+    if (amount <= 0 || amount > payDebtModal.balance) {
+      alert("Noto'g'ri summa kiritildi.");
+      return;
+    }
+
     try {
-      const res = await fetch(`/api/sales/${id}/complete`, { method: 'PUT' });
+      const res = await fetch(`/api/sales/${payDebtModal.saleId}/pay`, { 
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount, method: debtPayMethod })
+      });
       if (res.ok) {
+        setPayDebtModal(null);
+        setDebtPayAmount('');
         fetchHistory();
       } else {
         alert("Xatolik yuz berdi");
@@ -289,57 +324,47 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
 
             {items.length > 0 && items.some(i => i.price) && (
               <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-2xl flex justify-between items-center mt-2 mb-4">
-                <span className="text-blue-600 dark:text-blue-400 font-semibold">Umumiy Summa:</span>
+                <span className="text-blue-600 dark:text-blue-400 font-semibold">Jami Savdo Summasi:</span>
                 <span className="text-xl font-black text-blue-700 dark:text-blue-300">
-                  {items.reduce((acc, curr) => acc + parseNumber(curr.price), 0).toLocaleString()} so'm
+                  {calculateTotalItems().toLocaleString()} so'm
                 </span>
               </div>
             )}
 
-            <div>
-              <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
-                {t('payment_method')}
+            <div className="space-y-3">
+              <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">
+                To'lov Turlari bo'yicha kiritish
               </label>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {paymentMethods.length > 0 ? paymentMethods.map(pm => (
-                  <button
-                    key={pm.id}
-                    type="button"
-                    onClick={() => setPaymentMethod(pm.name)}
-                    className={`p-3 rounded-2xl font-bold text-sm transition-all ${
-                      paymentMethod === pm.name
-                      ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30' 
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
-                    }`}
-                  >
-                    {pm.name}
-                  </button>
-                )) : (
-                  <div className="text-slate-400 text-sm py-2">To'lov turlari mavjud emas. Admindan qo'shishni so'rang.</div>
-                )}
-              </div>
+              {paymentMethods.length > 0 ? paymentMethods.map(pm => (
+                <div key={pm.id} className="flex items-center gap-3">
+                  <span className="w-1/3 text-sm font-semibold text-slate-600 dark:text-slate-400">{pm.name}:</span>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={paymentAmounts[pm.name] || ''}
+                    onChange={(e) => handlePaymentAmountChange(pm.name, e.target.value)}
+                    className="flex-1 p-3 bg-slate-50 dark:bg-slate-800 border-none rounded-xl focus:ring-2 focus:ring-blue-500 dark:text-white font-bold"
+                    placeholder="0"
+                  />
+                </div>
+              )) : (
+                <div className="text-slate-400 text-sm py-2">To'lov turlari yo'q. Admindan qo'shishni so'rang.</div>
+              )}
             </div>
 
-            {(paymentMethod.toLowerCase().includes('avans') || paymentMethod.toLowerCase().includes('nasiya') || paymentMethod === 'INSTALLMENT') && (
-              <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
-                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">
-                  To'lanayotgan Avans Summasi
-                </label>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  required
-                  value={advanceAmount}
-                  onChange={(e) => setAdvanceAmount(formatNumber(e.target.value))}
-                  className="w-full p-4 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl focus:ring-2 focus:ring-purple-500 dark:text-white font-bold text-lg"
-                  placeholder="Avans (so'm)"
-                />
-                
-                {advanceAmount && (
-                  <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-2xl flex justify-between items-center mt-2">
-                    <span className="text-purple-600 dark:text-purple-400 font-semibold">Qoldiq (Qarz):</span>
-                    <span className="text-xl font-black text-red-600 dark:text-red-400">
-                      {(items.reduce((acc, curr) => acc + parseNumber(curr.price), 0) - parseNumber(advanceAmount)).toLocaleString()} so'm
+            {calculateTotalPaid() > 0 && (
+              <div className="bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-2xl flex flex-col gap-2 mt-4 animate-in fade-in slide-in-from-top-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-emerald-600 dark:text-emerald-400 font-semibold">Jami To'landi:</span>
+                  <span className="text-lg font-black text-emerald-700 dark:text-emerald-300">
+                    {calculateTotalPaid().toLocaleString()} so'm
+                  </span>
+                </div>
+                {calculateTotalItems() > calculateTotalPaid() && (
+                  <div className="flex justify-between items-center border-t border-emerald-100 dark:border-emerald-800/50 pt-2">
+                    <span className="text-rose-600 dark:text-rose-400 font-semibold">Qarz (Avans):</span>
+                    <span className="text-lg font-black text-rose-700 dark:text-rose-300">
+                      {(calculateTotalItems() - calculateTotalPaid()).toLocaleString()} so'm
                     </span>
                   </div>
                 )}
@@ -405,9 +430,17 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
                     <span className="text-slate-400">{new Date(sale.createdAt).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' })}</span>
                   </div>
                   
-                  {(sale.status === 'INCOMPLETE' || ((sale.paymentMethod?.toLowerCase().includes('avans') || sale.paymentMethod?.toLowerCase().includes('nasiya') || sale.paymentMethod === 'INSTALLMENT') && sale.balance > 0)) && (
+                  {sale.payments && sale.payments.length > 0 && (
+                    <div className="text-[10px] text-slate-400 mt-1 flex flex-col">
+                      {sale.payments.map((p: any) => (
+                        <span key={p.id}>{p.method}: {p.amount.toLocaleString()} so'm</span>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {(sale.status === 'INCOMPLETE' || sale.balance > 0) && (
                     <div className="mt-3 flex flex-col gap-1">
-                      <div className="text-[10px] font-black text-rose-600 bg-rose-100 dark:bg-rose-900/30 dark:text-rose-400 px-3 py-1.5 rounded-xl border border-rose-200 dark:border-rose-800/50 inline-block w-fit shadow-sm">
+                       <div className="text-[10px] font-black text-rose-600 bg-rose-100 dark:bg-rose-900/30 dark:text-rose-400 px-3 py-1.5 rounded-xl border border-rose-200 dark:border-rose-800/50 inline-block w-fit shadow-sm">
                         ⚠️ Qarz: {sale.balance?.toLocaleString()} so'm
                       </div>
                     </div>
@@ -418,12 +451,12 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
                     {(sale.totalPrice || 0).toLocaleString()} <span className="text-xs font-normal text-emerald-600/70">so'm</span>
                   </div>
                   
-                  {(sale.status === 'INCOMPLETE' || ((sale.paymentMethod?.toLowerCase().includes('avans') || sale.paymentMethod?.toLowerCase().includes('nasiya') || sale.paymentMethod === 'INSTALLMENT') && sale.balance > 0)) && (
+                  {(sale.status === 'INCOMPLETE' || sale.balance > 0) && (
                     <button 
-                      onClick={() => completeSale(sale.id)}
+                      onClick={() => setPayDebtModal({saleId: sale.id, balance: sale.balance})}
                       className="mt-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs font-bold px-4 py-2 rounded-xl active:scale-95 transition-all shadow-md shadow-emerald-500/20 flex items-center justify-center gap-1 w-full"
                     >
-                      <CheckCircle2 className="w-4 h-4" /> To'liq to'landi
+                      <CheckCircle2 className="w-4 h-4" /> Qarzni to'lash
                     </button>
                   )}
                   
@@ -439,6 +472,60 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
           )}
         </div>
       </div>
+
+      {/* Pay Debt Modal */}
+      {payDebtModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-3xl p-6 shadow-xl relative animate-in zoom-in-95 duration-200">
+            <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-4">Qarzni to'lash</h3>
+            
+            <div className="bg-rose-50 dark:bg-rose-900/20 p-4 rounded-xl mb-4">
+              <div className="text-xs text-rose-600 dark:text-rose-400 font-bold uppercase">To'lanishi kerak:</div>
+              <div className="text-2xl font-black text-rose-600 dark:text-rose-400">{payDebtModal.balance.toLocaleString()} so'm</div>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">To'lov Turi</label>
+                <select 
+                  value={debtPayMethod}
+                  onChange={e => setDebtPayMethod(e.target.value)}
+                  className="w-full p-3 bg-slate-50 dark:bg-slate-800 border-none rounded-xl focus:ring-2 focus:ring-blue-500 text-sm font-semibold dark:text-white"
+                >
+                  {paymentMethods.map(pm => (
+                    <option key={pm.id} value={pm.name}>{pm.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Qancha pul to'lanmoqda?</label>
+                <input 
+                  type="text" 
+                  inputMode="numeric"
+                  value={debtPayAmount}
+                  onChange={e => setDebtPayAmount(formatNumber(e.target.value))}
+                  placeholder="Summani kiriting..."
+                  className="w-full p-3 bg-slate-50 dark:bg-slate-800 border-none rounded-xl focus:ring-2 focus:ring-blue-500 font-bold text-lg dark:text-white"
+                />
+              </div>
+              <div className="flex gap-2 pt-2">
+                <button 
+                  onClick={() => setPayDebtModal(null)}
+                  className="flex-1 p-3 rounded-xl font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200"
+                >
+                  Bekor
+                </button>
+                <button 
+                  onClick={payDebt}
+                  className="flex-1 p-3 rounded-xl font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-600/30"
+                >
+                  Saqlash
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

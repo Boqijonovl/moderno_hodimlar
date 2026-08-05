@@ -87,11 +87,11 @@ export default function ReportsPage() {
                   <tr className="bg-slate-50 border-b border-slate-100 text-xs uppercase text-slate-500 font-semibold">
                     <th className="p-3">Xodim</th>
                     <th className="p-3 text-center">Kunlar</th>
-                    <th className="p-3 text-center">Kechikish/Overtaym</th>
                     <th className="p-3 text-center">Sotuv Soni</th>
                     <th className="p-3 text-right">Jami Savdo</th>
+                    <th className="p-3 text-right text-emerald-600">Real Kirim</th>
                     <th className="p-3 text-right text-rose-500">Xarajat</th>
-                    <th className="p-3 text-right text-blue-600">Sof Daromad</th>
+                    <th className="p-3 text-right text-blue-600">Sof Daromad (Kirim - Xarajat)</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -102,19 +102,18 @@ export default function ReportsPage() {
                     <tr key={m.user.id} className="hover:bg-slate-50 transition-colors">
                       <td className="p-3 font-medium text-slate-800">{m.user.name}</td>
                       <td className="p-3 text-center text-slate-600">{m.totalDaysPresent} kun</td>
-                      <td className="p-3 text-center">
-                        <span className={`px-2 py-1 rounded text-xs font-bold ${
-                          m.totalLateMinutes > 0 ? 'bg-amber-100 text-amber-700' : 
-                          m.totalLateMinutes < 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'
-                        }`}>
-                          {m.totalLateMinutes > 0 ? `${m.totalLateMinutes} daq kech` : 
-                           m.totalLateMinutes < 0 ? `${Math.abs(m.totalLateMinutes)} daq ortiqcha` : '0'}
-                        </span>
-                      </td>
                       <td className="p-3 text-center text-slate-600">{m.totalSalesCount}</td>
-                      <td className="p-3 text-right font-bold text-emerald-600">{(m.totalSales).toLocaleString()}</td>
+                      <td className="p-3 text-right font-bold text-slate-700">{(m.totalSales).toLocaleString()}</td>
+                      <td className="p-3 text-right">
+                        <div className="font-bold text-emerald-600">{(m.totalReceived || 0).toLocaleString()}</div>
+                        <div className="text-[10px] text-slate-400 mt-1 flex flex-col items-end">
+                          {Object.entries(m.paymentBreakdown || {}).map(([method, amount]: any) => (
+                            <span key={method}>{method}: {amount.toLocaleString()}</span>
+                          ))}
+                        </div>
+                      </td>
                       <td className="p-3 text-right font-bold text-rose-500">{m.totalExpenses > 0 ? `-${(m.totalExpenses).toLocaleString()}` : '0'}</td>
-                      <td className="p-3 text-right font-black text-blue-600">{(m.totalSales - m.totalExpenses).toLocaleString()} so'm</td>
+                      <td className="p-3 text-right font-black text-blue-600">{((m.totalReceived || 0) - m.totalExpenses).toLocaleString()} so'm</td>
                     </tr>
                   ))}
                 </tbody>
@@ -143,10 +142,9 @@ export default function ReportsPage() {
                     <thead>
                       <tr className="bg-slate-50 border-b border-slate-100 text-[10px] uppercase text-slate-500 font-semibold">
                         <th className="p-2 pl-3">Xodim</th>
-                        <th className="p-2 text-center">Keldi</th>
-                        <th className="p-2 text-center">Ketdi</th>
                         <th className="p-2 text-center">Holat</th>
-                        <th className="p-2 text-right">Savdo</th>
+                        <th className="p-2 text-right">Jami Savdo</th>
+                        <th className="p-2 text-right">Real Kirim</th>
                         <th className="p-2 text-right pr-3">Xarajat</th>
                       </tr>
                     </thead>
@@ -154,22 +152,35 @@ export default function ReportsPage() {
                       {data.daily[dateStr].map((d: any) => (
                         <tr key={d.user.id} className="hover:bg-slate-50 transition-colors">
                           <td className="p-2 pl-3 font-medium text-slate-800">{d.user.name}</td>
-                          <td className="p-2 text-center text-slate-600">{d.attendance?.checkInTime ? new Date(d.attendance.checkInTime).toLocaleTimeString('uz-UZ', {hour:'2-digit', minute:'2-digit'}) : '-'}</td>
-                          <td className="p-2 text-center text-slate-600">{d.attendance?.checkOutTime ? new Date(d.attendance.checkOutTime).toLocaleTimeString('uz-UZ', {hour:'2-digit', minute:'2-digit'}) : '-'}</td>
                           <td className="p-2 text-center">
                             {d.attendance ? (
-                              <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider ${
-                                d.attendance.status === 'ON_TIME' ? 'bg-emerald-50 text-emerald-600' : 
-                                d.attendance.status === 'LATE' ? 'bg-amber-50 text-amber-600' : 'bg-rose-50 text-rose-600'
-                              }`}>
-                                {d.attendance.status === 'ON_TIME' ? 'Vaqtida' : d.attendance.status === 'LATE' ? 'Kechikkan' : 'Kelmagan'}
-                              </span>
+                              <div className="flex flex-col items-center gap-1">
+                                <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider ${
+                                  d.attendance.status === 'ON_TIME' ? 'bg-emerald-50 text-emerald-600' : 
+                                  d.attendance.status === 'LATE' ? 'bg-amber-50 text-amber-600' : 'bg-rose-50 text-rose-600'
+                                }`}>
+                                  {d.attendance.status === 'ON_TIME' ? 'Vaqtida' : d.attendance.status === 'LATE' ? 'Kechikkan' : 'Kelmagan'}
+                                </span>
+                                <span className="text-[10px] text-slate-400">
+                                  {d.attendance.checkInTime ? new Date(d.attendance.checkInTime).toLocaleTimeString('uz-UZ', {hour:'2-digit', minute:'2-digit'}) : '-'}
+                                </span>
+                              </div>
                             ) : (
                               <span className="text-slate-400 text-xs">Kelmagan</span>
                             )}
                           </td>
-                          <td className="p-2 text-right font-bold text-emerald-600">
+                          <td className="p-2 text-right font-bold text-slate-700">
                             {d.salesTotal > 0 ? `${(d.salesTotal).toLocaleString()}` : '-'}
+                          </td>
+                          <td className="p-2 text-right">
+                            <div className="font-bold text-emerald-600">{d.receivedTotal > 0 ? `${(d.receivedTotal).toLocaleString()}` : '-'}</div>
+                            {Object.keys(d.paymentBreakdown || {}).length > 0 && (
+                              <div className="text-[9px] text-slate-400 mt-0.5 flex flex-col items-end">
+                                {Object.entries(d.paymentBreakdown).map(([method, amount]: any) => (
+                                  <span key={method}>{method}: {amount.toLocaleString()}</span>
+                                ))}
+                              </div>
+                            )}
                           </td>
                           <td className="p-2 text-right pr-3 font-bold text-rose-500">
                             {d.expensesTotal > 0 ? `-${(d.expensesTotal).toLocaleString()}` : '-'}

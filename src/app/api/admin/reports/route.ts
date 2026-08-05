@@ -22,7 +22,7 @@ export async function GET(req: Request) {
     }
 
     const users = await prisma.user.findMany({
-      where: { active: true } // Removed role constraint to include ADMINs
+      where: { active: true } 
     });
 
     const attendances = await prisma.attendance.findMany({
@@ -35,6 +35,11 @@ export async function GET(req: Request) {
       include: { user: true }
     });
     
+    const salePayments = await prisma.salePayment.findMany({
+      where: { createdAt: { gte: startDate, lte: endDate } },
+      include: { sale: true }
+    });
+
     const expenses = await prisma.expense.findMany({
       where: { createdAt: { gte: startDate, lte: endDate } },
       include: { user: true }
@@ -45,6 +50,7 @@ export async function GET(req: Request) {
     const dates = new Set([
       ...attendances.map(a => a.date.toISOString().split('T')[0]),
       ...sales.map(s => s.date.toISOString().split('T')[0]),
+      ...salePayments.map(p => p.createdAt.toISOString().split('T')[0]),
       ...expenses.map(e => e.createdAt.toISOString().split('T')[0])
     ]);
 
@@ -52,17 +58,26 @@ export async function GET(req: Request) {
       const dayUsers = users.map(user => {
         const userAtt = attendances.find(a => a.userId === user.id && a.date.toISOString().split('T')[0] === dateStr);
         const userSales = sales.filter(s => s.userId === user.id && s.date.toISOString().split('T')[0] === dateStr);
+        const userPayments = salePayments.filter(p => p.sale.userId === user.id && p.createdAt.toISOString().split('T')[0] === dateStr);
         const userExpenses = expenses.filter(e => e.userId === user.id && e.createdAt.toISOString().split('T')[0] === dateStr);
+        
+        // Calculate payment breakdown for this day
+        const paymentBreakdown: Record<string, number> = {};
+        userPayments.forEach(p => {
+          paymentBreakdown[p.method] = (paymentBreakdown[p.method] || 0) + p.amount;
+        });
         
         return {
           user: { id: user.id, name: user.name },
           attendance: userAtt || null,
           salesTotal: userSales.reduce((sum, s) => sum + s.totalPrice, 0),
           salesCount: userSales.length,
+          receivedTotal: userPayments.reduce((sum, p) => sum + p.amount, 0),
+          paymentBreakdown,
           expensesTotal: userExpenses.reduce((sum, e) => sum + e.amount, 0),
           expensesCount: userExpenses.length
         };
-      }).filter(u => u.attendance || u.salesCount > 0 || u.expensesCount > 0); // Only show users who were active that day
+      }).filter(u => u.attendance || u.salesCount > 0 || u.expensesCount > 0 || u.receivedTotal > 0); 
 
       dailyMap[dateStr] = dayUsers;
     });
@@ -71,9 +86,15 @@ export async function GET(req: Request) {
     const monthlySummary = users.map(user => {
       const userAtts = attendances.filter(a => a.userId === user.id);
       const userSales = sales.filter(s => s.userId === user.id);
+      const userPayments = salePayments.filter(p => p.sale.userId === user.id);
       const userExpenses = expenses.filter(e => e.userId === user.id);
       
       let totalLateMinutes = userAtts.reduce((sum, a) => sum + a.lateMinutes, 0);
+      
+      const paymentBreakdown: Record<string, number> = {};
+      userPayments.forEach(p => {
+        paymentBreakdown[p.method] = (paymentBreakdown[p.method] || 0) + p.amount;
+      });
       
       return {
         user: { id: user.id, name: user.name },
@@ -81,12 +102,14 @@ export async function GET(req: Request) {
         totalLateMinutes,
         totalSales: userSales.reduce((sum, s) => sum + s.totalPrice, 0),
         totalSalesCount: userSales.length,
+        totalReceived: userPayments.reduce((sum, p) => sum + p.amount, 0),
+        paymentBreakdown,
         totalExpenses: userExpenses.reduce((sum, e) => sum + e.amount, 0),
         totalExpensesCount: userExpenses.length
       };
-    }).filter(u => u.totalDaysPresent > 0 || u.totalSalesCount > 0 || u.totalExpensesCount > 0);
+    }).filter(u => u.totalDaysPresent > 0 || u.totalSalesCount > 0 || u.totalExpensesCount > 0 || u.totalReceived > 0);
 
-    // Available months based on all attendances and sales ever created
+    // Available months based on all events
     const allAtts = await prisma.attendance.findMany({ select: { date: true } });
     const allSales = await prisma.sale.findMany({ select: { date: true } });
     const allExps = await prisma.expense.findMany({ select: { createdAt: true } });

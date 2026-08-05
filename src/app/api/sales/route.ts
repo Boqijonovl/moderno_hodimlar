@@ -4,10 +4,13 @@ import { Telegraf } from 'telegraf';
 
 export async function POST(req: Request) {
   try {
-    const { items, paymentMethod, advance, telegramId, userId, employeeName } = await req.json();
+    const { items, paymentDetails, telegramId, userId, employeeName } = await req.json();
 
     if (!items || !items.length) {
       return NextResponse.json({ error: 'Missing items' }, { status: 400 });
+    }
+    if (!paymentDetails || !Array.isArray(paymentDetails)) {
+      return NextResponse.json({ error: 'Missing payment details' }, { status: 400 });
     }
 
     let user;
@@ -26,9 +29,17 @@ export async function POST(req: Request) {
     }
 
     const totalPrice = items.reduce((acc: number, item: any) => acc + parseFloat(item.price || 0), 0);
-    const parsedAdvance = advance ? parseFloat(advance) : (paymentMethod === 'INSTALLMENT' ? 0 : totalPrice);
-    const balance = totalPrice - parsedAdvance;
+    const advance = paymentDetails.reduce((acc: number, p: any) => acc + parseFloat(p.amount || 0), 0);
+    const balance = Math.max(0, totalPrice - advance);
     const status = balance > 0 ? 'INCOMPLETE' : 'COMPLETED';
+    
+    // Determine the main payment method string for backward compatibility
+    let paymentMethod = 'Aralash';
+    if (paymentDetails.length === 1) {
+      paymentMethod = paymentDetails[0].method;
+    } else if (paymentDetails.length === 0) {
+      paymentMethod = 'Nasiya';
+    }
 
     const saleItems = items.filter((item: any) => !item.isOrder);
     const orderItems = items.filter((item: any) => item.isOrder);
@@ -47,6 +58,12 @@ export async function POST(req: Request) {
             price: parseFloat(item.price)
           }))
         },
+        payments: {
+          create: paymentDetails.filter((p: any) => parseFloat(p.amount) > 0).map((p: any) => ({
+            method: p.method,
+            amount: parseFloat(p.amount)
+          }))
+        },
         orders: {
           create: orderItems.map((item: any) => ({
             name: item.name,
@@ -58,7 +75,7 @@ export async function POST(req: Request) {
           }))
         }
       },
-      include: { items: true, orders: { include: { assignedTo: true } } }
+      include: { items: true, orders: { include: { assignedTo: true } }, payments: true }
     });
 
     // Send notification to all Admins
@@ -73,13 +90,15 @@ export async function POST(req: Request) {
           return text;
         }).join('\n');
         
-        let paymentName = paymentMethod === 'CASH' ? 'Naqd' : paymentMethod === 'CARD' ? 'Karparativ' : 'Avans';
+        let paymentName = paymentMethod;
         let amountText = `💰 Umumiy summa: <b>${totalPrice.toLocaleString()} so'm</b>`;
-        if (paymentMethod === 'INSTALLMENT') {
-          amountText += `\n💵 To'langan Avans: <b>${parsedAdvance.toLocaleString()} so'm</b>\n⚠️ Qoldiq (Qarz): <b>${balance.toLocaleString()} so'm</b>`;
+        if (balance > 0) {
+          amountText += `\n💵 To'langan: <b>${advance.toLocaleString()} so'm</b>\n⚠️ Qoldiq (Qarz): <b>${balance.toLocaleString()} so'm</b>`;
         }
         
-        const message = `🟢 <b>Yangi Savdo!</b>\n\n👤 Xodim: ${user.name}\n\n🛍 <b>Sotilgan tovarlar:</b>\n${itemsText}\n\n${amountText}\n💳 To'lov turi: ${paymentName}`;
+        let paymentBreakdown = paymentDetails.filter((p:any) => parseFloat(p.amount) > 0).map((p:any) => `- ${p.method}: ${parseFloat(p.amount).toLocaleString()}`).join('\n');
+        
+        const message = `🟢 <b>Yangi Savdo!</b>\n\n👤 Xodim: ${user.name}\n\n🛍 <b>Sotilgan tovarlar:</b>\n${itemsText}\n\n${amountText}\n\n💳 <b>To'lov turi:</b> ${paymentName}\n${paymentBreakdown}`;
 
         for (const admin of admins) {
           if (admin.telegramId) {
