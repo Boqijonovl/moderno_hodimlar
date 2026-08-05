@@ -7,6 +7,8 @@ import { useTranslation, Language } from '@/lib/i18n';
 export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
   const [items, setItems] = useState<{name: string, price: string, isOrder: boolean, description: string, deadline: string, assignedToId: string}[]>([{ name: '', price: '', isOrder: false, description: '', deadline: '', assignedToId: '' }]);
   const [paymentAmounts, setPaymentAmounts] = useState<Record<string, string>>({});
+  const [selectedMethods, setSelectedMethods] = useState<string[]>([]);
+  const [isPartial, setIsPartial] = useState(false);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [lastSale, setLastSale] = useState<any>(null);
@@ -29,6 +31,7 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
       setPaymentMethods(data);
       if (data.length > 0) {
         setDebtPayMethod(data[0].name);
+        setSelectedMethods([data[0].name]); // Default select the first one
       }
     }).catch(() => {});
   }, [user, selectedMonth]);
@@ -78,12 +81,29 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
     }));
   };
 
-  const calculateTotalPaid = () => {
-    return Object.values(paymentAmounts).reduce((acc, curr) => acc + parseNumber(curr), 0);
-  };
-
   const calculateTotalItems = () => {
     return items.reduce((acc, curr) => acc + parseNumber(curr.price), 0);
+  };
+
+  const calculateTotalPaid = () => {
+    if (selectedMethods.length === 1 && !isPartial) return calculateTotalItems();
+    
+    let sum = 0;
+    selectedMethods.forEach(method => {
+      const val = paymentAmounts[method] || '';
+      sum += parseNumber(val);
+    });
+    return sum;
+  };
+
+  const toggleMethod = (name: string) => {
+    setSelectedMethods(prev => {
+      if (prev.includes(name)) {
+        return prev.filter(m => m !== name);
+      } else {
+        return [...prev, name];
+      }
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -95,9 +115,15 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
       return;
     }
     
-    const paymentDetails = Object.entries(paymentAmounts)
-      .map(([method, amountStr]) => ({ method, amount: parseNumber(amountStr) }))
-      .filter(p => p.amount > 0);
+    const paymentDetails = selectedMethods.map(method => {
+      let amount = 0;
+      if (selectedMethods.length === 1 && !isPartial) {
+        amount = calculateTotalItems();
+      } else {
+        amount = parseNumber(paymentAmounts[method] || '');
+      }
+      return { method, amount };
+    }).filter(p => p.amount > 0);
 
     setLoading(true);
     try {
@@ -120,6 +146,7 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
         if (WebApp?.HapticFeedback) WebApp.HapticFeedback.notificationOccurred('success');
         setItems([{ name: '', price: '', isOrder: false, description: '', deadline: '', assignedToId: '' }]);
         setPaymentAmounts({});
+        setIsPartial(false);
         fetchHistory();
       } else {
         if (WebApp?.HapticFeedback) WebApp.HapticFeedback.notificationOccurred('error');
@@ -333,22 +360,58 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
 
             <div className="space-y-3">
               <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">
-                To'lov Turlari bo'yicha kiritish
+                To'lov Turlarini Tanlang
               </label>
-              {paymentMethods.length > 0 ? paymentMethods.map(pm => (
-                <div key={pm.id} className="flex items-center gap-3">
-                  <span className="w-1/3 text-sm font-semibold text-slate-600 dark:text-slate-400">{pm.name}:</span>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    value={paymentAmounts[pm.name] || ''}
-                    onChange={(e) => handlePaymentAmountChange(pm.name, e.target.value)}
-                    className="flex-1 p-3 bg-slate-50 dark:bg-slate-800 border-none rounded-xl focus:ring-2 focus:ring-blue-500 dark:text-white font-bold"
-                    placeholder="0"
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {paymentMethods.length > 0 ? paymentMethods.map(pm => (
+                  <button
+                    key={pm.id}
+                    type="button"
+                    onClick={() => toggleMethod(pm.name)}
+                    className={`p-3 rounded-2xl font-bold text-sm transition-all border-2 ${
+                      selectedMethods.includes(pm.name)
+                      ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/30 dark:border-blue-500 dark:text-blue-300 shadow-md shadow-blue-500/20' 
+                      : 'bg-slate-50 border-transparent text-slate-500 hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-400'
+                    }`}
+                  >
+                    {pm.name}
+                  </button>
+                )) : (
+                  <div className="text-slate-400 text-sm py-2 col-span-3">To'lov turlari yo'q. Admindan qo'shishni so'rang.</div>
+                )}
+              </div>
+
+              {selectedMethods.length === 1 && (
+                <label className="flex items-center gap-2 text-sm font-bold text-rose-600 cursor-pointer mt-2 w-fit">
+                  <input 
+                    type="checkbox"
+                    checked={isPartial}
+                    onChange={e => setIsPartial(e.target.checked)}
+                    className="w-4 h-4 rounded border-rose-300 text-rose-600 focus:ring-rose-500"
                   />
+                  To'liq to'lanmadi (Qarz/Avans qolmoqda)
+                </label>
+              )}
+
+              {(selectedMethods.length > 1 || (selectedMethods.length === 1 && isPartial)) && (
+                <div className="mt-4 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700 space-y-3 animate-in fade-in slide-in-from-top-2">
+                  <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                    Summani kiritish
+                  </label>
+                  {selectedMethods.map(method => (
+                    <div key={method} className="flex items-center gap-3">
+                      <span className="w-1/3 text-sm font-semibold text-slate-700 dark:text-slate-300">{method}:</span>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={paymentAmounts[method] || ''}
+                        onChange={(e) => handlePaymentAmountChange(method, e.target.value)}
+                        className="flex-1 p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 dark:text-white font-bold"
+                        placeholder="Summa..."
+                      />
+                    </div>
+                  ))}
                 </div>
-              )) : (
-                <div className="text-slate-400 text-sm py-2">To'lov turlari yo'q. Admindan qo'shishni so'rang.</div>
               )}
             </div>
 
