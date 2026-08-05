@@ -48,7 +48,7 @@ export async function POST(req: Request) {
       data: {
         userId: user.id,
         totalPrice,
-        advance: parsedAdvance,
+        advance,
         balance,
         status,
         paymentMethod,
