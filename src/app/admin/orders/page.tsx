@@ -140,14 +140,20 @@ export default function AdminOrdersPage() {
                             ref={provided.innerRef}
                             {...provided.draggableProps}
                             {...provided.dragHandleProps}
-                            className={`bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border ${
+                            className={`bg-white dark:bg-slate-800 rounded-xl shadow-sm border overflow-hidden relative ${
                               isOverdue(order.deadline) && order.status !== 'COMPLETED' 
-                                ? 'border-rose-300 dark:border-rose-500/50 shadow-rose-100' 
+                                ? 'border-rose-500 shadow-[0_0_15px_-3px_rgba(244,63,94,0.3)]' 
                                 : isToday(order.deadline) && order.status !== 'COMPLETED'
                                   ? 'border-amber-300 dark:border-amber-500/50 shadow-amber-100'
                                   : 'border-slate-100 dark:border-slate-700'
                             }`}
                           >
+                            {isOverdue(order.deadline) && order.status !== 'COMPLETED' && (
+                              <div className="bg-rose-500 text-white text-[10px] uppercase font-bold px-4 py-1 text-center tracking-wider flex justify-center items-center gap-1">
+                                <AlertCircle className="w-3 h-3" /> Muddati o'tgan!
+                              </div>
+                            )}
+                            <div className="p-4">
                             <div className="flex justify-between items-start mb-2">
                               <div>
                                 <h4 className="font-bold text-sm text-slate-800 dark:text-slate-200">{order.name}</h4>
@@ -198,6 +204,7 @@ export default function AdminOrdersPage() {
                                   </div>
                                 </div>
                               )}
+                            </div>
                             </div>
                           </div>
                         )}

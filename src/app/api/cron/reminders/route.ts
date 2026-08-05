@@ -86,6 +86,79 @@ export async function GET(req: Request) {
         await bot.telegram.sendMessage(telegramId, msg, { parse_mode: 'HTML' }).catch(() => {});
         sentCount++;
       }
+    } else if (type === 'check_open_23') {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const openAttendances = await prisma.attendance.findMany({
+        where: { date: { gte: today }, checkOutTime: null },
+        include: { user: true }
+      });
+
+      for (const att of openAttendances) {
+        if (att.user.telegramId) {
+          try {
+            await bot.telegram.sendMessage(
+              att.user.telegramId,
+              `⚠️ <b>Davomat yopilmagan!</b>\n\nSiz hali ham ishdamisiz yoki ishdan ketishda davomatni yakunlashni unutdingizmi?`,
+              {
+                parse_mode: 'HTML',
+                reply_markup: {
+                  inline_keyboard: [
+                    [
+                      { text: '✅ Ha, ishlayapman', callback_data: `still_working_yes_${att.id}` },
+                      { text: '❌ Yo\'q, ketganman', callback_data: `still_working_no_${att.id}` }
+                    ]
+                  ]
+                }
+              }
+            );
+            sentCount++;
+          } catch (e) {
+            console.error(`Failed to send 23:00 check to ${att.user.name}`, e);
+          }
+        }
+      }
+    } else if (type === 'force_close_00') {
+      const openAttendances = await prisma.attendance.findMany({
+        where: { checkOutTime: null },
+        include: { user: true }
+      });
+
+      const serverTime = new Date();
+      const tashkentTimeStr = serverTime.toLocaleString("en-US", {timeZone: "Asia/Tashkent"});
+      const tashkentTime = new Date(tashkentTimeStr);
+
+      for (const att of openAttendances) {
+        const user = att.user;
+        const endTimeLimit = new Date(tashkentTime);
+        const [endHour, endMinute] = (user.workEndTime || "18:00").split(':').map(Number);
+        endTimeLimit.setHours(endHour, endMinute, 0, 0);
+
+        // From 18:00 to 00:00 is 360 minutes penalty
+        const penaltyMinutes = Math.floor((tashkentTime.getTime() - endTimeLimit.getTime()) / 60000);
+        const newLateMinutes = (att.lateMinutes || 0) + penaltyMinutes;
+
+        await prisma.attendance.update({
+          where: { id: att.id },
+          data: {
+            checkOutTime: endTimeLimit,
+            lateMinutes: newLateMinutes,
+            reason: att.reason ? `${att.reason} | (Esdan chiqqan, jarima yozildi)` : `(Esdan chiqqan, jarima yozildi)`
+          }
+        });
+
+        if (user.telegramId) {
+          try {
+            await bot.telegram.sendMessage(
+              user.telegramId,
+              `❌ <b>Jarima!</b>\n\nSiz davomatni yopishni unutganingiz uchun tizim uni avtomatik yopdi va ${penaltyMinutes} daqiqa jarima yozdi. Keyingi safar e'tiborliroq bo'ling!`,
+              { parse_mode: 'HTML' }
+            );
+          } catch (e) {}
+        }
+        sentCount++;
+      }
     }
 
     return NextResponse.json({ success: true, sentCount, type });

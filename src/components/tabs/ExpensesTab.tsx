@@ -11,11 +11,18 @@ export default function ExpensesTab({ user, WebApp }: { user: any, WebApp: any }
   const [loading, setLoading] = useState(false);
   const [history, setHistory] = useState<any[]>([]);
   const [selectedMonth, setSelectedMonth] = useState('');
+  const [paymentMethods, setPaymentMethods] = useState<{id: string, name: string}[]>([]);
 
   const t = useTranslation(user?.language as Language);
 
   useEffect(() => {
     fetchHistory();
+    fetch('/api/payment-methods').then(res => res.json()).then(data => {
+      setPaymentMethods(data);
+      if (data.length > 0 && paymentMethod === 'CASH') {
+        setPaymentMethod(data[0].name as any);
+      }
+    }).catch(() => {});
   }, [user, selectedMonth]);
 
   const fetchHistory = async () => {
@@ -61,7 +68,7 @@ export default function ExpensesTab({ user, WebApp }: { user: any, WebApp: any }
         if (WebApp?.HapticFeedback) WebApp.HapticFeedback.notificationOccurred('success');
         setReason('');
         setAmount('');
-        setPaymentMethod('CASH');
+        if (paymentMethods.length > 0) setPaymentMethod(paymentMethods[0].name as any);
         fetchHistory();
       } else {
         if (WebApp?.HapticFeedback) WebApp.HapticFeedback.notificationOccurred('error');
@@ -114,40 +121,23 @@ export default function ExpensesTab({ user, WebApp }: { user: any, WebApp: any }
             <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
               {t('payment_method')}
             </label>
-            <div className="grid grid-cols-3 gap-2">
-              <button
-                type="button"
-                onClick={() => setPaymentMethod('CASH')}
-                className={`p-3 rounded-2xl text-sm font-bold transition-all ${
-                  paymentMethod === 'CASH' 
-                    ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30' 
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
-                }`}
-              >
-                {t('cash')}
-              </button>
-              <button
-                type="button"
-                onClick={() => setPaymentMethod('CARD')}
-                className={`p-3 rounded-2xl text-sm font-bold transition-all ${
-                  paymentMethod === 'CARD' 
-                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30' 
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
-                }`}
-              >
-                {t('card')}
-              </button>
-              <button
-                type="button"
-                onClick={() => setPaymentMethod('ADVANCE')}
-                className={`p-3 rounded-2xl text-sm font-bold transition-all ${
-                  paymentMethod === 'ADVANCE' 
-                    ? 'bg-purple-600 text-white shadow-md shadow-purple-600/30' 
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
-                }`}
-              >
-                Karparativ
-              </button>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {paymentMethods.length > 0 ? paymentMethods.map(pm => (
+                <button
+                  key={pm.id}
+                  type="button"
+                  onClick={() => setPaymentMethod(pm.name as any)}
+                  className={`p-3 rounded-2xl font-bold text-sm transition-all ${
+                    paymentMethod === pm.name
+                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30' 
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
+                  }`}
+                >
+                  {pm.name}
+                </button>
+              )) : (
+                <div className="text-slate-400 text-sm py-2">To'lov turlari mavjud emas. Admindan qo'shishni so'rang.</div>
+              )}
             </div>
           </div>
 
@@ -204,7 +194,7 @@ export default function ExpensesTab({ user, WebApp }: { user: any, WebApp: any }
                   </div>
                   <div className="flex items-center gap-2 mt-1 text-xs flex-wrap">
                     <span className="text-blue-600 font-medium bg-blue-100 dark:bg-blue-900/30 px-2 py-0.5 rounded-full">
-                      {expense.paymentMethod === 'CASH' ? t('cash') : expense.paymentMethod === 'CARD' ? t('card') : 'Karparativ'}
+                      {expense.paymentMethod === 'CASH' ? t('cash') : expense.paymentMethod === 'CARD' ? t('card') : expense.paymentMethod === 'ADVANCE' ? 'Karparativ' : expense.paymentMethod}
                     </span>
                     <span className="text-slate-400">{new Date(expense.createdAt).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' })}</span>
                   </div>

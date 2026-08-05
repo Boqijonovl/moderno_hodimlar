@@ -11,6 +11,14 @@
     {
       "path": "/api/cron/reminders?type=orders",
       "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/cron/reminders?type=check_open_23",
+      "schedule": "0 18 * * *"
+    },
+    {
+      "path": "/api/cron/reminders?type=force_close_00",
+      "schedule": "0 19 * * *"
     }
   ]
 }

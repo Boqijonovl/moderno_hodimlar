@@ -86,7 +86,12 @@ export default function OrdersTab({ user, WebApp }: { user: any, WebApp: any }) 
             </div>
           ) : (
             orders.map(order => (
-              <div key={order.id} className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700 overflow-hidden">
+              <div key={order.id} className={`bg-slate-50 dark:bg-slate-800/50 rounded-2xl border overflow-hidden ${isOverdue(order.deadline) && order.status !== 'COMPLETED' ? 'border-rose-500 shadow-[0_0_15px_-3px_rgba(244,63,94,0.3)]' : 'border-slate-100 dark:border-slate-700'}`}>
+                {isOverdue(order.deadline) && order.status !== 'COMPLETED' && (
+                  <div className="bg-rose-500 text-white text-[10px] uppercase font-bold px-4 py-1 text-center tracking-wider flex justify-center items-center gap-1">
+                    <AlertCircle className="w-3 h-3" /> Muddati o'tgan!
+                  </div>
+                )}
                 <div className="p-4">
                   <div className="flex justify-between items-start mb-2">
                     <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100">{order.name}</h3>

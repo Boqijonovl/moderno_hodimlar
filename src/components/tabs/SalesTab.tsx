@@ -14,12 +14,19 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
   const [history, setHistory] = useState<any[]>([]);
   const [employees, setEmployees] = useState<{id: string, name: string}[]>([]);
   const [selectedMonth, setSelectedMonth] = useState('');
+  const [paymentMethods, setPaymentMethods] = useState<{id: string, name: string}[]>([]);
 
   const t = useTranslation(user?.language as Language);
 
   useEffect(() => {
     fetchHistory();
     fetch('/api/employees').then(res => res.json()).then(data => setEmployees(data)).catch(() => {});
+    fetch('/api/payment-methods').then(res => res.json()).then(data => {
+      setPaymentMethods(data);
+      if (data.length > 0 && paymentMethod === 'CASH') {
+        setPaymentMethod(data[0].name);
+      }
+    }).catch(() => {});
   }, [user, selectedMonth]);
 
   const fetchHistory = async () => {
@@ -77,7 +84,7 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
         body: JSON.stringify({
           items: validItems.map(item => ({ ...item, price: item.price.replace(/\s/g, '') })),
           paymentMethod,
-          advance: paymentMethod === 'INSTALLMENT' ? advanceAmount.replace(/\s/g, '') : undefined,
+          advance: paymentMethod.toLowerCase().includes('avans') || paymentMethod.toLowerCase().includes('nasiya') || paymentMethod === 'INSTALLMENT' ? advanceAmount.replace(/\s/g, '') : undefined,
           telegramId: user?.telegramId,
           userId: user?.id,
           employeeName: user?.name,
@@ -293,44 +300,27 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
               <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
                 {t('payment_method')}
               </label>
-              <div className="grid grid-cols-3 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod('CASH')}
-                  className={`p-3 rounded-2xl font-bold text-sm transition-all ${
-                    paymentMethod === 'CASH' 
-                    ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30' 
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
-                  }`}
-                >
-                  Naqd
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod('CARD')}
-                  className={`p-3 rounded-2xl font-bold text-sm transition-all ${
-                    paymentMethod === 'CARD' 
-                    ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/30' 
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
-                  }`}
-                >
-                  Karparativ
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod('INSTALLMENT')}
-                  className={`p-3 rounded-2xl font-bold text-sm transition-all ${
-                    paymentMethod === 'INSTALLMENT' 
-                    ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/30' 
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
-                  }`}
-                >
-                  Avans
-                </button>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {paymentMethods.length > 0 ? paymentMethods.map(pm => (
+                  <button
+                    key={pm.id}
+                    type="button"
+                    onClick={() => setPaymentMethod(pm.name)}
+                    className={`p-3 rounded-2xl font-bold text-sm transition-all ${
+                      paymentMethod === pm.name
+                      ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30' 
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
+                    }`}
+                  >
+                    {pm.name}
+                  </button>
+                )) : (
+                  <div className="text-slate-400 text-sm py-2">To'lov turlari mavjud emas. Admindan qo'shishni so'rang.</div>
+                )}
               </div>
             </div>
 
-            {paymentMethod === 'INSTALLMENT' && (
+            {(paymentMethod.toLowerCase().includes('avans') || paymentMethod.toLowerCase().includes('nasiya') || paymentMethod === 'INSTALLMENT') && (
               <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
                 <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">
                   To'lanayotgan Avans Summasi
@@ -410,12 +400,12 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
                   </div>
                   <div className="flex items-center gap-2 mt-1 text-xs flex-wrap">
                     <span className="text-blue-600 font-medium bg-blue-100 dark:bg-blue-900/30 px-2 py-0.5 rounded-full">
-                      {sale.paymentMethod === 'CASH' ? t('cash') : sale.paymentMethod === 'CARD' ? 'Karparativ' : 'Avans'}
+                      {sale.paymentMethod === 'CASH' ? t('cash') : sale.paymentMethod === 'CARD' ? 'Karparativ' : sale.paymentMethod === 'INSTALLMENT' ? 'Avans' : sale.paymentMethod}
                     </span>
                     <span className="text-slate-400">{new Date(sale.createdAt).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' })}</span>
                   </div>
                   
-                  {(sale.status === 'INCOMPLETE' || (sale.paymentMethod === 'INSTALLMENT' && sale.balance > 0)) && (
+                  {(sale.status === 'INCOMPLETE' || ((sale.paymentMethod?.toLowerCase().includes('avans') || sale.paymentMethod?.toLowerCase().includes('nasiya') || sale.paymentMethod === 'INSTALLMENT') && sale.balance > 0)) && (
                     <div className="mt-3 flex flex-col gap-1">
                       <div className="text-[10px] font-black text-rose-600 bg-rose-100 dark:bg-rose-900/30 dark:text-rose-400 px-3 py-1.5 rounded-xl border border-rose-200 dark:border-rose-800/50 inline-block w-fit shadow-sm">
                         ⚠️ Qarz: {sale.balance?.toLocaleString()} so'm
@@ -428,7 +418,7 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
                     {(sale.totalPrice || 0).toLocaleString()} <span className="text-xs font-normal text-emerald-600/70">so'm</span>
                   </div>
                   
-                  {(sale.status === 'INCOMPLETE' || (sale.paymentMethod === 'INSTALLMENT' && sale.balance > 0)) && (
+                  {(sale.status === 'INCOMPLETE' || ((sale.paymentMethod?.toLowerCase().includes('avans') || sale.paymentMethod?.toLowerCase().includes('nasiya') || sale.paymentMethod === 'INSTALLMENT') && sale.balance > 0)) && (
                     <button 
                       onClick={() => completeSale(sale.id)}
                       className="mt-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs font-bold px-4 py-2 rounded-xl active:scale-95 transition-all shadow-md shadow-emerald-500/20 flex items-center justify-center gap-1 w-full"
