@@ -20,10 +20,13 @@ bot.start(async (ctx) => {
       }
     });
 
+    const webAppUrl = process.env.NEXT_PUBLIC_APP_URL as string;
+
     if (user.role === 'ADMIN') {
-      await ctx.reply(`Xush kelibsiz ${name}! Qanaqa hisobot kerak?`, {
+      await ctx.reply(`Xush kelibsiz ${name}! Ilovani ochish uchun yoki hisobotlarni olish uchun tugmalardan foydalaning.`, {
         reply_markup: {
           keyboard: [
+            [{ text: '📱 Ilovani ochish', web_app: { url: webAppUrl } }],
             [{ text: '📊 Bugungi Davomat' }, { text: '📅 Oylik Davomat' }],
             [{ text: '💰 Bugungi Savdolar' }, { text: '📈 Oylik Savdolar' }]
           ],
@@ -31,18 +34,20 @@ bot.start(async (ctx) => {
           persistent: true
         }
       });
+    } else {
+      await ctx.reply(`Xush kelibsiz ${name}! Ilovani ochish uchun quyidagi tugmani bosing!`, {
+        reply_markup: {
+          keyboard: [
+            [{ text: '📱 Ilovani ochish', web_app: { url: webAppUrl } }]
+          ],
+          resize_keyboard: true,
+          persistent: true
+        }
+      });
     }
   } catch (error) {
-    console.error('Error auto-registering user:', error);
+    console.error('Error in bot.start:', error);
   }
-
-  ctx.reply(`Xush kelibsiz ${name}! Ilovani ochish uchun quyidagi tugmani bosing!`, {
-    reply_markup: {
-      inline_keyboard: [
-        [{ text: '📱 Ilovani ochish', web_app: { url: process.env.NEXT_PUBLIC_APP_URL as string } }]
-      ]
-    }
-  });
 });
 
 bot.action(/^still_working_(yes|no)_([a-zA-Z0-9-]+)$/, async (ctx) => {
