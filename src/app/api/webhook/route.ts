@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { Telegraf } from 'telegraf';
+import { Telegraf, Markup } from 'telegraf';
 import { prisma } from '@/lib/prisma';
 
 const bot = new Telegraf(process.env.BOT_TOKEN as string);
@@ -23,27 +23,21 @@ bot.start(async (ctx) => {
     const webAppUrl = process.env.NEXT_PUBLIC_APP_URL as string;
 
     if (user.role === 'ADMIN') {
-      await ctx.reply(`Xush kelibsiz ${name}! Ilovani ochish uchun yoki hisobotlarni olish uchun tugmalardan foydalaning.`, {
-        reply_markup: {
-          keyboard: [
-            [{ text: '📱 Ilovani ochish', web_app: { url: webAppUrl } }],
-            [{ text: '📊 Bugungi Davomat' }, { text: '📅 Oylik Davomat' }],
-            [{ text: '💰 Bugungi Savdolar' }, { text: '📈 Oylik Savdolar' }]
-          ],
-          resize_keyboard: true,
-          is_persistent: true
-        }
-      });
+      await ctx.reply(
+        `Xush kelibsiz ${name}! Ilovani ochish uchun yoki hisobotlarni olish uchun tugmalardan foydalaning.`,
+        Markup.keyboard([
+          [Markup.button.webApp('📱 Ilovani ochish', webAppUrl)],
+          ['📊 Bugungi Davomat', '📅 Oylik Davomat'],
+          ['💰 Bugungi Savdolar', '📈 Oylik Savdolar']
+        ]).resize()
+      );
     } else {
-      await ctx.reply(`Xush kelibsiz ${name}! Ilovani ochish uchun quyidagi tugmani bosing!`, {
-        reply_markup: {
-          keyboard: [
-            [{ text: '📱 Ilovani ochish', web_app: { url: webAppUrl } }]
-          ],
-          resize_keyboard: true,
-          is_persistent: true
-        }
-      });
+      await ctx.reply(
+        `Xush kelibsiz ${name}! Ilovani ochish uchun quyidagi tugmani bosing!`,
+        Markup.keyboard([
+          [Markup.button.webApp('📱 Ilovani ochish', webAppUrl)]
+        ]).resize()
+      );
     }
   } catch (error) {
     console.error('Error in bot.start:', error);
