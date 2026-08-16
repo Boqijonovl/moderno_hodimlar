@@ -36,23 +36,27 @@ bot.start(async (ctx) => {
 
   try {
     if (role === 'ADMIN') {
-      await ctx.reply(`Xush kelibsiz ${name}! Qaysi hisobotni ko'rishni xohlaysiz?`, {
+      await ctx.reply(
+        `Xush kelibsiz ${name}! Hisobotlarni pastdagi menyudan (stiker yonidagi tugma) tanlang.`,
+        Markup.keyboard([
+          ['📊 Bugungi Davomat', '📅 Oylik Davomat'],
+          ['💰 Bugungi Savdolar', '📈 Oylik Savdolar']
+        ]).resize()
+      );
+      // Ilovani ochish uchun alohida inline tugma yuboramiz
+      await ctx.reply(`Ilovani ochish uchun tugmani bosing:`, {
         reply_markup: {
-          inline_keyboard: [
-            [{ text: '📊 Bugungi Davomat', callback_data: 'report_today_attendance' }],
-            [{ text: '📅 Oylik Davomat', callback_data: 'report_month_attendance' }],
-            [{ text: '💰 Bugungi Savdolar', callback_data: 'report_today_sales' }],
-            [{ text: '📈 Oylik Savdolar', callback_data: 'report_month_sales' }],
-            [{ text: '📱 Ilovani ochish', web_app: { url: webAppUrl } }]
-          ]
+          inline_keyboard: [[{ text: '📱 Ilovani ochish', web_app: { url: webAppUrl } }]]
         }
       });
     } else {
-      await ctx.reply(`Xush kelibsiz ${name}! Ilovani ochish uchun quyidagi tugmani bosing.`, {
+      await ctx.reply(
+        `Xush kelibsiz ${name}! Ilovani ochish uchun quyidagi tugmani bosing.`,
+        Markup.removeKeyboard()
+      );
+      await ctx.reply(`Ilovani ochish uchun tugmani bosing:`, {
         reply_markup: {
-          inline_keyboard: [
-            [{ text: '📱 Ilovani ochish', web_app: { url: webAppUrl } }]
-          ]
+          inline_keyboard: [[{ text: '📱 Ilovani ochish', web_app: { url: webAppUrl } }]]
         }
       });
     }
@@ -125,7 +129,7 @@ function getUzMonthRange() {
   return { start, end, uzNow: d };
 }
 
-bot.action('report_today_attendance', async (ctx) => {
+bot.hears('📊 Bugungi Davomat', async (ctx) => {
   try {
     const telegramId = ctx.from.id.toString();
     const user = await prisma.user.findUnique({ where: { telegramId } });
@@ -153,7 +157,7 @@ bot.action('report_today_attendance', async (ctx) => {
   } catch (e) {}
 });
 
-bot.action('report_month_attendance', async (ctx) => {
+bot.hears('📅 Oylik Davomat', async (ctx) => {
   try {
     const telegramId = ctx.from.id.toString();
     const user = await prisma.user.findUnique({ where: { telegramId } });
@@ -182,7 +186,7 @@ bot.action('report_month_attendance', async (ctx) => {
   } catch (e) {}
 });
 
-bot.action('report_today_sales', async (ctx) => {
+bot.hears('💰 Bugungi Savdolar', async (ctx) => {
   try {
     const telegramId = ctx.from.id.toString();
     const user = await prisma.user.findUnique({ where: { telegramId } });
@@ -217,7 +221,7 @@ bot.action('report_today_sales', async (ctx) => {
   } catch (e) {}
 });
 
-bot.action('report_month_sales', async (ctx) => {
+bot.hears('📈 Oylik Savdolar', async (ctx) => {
   try {
     const telegramId = ctx.from.id.toString();
     const user = await prisma.user.findUnique({ where: { telegramId } });
@@ -243,6 +247,8 @@ bot.action('report_month_sales', async (ctx) => {
     ctx.reply(text, { parse_mode: 'HTML' }).catch(() => {});
   } catch (e) {}
 });
+
+export { bot };
 
 export async function POST(req: Request) {
   try {
