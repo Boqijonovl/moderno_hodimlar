@@ -182,7 +182,15 @@ bot.hears('📅 Oylik Davomat', async (ctx) => {
     });
     if (Object.keys(stats).length === 0) text += "Ma'lumot yo'q.";
     
-    ctx.reply(text, { parse_mode: 'HTML' }).catch(() => {});
+    const webAppUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://moderno-hodimlar.vercel.app';
+    const monthParam = uzNow.toISOString().slice(0, 7);
+
+    ctx.reply(text, { 
+      parse_mode: 'HTML',
+      reply_markup: {
+        inline_keyboard: [[{ text: '🖨 To\'liq Chop Etish (PDF/Web)', web_app: { url: `${webAppUrl}/print/reports?month=${monthParam}` } }]]
+      }
+    }).catch(() => {});
   } catch (e) {}
 });
 
@@ -244,7 +252,15 @@ bot.hears('📈 Oylik Savdolar', async (ctx) => {
     text += `💵 <b>Haqiqiy tushgan pul:</b> ${totalReceived.toLocaleString()} so'm\n`;
     text += `⚠️ <b>Oy bo'yicha qarz qoldi:</b> ${totalDebt.toLocaleString()} so'm`;
 
-    ctx.reply(text, { parse_mode: 'HTML' }).catch(() => {});
+    const webAppUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://moderno-hodimlar.vercel.app';
+    const monthParam = uzNow.toISOString().slice(0, 7);
+
+    ctx.reply(text, { 
+      parse_mode: 'HTML',
+      reply_markup: {
+        inline_keyboard: [[{ text: '🖨 To\'liq Chop Etish (PDF/Web)', web_app: { url: `${webAppUrl}/print/reports?month=${monthParam}` } }]]
+      }
+    }).catch(() => {});
   } catch (e) {}
 });
 
