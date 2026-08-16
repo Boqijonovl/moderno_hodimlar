@@ -13,7 +13,7 @@ export async function POST(req: Request, props: { params: Promise<{ id: string }
 
     const sale = await prisma.sale.findUnique({
       where: { id: params.id },
-      include: { user: true }
+      include: { user: true, items: true }
     });
 
     if (!sale) return NextResponse.json({ error: 'Sale not found' }, { status: 404 });
@@ -46,8 +46,10 @@ export async function POST(req: Request, props: { params: Promise<{ id: string }
       if (process.env.BOT_TOKEN) {
         const bot = new Telegraf(process.env.BOT_TOKEN);
         const admins = await prisma.user.findMany({ where: { role: 'ADMIN' } });
+        const dateStr = new Date(sale.createdAt).toLocaleString('uz-UZ', { timeZone: 'Asia/Tashkent' });
+        const itemsList = updatedSale.items.map((i:any) => `- ${i.name}`).join('\n');
         
-        const message = `💸 <b>Qarz to'landi!</b>\n\n👤 Xodim: ${sale.user.name}\n💰 Jami savdo summasi: <b>${sale.totalPrice.toLocaleString()} so'm</b>\n✅ Hozir to'landi: <b>${payAmount.toLocaleString()} so'm</b> (${method})\n⚠️ Qolgan qarz: <b>${newBalance.toLocaleString()} so'm</b>`;
+        const message = `💸 <b>Qarz to'landi!</b>\n\n👤 Xodim: ${sale.user.name}\n📅 Asl savdo vaqti: <b>${dateStr}</b>\n🛍 <b>Tovarlar:</b>\n${itemsList}\n\n💰 Jami savdo summasi: <b>${sale.totalPrice.toLocaleString()} so'm</b>\n✅ Hozir to'landi: <b>${payAmount.toLocaleString()} so'm</b> (${method})\n⚠️ Qolgan qarz: <b>${newBalance.toLocaleString()} so'm</b>`;
         
         for (const admin of admins) {
           if (admin.telegramId) {
