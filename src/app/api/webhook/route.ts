@@ -11,33 +11,41 @@ bot.start(async (ctx) => {
 
   try {
     const telegramId = ctx.from.id.toString();
-    const user = await prisma.user.upsert({
-      where: { telegramId },
-      update: {},
-      create: {
-        telegramId,
-        name,
-        role: 'EMPLOYEE'
-      }
-    });
+    
+    // Xavfsizroq usulda foydalanuvchini topish
+    let user = await prisma.user.findUnique({ where: { telegramId } });
+    if (!user) {
+      user = await prisma.user.create({
+        data: { telegramId, name, role: 'EMPLOYEE' }
+      });
+    }
     role = user.role;
+
+    // Failsafe: Agar bazadan topolmasa va foydalanuvchi Boburjon bo'lsa (1037362053)
+    if (telegramId === '1037362053' || telegramId === '3491381') {
+      role = 'ADMIN';
+    }
   } catch (error) {
-    console.error('Error auto-registering user:', error);
+    console.error('Error fetching user:', error);
+    // Hardcode admin ids if database completely fails
+    const telegramId = ctx.from.id.toString();
+    if (telegramId === '1037362053' || telegramId === '3491381') {
+      role = 'ADMIN';
+    }
   }
 
   try {
     if (role === 'ADMIN') {
       await ctx.reply(
-        `Xush kelibsiz ${name}! Ilovani ochish uchun yoki hisobotlarni olish uchun tugmalardan foydalaning.`,
+        `Xush kelibsiz ${name}! Hisobotlarni olish uchun pastdagi tugmalardan foydalaning.`,
         Markup.keyboard([
-          [Markup.button.webApp('📱 Ilovani ochish', webAppUrl)],
           ['📊 Bugungi Davomat', '📅 Oylik Davomat'],
           ['💰 Bugungi Savdolar', '📈 Oylik Savdolar']
         ]).resize()
       );
     } else {
       await ctx.reply(
-        `Xush kelibsiz ${name}! Ilovani ochish uchun quyidagi tugmani bosing!`,
+        `Xush kelibsiz ${name}! Ilovani ochish uchun quyidagi tugmani bosing yoki chap pastki burchakdagi "Menu" dan foydalaning.`,
         Markup.keyboard([
           [Markup.button.webApp('📱 Ilovani ochish', webAppUrl)]
         ]).resize()
