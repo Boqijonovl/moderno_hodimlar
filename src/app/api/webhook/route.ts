@@ -5,11 +5,12 @@ import { prisma } from '@/lib/prisma';
 const bot = new Telegraf(process.env.BOT_TOKEN as string);
 
 bot.start(async (ctx) => {
+  let role = 'EMPLOYEE';
+  const name = ctx.from.first_name + (ctx.from.last_name ? ` ${ctx.from.last_name}` : '');
+  const webAppUrl = process.env.NEXT_PUBLIC_APP_URL as string;
+
   try {
     const telegramId = ctx.from.id.toString();
-    const name = ctx.from.first_name + (ctx.from.last_name ? ` ${ctx.from.last_name}` : '');
-    
-    // Auto-register user
     const user = await prisma.user.upsert({
       where: { telegramId },
       update: {},
@@ -19,10 +20,13 @@ bot.start(async (ctx) => {
         role: 'EMPLOYEE'
       }
     });
+    role = user.role;
+  } catch (error) {
+    console.error('Error auto-registering user:', error);
+  }
 
-    const webAppUrl = process.env.NEXT_PUBLIC_APP_URL as string;
-
-    if (user.role === 'ADMIN') {
+  try {
+    if (role === 'ADMIN') {
       await ctx.reply(
         `Xush kelibsiz ${name}! Ilovani ochish uchun yoki hisobotlarni olish uchun tugmalardan foydalaning.`,
         Markup.keyboard([
@@ -39,8 +43,13 @@ bot.start(async (ctx) => {
         ]).resize()
       );
     }
-  } catch (error) {
-    console.error('Error in bot.start:', error);
+  } catch (e) {
+    console.error('Reply error:', e);
+    await ctx.reply(`Xush kelibsiz ${name}! Ilovani ochish uchun tugmani bosing!`, {
+      reply_markup: {
+        inline_keyboard: [[{ text: '📱 Ilovani ochish', web_app: { url: webAppUrl } }]]
+      }
+    });
   }
 });
 
