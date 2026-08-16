@@ -7,47 +7,62 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const dateParam = searchParams.get('date');
+    const monthParam = searchParams.get('month');
 
+    let whereClause = {};
     let targetDate = new Date();
-    if (dateParam) {
-      targetDate = new Date(dateParam);
-    }
-    targetDate.setHours(0, 0, 0, 0);
 
-    const nextDay = new Date(targetDate);
-    nextDay.setDate(nextDay.getDate() + 1);
+    if (monthParam) {
+      const year = parseInt(monthParam.split('-')[0]);
+      const month = parseInt(monthParam.split('-')[1]);
+      const start = new Date(year, month - 1, 1);
+      const end = new Date(year, month, 1);
+      whereClause = {
+        date: { gte: start, lt: end }
+      };
+    } else {
+      if (dateParam) {
+        targetDate = new Date(dateParam);
+      }
+      targetDate.setHours(0, 0, 0, 0);
+      const nextDay = new Date(targetDate);
+      nextDay.setDate(nextDay.getDate() + 1);
+      whereClause = {
+        date: { gte: targetDate, lt: nextDay }
+      };
+    }
 
     const attendance = await prisma.attendance.findMany({
-      where: { 
-        date: { 
-          gte: targetDate,
-          lt: nextDay
-        } 
-      },
+      where: whereClause,
       include: { user: true },
       orderBy: { checkInTime: 'desc' }
     });
 
-    const activeUsers = await prisma.user.findMany({
-      where: { active: true, canUseAttendance: true }
-    });
+    let fullAttendance = attendance;
+    
+    // Only generate mock attendances for single day view
+    if (!monthParam) {
+      const activeUsers = await prisma.user.findMany({
+        where: { active: true, canUseAttendance: true }
+      });
 
-    const attendanceUserIds = new Set(attendance.map(a => a.userId));
+      const attendanceUserIds = new Set(attendance.map(a => a.userId));
 
-    const mockAttendances = activeUsers
-      .filter(u => !attendanceUserIds.has(u.id))
-      .map(u => ({
-        id: `mock-${u.id}-${targetDate.getTime()}`,
-        userId: u.id,
-        user: u,
-        date: targetDate,
-        checkInTime: null,
-        checkOutTime: null,
-        status: 'ABSENT',
-        lateMinutes: 0
-      }));
+      const mockAttendances = activeUsers
+        .filter(u => !attendanceUserIds.has(u.id))
+        .map(u => ({
+          id: `mock-${u.id}-${targetDate.getTime()}`,
+          userId: u.id,
+          user: u,
+          date: targetDate,
+          checkInTime: null,
+          checkOutTime: null,
+          status: 'ABSENT',
+          lateMinutes: 0
+        }));
 
-    const fullAttendance = [...attendance, ...mockAttendances];
+      fullAttendance = [...attendance, ...mockAttendances];
+    }
 
     const settings = await prisma.settings.findFirst();
 

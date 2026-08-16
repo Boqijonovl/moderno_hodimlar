@@ -1,21 +1,25 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Printer } from 'lucide-react';
 
-export default function PrintSalesPage() {
+function PrintSalesContent() {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const searchParams = useSearchParams();
+  const monthParam = searchParams.get('month');
 
   useEffect(() => {
-    fetch('/api/sales')
+    const url = monthParam ? `/api/sales?month=${monthParam}` : '/api/sales';
+    fetch(url)
       .then(res => res.json())
       .then(resData => {
         setData(resData);
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, []);
+  }, [monthParam]);
 
   if (loading) {
     return <div className="p-10 text-center font-bold">Yuklanmoqda...</div>;
@@ -33,7 +37,7 @@ export default function PrintSalesPage() {
         <div className="flex justify-between items-center border-b-2 border-gray-800 pb-6 mb-8">
           <div>
             <h1 className="text-3xl font-black text-gray-900 uppercase tracking-wider">Moderno Mebel</h1>
-            <p className="text-gray-500 mt-1">Rasmiy Savdolar Hisoboti</p>
+            <p className="text-gray-500 mt-1">Rasmiy Savdolar Hisoboti {monthParam ? `(${monthParam})` : ''}</p>
           </div>
           <div className="text-right">
             <p className="text-sm font-bold text-gray-600">Hujjat sanasi: <span className="text-gray-900">{new Date().toLocaleDateString('uz-UZ')}</span></p>
@@ -126,5 +130,13 @@ export default function PrintSalesPage() {
         }
       `}} />
     </div>
+  );
+}
+
+export default function PrintSalesPage() {
+  return (
+    <Suspense fallback={<div className="p-10 text-center font-bold">Yuklanmoqda...</div>}>
+      <PrintSalesContent />
+    </Suspense>
   );
 }

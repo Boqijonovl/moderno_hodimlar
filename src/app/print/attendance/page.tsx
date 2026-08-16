@@ -8,21 +8,27 @@ function PrintAttendanceContent() {
   const [data, setData] = useState<any>(null);
   const searchParams = useSearchParams();
   const dateParam = searchParams.get('date');
+  const monthParam = searchParams.get('month');
 
   useEffect(() => {
-    const url = dateParam ? `/api/admin/attendance?date=${dateParam}` : '/api/admin/attendance';
+    let url = '/api/admin/attendance';
+    if (monthParam) url += `?month=${monthParam}`;
+    else if (dateParam) url += `?date=${dateParam}`;
+    
     fetch(url)
       .then(res => res.json())
       .then(setData);
-  }, [dateParam]);
+  }, [dateParam, monthParam]);
 
   if (!data) {
     return <div className="p-10 text-center font-bold">Yuklanmoqda...</div>;
   }
 
-  const printDate = dateParam 
-    ? new Date(dateParam).toLocaleDateString('uz-UZ') 
-    : new Date().toLocaleDateString('uz-UZ');
+  const printDate = monthParam 
+    ? new Date(monthParam + '-01').toLocaleDateString('uz-UZ', { month: 'long', year: 'numeric' })
+    : dateParam 
+      ? new Date(dateParam).toLocaleDateString('uz-UZ') 
+      : new Date().toLocaleDateString('uz-UZ');
 
   return (
     <div className="min-h-screen bg-gray-100 p-4 md:p-8 font-sans">
@@ -46,6 +52,7 @@ function PrintAttendanceContent() {
             <thead>
               <tr className="bg-gray-100 print:bg-gray-200">
                 <th className="p-3 border border-gray-300 font-bold text-gray-800">№</th>
+                {monthParam && <th className="p-3 border border-gray-300 font-bold text-gray-800">Sana</th>}
                 <th className="p-3 border border-gray-300 font-bold text-gray-800">Xodim Ismi</th>
                 <th className="p-3 border border-gray-300 font-bold text-gray-800">Kelgan Vaqti</th>
                 <th className="p-3 border border-gray-300 font-bold text-gray-800">Ketgan Vaqti</th>
@@ -73,6 +80,7 @@ function PrintAttendanceContent() {
                 return (
                   <tr key={att.id} className="hover:bg-gray-50 print:break-inside-avoid">
                     <td className="p-3 border border-gray-300 text-gray-600 text-sm font-medium">{index + 1}</td>
+                    {monthParam && <td className="p-3 border border-gray-300 text-gray-700 font-medium whitespace-nowrap">{new Date(att.date).toLocaleDateString('uz-UZ')}</td>}
                     <td className="p-3 border border-gray-300 font-bold text-gray-800">{att.user?.name || 'Noma\'lum'}</td>
                     <td className="p-3 border border-gray-300 text-gray-700">{formatTime(att.checkInTime)}</td>
                     <td className="p-3 border border-gray-300 text-gray-700">{formatTime(att.checkOutTime)}</td>
@@ -84,7 +92,7 @@ function PrintAttendanceContent() {
               })}
               {data.attendance.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="p-4 text-center text-gray-500 italic">Ma'lumot topilmadi</td>
+                  <td colSpan={monthParam ? 6 : 5} className="p-4 text-center text-gray-500 italic">Ma'lumot topilmadi</td>
                 </tr>
               )}
             </tbody>

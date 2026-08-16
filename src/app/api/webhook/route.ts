@@ -188,7 +188,7 @@ bot.hears('📅 Oylik Davomat', async (ctx) => {
     ctx.reply(text, { 
       parse_mode: 'HTML',
       reply_markup: {
-        inline_keyboard: [[{ text: '🖨 To\'liq Chop Etish (PDF/Web)', web_app: { url: `${webAppUrl}/print/reports?month=${monthParam}` } }]]
+        inline_keyboard: [[{ text: '🖨 To\'liq Chop Etish (PDF/Web)', web_app: { url: `${webAppUrl}/print/attendance?month=${monthParam}` } }]]
       }
     }).catch(() => {});
   } catch (e) {}
@@ -258,7 +258,7 @@ bot.hears('📈 Oylik Savdolar', async (ctx) => {
     ctx.reply(text, { 
       parse_mode: 'HTML',
       reply_markup: {
-        inline_keyboard: [[{ text: '🖨 To\'liq Chop Etish (PDF/Web)', web_app: { url: `${webAppUrl}/print/reports?month=${monthParam}` } }]]
+        inline_keyboard: [[{ text: '🖨 To\'liq Chop Etish (PDF/Web)', web_app: { url: `${webAppUrl}/print/sales?month=${monthParam}` } }]]
       }
     }).catch(() => {});
   } catch (e) {}

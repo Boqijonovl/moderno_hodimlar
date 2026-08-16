@@ -142,9 +142,24 @@ export async function POST(req: Request) {
   }
 }
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
+    const { searchParams } = new URL(req.url);
+    const monthParam = searchParams.get('month'); // format: YYYY-MM
+    let whereClause = {};
+
+    if (monthParam) {
+      const year = parseInt(monthParam.split('-')[0]);
+      const month = parseInt(monthParam.split('-')[1]);
+      const start = new Date(year, month - 1, 1);
+      const end = new Date(year, month, 1);
+      whereClause = {
+        createdAt: { gte: start, lt: end }
+      };
+    }
+
     const sales = await prisma.sale.findMany({
+      where: whereClause,
       include: { user: true, items: true },
       orderBy: { createdAt: 'desc' }
     });
