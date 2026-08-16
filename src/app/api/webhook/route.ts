@@ -7,7 +7,7 @@ const bot = new Telegraf(process.env.BOT_TOKEN as string);
 bot.start(async (ctx) => {
   let role = 'EMPLOYEE';
   const name = ctx.from.first_name + (ctx.from.last_name ? ` ${ctx.from.last_name}` : '');
-  const webAppUrl = process.env.NEXT_PUBLIC_APP_URL as string;
+  const webAppUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://moderno-hodimlar.vercel.app';
 
   try {
     const telegramId = ctx.from.id.toString();
