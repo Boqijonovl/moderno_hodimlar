@@ -31,7 +31,7 @@ bot.start(async (ctx) => {
             [{ text: '💰 Bugungi Savdolar' }, { text: '📈 Oylik Savdolar' }]
           ],
           resize_keyboard: true,
-          persistent: true
+          is_persistent: true
         }
       });
     } else {
@@ -41,7 +41,7 @@ bot.start(async (ctx) => {
             [{ text: '📱 Ilovani ochish', web_app: { url: webAppUrl } }]
           ],
           resize_keyboard: true,
-          persistent: true
+          is_persistent: true
         }
       });
     }
