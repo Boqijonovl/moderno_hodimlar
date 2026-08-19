@@ -131,9 +131,16 @@ export async function GET(req: Request) {
 
       for (const att of openAttendances) {
         const user = att.user;
-        const endTimeLimit = new Date(tashkentTime);
+        
+        // Use the DATE of the attendance, not the current time!
+        const attDate = new Date(att.date);
+        const endTimeLimit = new Date(attDate);
         const [endHour, endMinute] = (user.workEndTime || "18:00").split(':').map(Number);
-        endTimeLimit.setHours(endHour, endMinute, 0, 0);
+        
+        // Ensure the time limit uses Tashkent timezone interpretation of the hours
+        // The attendance date is already saved as a midnight UTC object corresponding to Tashkent midnight.
+        // We just add the hours.
+        endTimeLimit.setUTCHours(endHour - 5, endMinute, 0, 0); // Convert local hour to UTC by subtracting 5 (Tashkent offset)
 
         // From 18:00 to 00:00 is 360 minutes penalty
         const penaltyMinutes = Math.floor((tashkentTime.getTime() - endTimeLimit.getTime()) / 60000);

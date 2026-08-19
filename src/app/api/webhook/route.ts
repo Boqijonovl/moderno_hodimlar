@@ -89,9 +89,10 @@ bot.action(/^still_working_(yes|no)_([a-zA-Z0-9-]+)$/, async (ctx) => {
       const tashkentTimeStr = serverTime.toLocaleString("en-US", {timeZone: "Asia/Tashkent"});
       const tashkentTime = new Date(tashkentTimeStr);
       
-      const endTimeLimit = new Date(tashkentTime);
+      const attDate = new Date(attendance.date);
+      const endTimeLimit = new Date(attDate);
       const [endHour, endMinute] = (user.workEndTime || "18:00").split(':').map(Number);
-      endTimeLimit.setHours(endHour, endMinute, 0, 0);
+      endTimeLimit.setUTCHours(endHour - 5, endMinute, 0, 0);
       
       const newLateMinutes = attendance.lateMinutes || 0;
 

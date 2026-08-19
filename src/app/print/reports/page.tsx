@@ -27,9 +27,10 @@ function PrintReportsContent() {
   const formatCurrency = (val: number) => (val || 0).toLocaleString() + " so'm";
   
   const users = data.monthly || [];
-  const totalIncome = users.reduce((acc: number, curr: any) => acc + (curr.totalSales || 0), 0);
+  const totalSalesValue = users.reduce((acc: number, curr: any) => acc + (curr.totalSales || 0), 0);
+  const totalReceived = users.reduce((acc: number, curr: any) => acc + (curr.totalReceived || 0), 0);
   const totalExpenses = users.reduce((acc: number, curr: any) => acc + (curr.totalExpenses || 0), 0);
-  const netProfit = totalIncome - totalExpenses;
+  const netProfit = totalReceived - totalExpenses;
   const monthText = new Date(monthParam + '-01').toLocaleString('uz-UZ', { month: 'long', year: 'numeric' });
 
   return (
@@ -49,17 +50,21 @@ function PrintReportsContent() {
         </div>
 
         {/* Summary */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <div className="bg-gray-50 p-4 border border-gray-200 rounded-lg">
-            <p className="text-xs text-gray-500 font-bold uppercase mb-1">Umumiy Daromad</p>
-            <p className="text-lg font-black text-emerald-600">{formatCurrency(totalIncome)}</p>
+            <p className="text-xs text-gray-500 font-bold uppercase mb-1">Jami Savdo Qiymati</p>
+            <p className="text-lg font-black text-slate-700">{formatCurrency(totalSalesValue)}</p>
+          </div>
+          <div className="bg-gray-50 p-4 border border-gray-200 rounded-lg">
+            <p className="text-xs text-gray-500 font-bold uppercase mb-1">Haqiqiy Tushum (Kirim)</p>
+            <p className="text-lg font-black text-emerald-600">{formatCurrency(totalReceived)}</p>
           </div>
           <div className="bg-gray-50 p-4 border border-gray-200 rounded-lg">
             <p className="text-xs text-gray-500 font-bold uppercase mb-1">Xarajatlar</p>
             <p className="text-lg font-black text-rose-600">{formatCurrency(totalExpenses)}</p>
           </div>
           <div className="bg-gray-50 p-4 border border-gray-200 rounded-lg">
-            <p className="text-xs text-gray-500 font-bold uppercase mb-1">Sof Foyda</p>
+            <p className="text-xs text-gray-500 font-bold uppercase mb-1">Sof Foyda (Kassa)</p>
             <p className="text-lg font-black text-blue-600">{formatCurrency(netProfit)}</p>
           </div>
         </div>
@@ -73,6 +78,7 @@ function PrintReportsContent() {
                 <th className="p-3 border border-gray-300 font-bold text-gray-800">№</th>
                 <th className="p-3 border border-gray-300 font-bold text-gray-800">Xodim</th>
                 <th className="p-3 border border-gray-300 font-bold text-gray-800 text-right">Qilgan Savdosi</th>
+                <th className="p-3 border border-gray-300 font-bold text-gray-800 text-right">Real Kirim</th>
                 <th className="p-3 border border-gray-300 font-bold text-gray-800 text-right">Xarajatlar</th>
                 <th className="p-3 border border-gray-300 font-bold text-gray-800 text-center">Davomat</th>
               </tr>
@@ -82,7 +88,8 @@ function PrintReportsContent() {
                 <tr key={u.user.id} className="hover:bg-gray-50 print:break-inside-avoid">
                   <td className="p-3 border border-gray-300 text-gray-600 font-medium">{i + 1}</td>
                   <td className="p-3 border border-gray-300 font-bold text-gray-800">{u.user.name}</td>
-                  <td className="p-3 border border-gray-300 text-emerald-600 font-bold text-right">{formatCurrency(u.totalSales)}</td>
+                  <td className="p-3 border border-gray-300 text-slate-700 font-bold text-right">{formatCurrency(u.totalSales)}</td>
+                  <td className="p-3 border border-gray-300 text-emerald-600 font-bold text-right">{formatCurrency(u.totalReceived)}</td>
                   <td className="p-3 border border-gray-300 text-rose-600 font-bold text-right">{formatCurrency(u.totalExpenses)}</td>
                   <td className="p-3 border border-gray-300 text-center">
                     <span className="text-green-600 font-bold">{u.totalDaysPresent} kun</span>
