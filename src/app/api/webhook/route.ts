@@ -202,29 +202,43 @@ bot.hears('💰 Bugungi Savdolar', async (ctx) => {
     if (!user || (user.role !== 'ADMIN' && telegramId !== '1037362053' && telegramId !== '3491381')) return;
 
     const { start, end, uzNow } = getUzDayRange();
+    
+    // Bugungi barcha to'lovlar (Yangi savdolar + Eski qarzlar uchun)
+    const todayPayments = await prisma.salePayment.findMany({
+      where: { createdAt: { gte: start, lte: end } }
+    });
+    const absoluteTotalReceived = todayPayments.reduce((sum, p) => sum + p.amount, 0);
+
+    // Bugungi qilingan savdolar ro'yxati
     const sales = await prisma.sale.findMany({
       where: { createdAt: { gte: start, lte: end } },
       include: { user: true, items: true, payments: true }
     });
 
-    if (sales.length === 0) {
-      return ctx.reply('Bugun hali savdo bo\'lmadi.');
+    if (sales.length === 0 && absoluteTotalReceived === 0) {
+      return ctx.reply('Bugun hali hech qanday savdo yoki pul tushumi bo\'lmadi.');
     }
 
-    let totalReceived = 0;
     let totalDebt = 0;
     let text = `💰 <b>Bugungi Savdolar (${uzNow.toLocaleDateString('uz-UZ')})</b>\n\n`;
 
-    sales.forEach((s, i) => {
-      const items = s.items.map(it => it.name).join(', ');
-      const paid = s.payments.reduce((acc, p) => acc + p.amount, 0);
-      totalReceived += paid;
-      totalDebt += s.balance;
-      text += `${i + 1}. <b>${s.user.name}</b>: ${items}\n   Jami: ${s.totalPrice.toLocaleString()}, To'landi: ${paid.toLocaleString()}, Qarz: ${s.balance.toLocaleString()}\n\n`;
-    });
+    if (sales.length > 0) {
+      text += `🛍 <b>Yangi Savdolar:</b>\n`;
+      sales.forEach((s, i) => {
+        const items = s.items.map(it => it.name).join(', ');
+        const paid = s.payments.reduce((acc, p) => acc + p.amount, 0);
+        totalDebt += s.balance;
+        text += `${i + 1}. <b>${s.user.name}</b>: ${items}\n   Jami: ${s.totalPrice.toLocaleString()}, To'landi: ${paid.toLocaleString()}, Qarz: ${s.balance.toLocaleString()}\n\n`;
+      });
+    } else {
+      text += `<i>Bugun yangi tovar sotilmadi.</i>\n\n`;
+    }
 
-    text += `💵 <b>Haqiqiy Tushum:</b> ${totalReceived.toLocaleString()} so'm\n`;
-    text += `⚠️ <b>Bugungi Qarzlar:</b> ${totalDebt.toLocaleString()} so'm`;
+    text += `💵 <b>Bugungi Barcha Tushum:</b> ${absoluteTotalReceived.toLocaleString()} so'm\n`;
+    text += `<i>(Eski qarzlar va yangi savdolar hisobidan kassaga tushgan jami pul)</i>\n\n`;
+    if (totalDebt > 0) {
+      text += `⚠️ <b>Bugungi savdolardan qolgan qarz:</b> ${totalDebt.toLocaleString()} so'm`;
+    }
     
     ctx.reply(text, { parse_mode: 'HTML' }).catch(() => {});
   } catch (e) {}
@@ -250,8 +264,9 @@ bot.hears('📈 Oylik Savdolar', async (ctx) => {
 
     let text = `📈 <b>Oylik Savdolar Hisoboti</b>\n(${uzNow.toLocaleDateString('uz-UZ', { month: 'long', year: 'numeric' })})\n\n`;
     text += `🛒 <b>Jami Savdo summasi:</b> ${totalSalesAmount.toLocaleString()} so'm\n`;
-    text += `💵 <b>Haqiqiy tushgan pul:</b> ${totalReceived.toLocaleString()} so'm\n`;
-    text += `⚠️ <b>Oy bo'yicha qarz qoldi:</b> ${totalDebt.toLocaleString()} so'm`;
+    text += `💵 <b>Shu oyda kassaga tushgan barcha pul:</b> ${totalReceived.toLocaleString()} so'm\n`;
+    text += `<i>(Bunga shu oyda eski qarzlardan uzilgan pullar ham kiradi)</i>\n\n`;
+    text += `⚠️ <b>Shu oydagi savdolardan qolgan qarz:</b> ${totalDebt.toLocaleString()} so'm`;
 
     const webAppUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://moderno-hodimlar.vercel.app';
     const monthParam = uzNow.toISOString().slice(0, 7);
