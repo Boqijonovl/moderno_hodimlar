@@ -45,24 +45,31 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
   };
 
   const requestContact = async () => {
-    const twa = (window as any).Telegram?.WebApp;
-    const adminId = twa?.initDataUnsafe?.user?.id?.toString();
-    
-    if (!adminId) {
-       window.open(`tg://user?id=${telegramId}`, '_blank');
-       return;
-    }
-    
     try {
-      await fetch('/api/admin/contact', {
+      const twa = (window as any).Telegram?.WebApp;
+      const adminId = twa?.initDataUnsafe?.user?.id?.toString();
+      
+      if (!adminId) {
+         alert("Tizim sizning Telegram ID'ngizni aniqlay olmadi. Iltimos bot orqali kiring.");
+         return;
+      }
+      
+      const res = await fetch('/api/admin/contact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ targetTelegramId: telegramId, adminTelegramId: adminId })
       });
       
+      if (!res.ok) {
+        const err = await res.json();
+        alert("Xatolik: " + (err.error || 'Noma\'lum xatolik'));
+        return;
+      }
+      
       if (twa?.close) twa.close();
-    } catch (e) {
-      alert("Xatolik yuz berdi");
+      else alert("Xabar yuborildi! Botga qayting.");
+    } catch (e: any) {
+      alert("Tarmoq xatosi: " + e.message);
     }
   };
 
