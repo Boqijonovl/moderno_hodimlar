@@ -19,9 +19,24 @@ export async function POST(req: Request) {
     if (process.env.BOT_TOKEN) {
       const bot = new Telegraf(process.env.BOT_TOKEN);
       
-      const msg = `👤 <b>${targetUser.name}</b> profiliga o'tish uchun quyidagi ssilkaga bosing:\n\n👉 <a href="tg://user?id=${targetTelegramId}">Profilni ochish</a>`;
+      const buttons = [
+        [{ text: '💬 Profilni ochish (Telegram ID)', url: `tg://user?id=${targetTelegramId}` }]
+      ];
       
-      await bot.telegram.sendMessage(adminTelegramId, msg, { parse_mode: 'HTML' });
+      if (targetUser.phone) {
+        const cleanPhone = targetUser.phone.replace(/\D/g, '');
+        const fullPhone = cleanPhone.length === 9 ? `998${cleanPhone}` : cleanPhone;
+        buttons.push([{ text: '📱 Profilni ochish (Raqam orqali)', url: `https://t.me/+${fullPhone}` }]);
+      }
+
+      const msg = `👤 Xodim: <b>${targetUser.name}</b>\n\nPastdagi tugmalardan birini tanlab, xodimning shaxsiy profiliga o'ting:`;
+      
+      await bot.telegram.sendMessage(adminTelegramId, msg, { 
+        parse_mode: 'HTML',
+        reply_markup: {
+          inline_keyboard: buttons
+        }
+      });
     }
 
     return NextResponse.json({ success: true });
