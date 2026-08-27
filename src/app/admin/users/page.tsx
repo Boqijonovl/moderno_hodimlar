@@ -25,6 +25,30 @@ export default function UsersPage() {
     setLoading(false);
   };
 
+  const requestContact = async (targetTelegramId: string) => {
+    const twa = (window as any).Telegram?.WebApp;
+    const adminId = twa?.initDataUnsafe?.user?.id?.toString();
+    
+    if (!adminId) {
+       // Browser fallback
+       window.open(`tg://user?id=${targetTelegramId}`, '_blank');
+       return;
+    }
+    
+    try {
+      await fetch('/api/admin/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ targetTelegramId, adminTelegramId: adminId })
+      });
+      
+      // Close the webapp so they see the bot message
+      if (twa?.close) twa.close();
+    } catch (e) {
+      alert("Xatolik yuz berdi");
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center py-10">
@@ -61,21 +85,7 @@ export default function UsersPage() {
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    const twa = (window as any).Telegram?.WebApp;
-                    
-                    if (user.phone) {
-                      const cleanPhone = user.phone.replace(/\D/g, '');
-                      // If phone doesn't have 998 prefix but is 9 digits, add 998
-                      const fullPhone = cleanPhone.length === 9 ? `998${cleanPhone}` : cleanPhone;
-                      const url = `https://t.me/+${fullPhone}`;
-                      if (twa?.openTelegramLink) {
-                        twa.openTelegramLink(url);
-                      } else {
-                        window.open(url, '_blank');
-                      }
-                    } else {
-                      alert("Ushbu xodimning profilida telefon raqami mavjud emas! Raqam kiritilgandan so'ng to'g'ridan to'g'ri o'tish ishlaydi.");
-                    }
+                    requestContact(user.telegramId);
                   }}
                   className="bg-blue-100 text-blue-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-blue-200 transition-colors flex items-center gap-1 z-10 relative"
                 >

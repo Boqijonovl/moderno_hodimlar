@@ -44,6 +44,28 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
     setLoading(false);
   };
 
+  const requestContact = async () => {
+    const twa = (window as any).Telegram?.WebApp;
+    const adminId = twa?.initDataUnsafe?.user?.id?.toString();
+    
+    if (!adminId) {
+       window.open(`tg://user?id=${telegramId}`, '_blank');
+       return;
+    }
+    
+    try {
+      await fetch('/api/admin/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ targetTelegramId: telegramId, adminTelegramId: adminId })
+      });
+      
+      if (twa?.close) twa.close();
+    } catch (e) {
+      alert("Xatolik yuz berdi");
+    }
+  };
+
   const deleteAttendance = async (id: string) => {
     if (!confirm("Haqiqatan ham ushbu davomatni o'chirasizmi?")) return;
     try {
@@ -116,19 +138,7 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
             type="button"
             onClick={(e) => {
               e.preventDefault();
-              const twa = (window as any).Telegram?.WebApp;
-              if (user.phone) {
-                const cleanPhone = user.phone.replace(/\D/g, '');
-                const fullPhone = cleanPhone.length === 9 ? `998${cleanPhone}` : cleanPhone;
-                const url = `https://t.me/+${fullPhone}`;
-                if (twa?.openTelegramLink) {
-                  twa.openTelegramLink(url);
-                } else {
-                  window.open(url, '_blank');
-                }
-              } else {
-                alert("Ushbu xodimning profilida telefon raqami kiritilmagan. Iltimos pastroqdan raqamini kiriting.");
-              }
+              requestContact();
             }}
             className="text-xs font-bold text-blue-600 hover:underline mt-1 inline-block text-left"
           >
