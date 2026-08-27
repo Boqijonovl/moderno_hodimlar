@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { use } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Clock, Package, User, Settings, Trash2 } from 'lucide-react';
+import WebApp from '@twa-dev/sdk';
 
 export default function UserDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
@@ -46,8 +47,7 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
 
   const requestContact = async () => {
     try {
-      const twa = (window as any).Telegram?.WebApp;
-      const adminId = twa?.initDataUnsafe?.user?.id?.toString();
+      const adminId = WebApp.initDataUnsafe?.user?.id?.toString();
       
       if (!adminId) {
          alert("Tizim sizning Telegram ID'ngizni aniqlay olmadi. Iltimos bot orqali kiring.");
@@ -66,7 +66,7 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
         return;
       }
       
-      if (twa?.close) twa.close();
+      if (WebApp.close) WebApp.close();
       else alert("Xabar yuborildi! Botga qayting.");
     } catch (e: any) {
       alert("Tarmoq xatosi: " + e.message);
