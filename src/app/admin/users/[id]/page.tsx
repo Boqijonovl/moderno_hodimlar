@@ -112,14 +112,16 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
           <h1 className="text-xl font-bold text-slate-800 flex items-center gap-2">
             <User className="w-6 h-6" /> {user.name}
           </h1>
-          <a 
-            href={`tg://user?id=${telegramId}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs font-bold text-blue-600 hover:underline mt-1 inline-block"
+          <button 
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              window.location.href = `tg://openmessage?user_id=${telegramId}`;
+            }}
+            className="text-xs font-bold text-blue-600 hover:underline mt-1 inline-block text-left"
           >
             Telegram profilni ochish
-          </a>
+          </button>
         </div>
       </div>
 

@@ -56,15 +56,17 @@ export default function UsersPage() {
               </Link>
               
               <div className="flex items-center gap-3">
-                <a 
-                  href={`tg://user?id=${user.telegramId}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="bg-blue-100 text-blue-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-blue-200 transition-colors flex items-center gap-1"
-                  onClick={(e) => e.stopPropagation()}
+                <button 
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    window.location.href = `tg://openmessage?user_id=${user.telegramId}`;
+                  }}
+                  className="bg-blue-100 text-blue-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-blue-200 transition-colors flex items-center gap-1 z-10 relative"
                 >
                   Telegram'da ochish
-                </a>
+                </button>
                 <Link href={`/admin/users/${user.telegramId}`}>
                   <ChevronRight className="w-5 h-5 text-slate-400" />
                 </Link>
