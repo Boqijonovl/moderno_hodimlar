@@ -116,7 +116,19 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
             type="button"
             onClick={(e) => {
               e.preventDefault();
-              window.location.href = `tg://openmessage?user_id=${telegramId}`;
+              const twa = (window as any).Telegram?.WebApp;
+              if (user.phone) {
+                const cleanPhone = user.phone.replace(/\D/g, '');
+                const fullPhone = cleanPhone.length === 9 ? `998${cleanPhone}` : cleanPhone;
+                const url = `https://t.me/+${fullPhone}`;
+                if (twa?.openTelegramLink) {
+                  twa.openTelegramLink(url);
+                } else {
+                  window.open(url, '_blank');
+                }
+              } else {
+                alert("Ushbu xodimning profilida telefon raqami kiritilmagan. Iltimos pastroqdan raqamini kiriting.");
+              }
             }}
             className="text-xs font-bold text-blue-600 hover:underline mt-1 inline-block text-left"
           >

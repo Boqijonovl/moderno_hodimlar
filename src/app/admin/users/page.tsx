@@ -61,7 +61,21 @@ export default function UsersPage() {
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    window.location.href = `tg://openmessage?user_id=${user.telegramId}`;
+                    const twa = (window as any).Telegram?.WebApp;
+                    
+                    if (user.phone) {
+                      const cleanPhone = user.phone.replace(/\D/g, '');
+                      // If phone doesn't have 998 prefix but is 9 digits, add 998
+                      const fullPhone = cleanPhone.length === 9 ? `998${cleanPhone}` : cleanPhone;
+                      const url = `https://t.me/+${fullPhone}`;
+                      if (twa?.openTelegramLink) {
+                        twa.openTelegramLink(url);
+                      } else {
+                        window.open(url, '_blank');
+                      }
+                    } else {
+                      alert("Ushbu xodimning profilida telefon raqami mavjud emas! Raqam kiritilgandan so'ng to'g'ridan to'g'ri o'tish ishlaydi.");
+                    }
                   }}
                   className="bg-blue-100 text-blue-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-blue-200 transition-colors flex items-center gap-1 z-10 relative"
                 >
