@@ -44,6 +44,7 @@ export async function GET(req: Request) {
       },
       include: {
         items: true,
+        orders: true,
         payments: true
       },
       take: 100

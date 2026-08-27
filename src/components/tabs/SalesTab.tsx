@@ -21,6 +21,7 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
   const [payDebtModal, setPayDebtModal] = useState<{saleId: string, balance: number} | null>(null);
   const [debtPayAmount, setDebtPayAmount] = useState('');
   const [debtPayMethod, setDebtPayMethod] = useState('');
+  const [payDebtLoading, setPayDebtLoading] = useState(false);
 
   const t = useTranslation(user?.language as Language);
 
@@ -174,6 +175,9 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
       return;
     }
 
+    if (payDebtLoading) return;
+    setPayDebtLoading(true);
+
     try {
       const res = await fetch(`/api/sales/${payDebtModal.saleId}/pay`, { 
         method: 'POST',
@@ -189,8 +193,17 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
       }
     } catch (e) {
       alert("Tarmoq xatosi");
+    } finally {
+      setPayDebtLoading(false);
     }
   };
+
+  const groupedHistory = history.reduce((acc: any, sale: any) => {
+    const date = new Date(sale.createdAt).toLocaleDateString('uz-UZ', { day: 'numeric', month: 'long', year: 'numeric' });
+    if (!acc[date]) acc[date] = [];
+    acc[date].push(sale);
+    return acc;
+  }, {});
 
   const openPDF = (saleId?: string) => {
     const id = saleId || lastSale?.id;
@@ -476,59 +489,83 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
           </div>
         </div>
         
-        <div className="space-y-3">
+        <div className="space-y-4">
           {history.length === 0 ? (
             <p className="text-slate-500 dark:text-slate-400 text-center py-4 text-sm">{t('no_sales')}</p>
           ) : (
-            history.map((sale) => (
-              <div key={sale.id} className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700 flex justify-between items-center">
-                <div>
-                  <div className="font-bold text-slate-800 dark:text-slate-200 text-sm">
-                    {sale.items?.length || 0} ta mebel
-                  </div>
-                  <div className="flex items-center gap-2 mt-1 text-xs flex-wrap">
-                    <span className="text-blue-600 font-medium bg-blue-100 dark:bg-blue-900/30 px-2 py-0.5 rounded-full">
-                      {sale.paymentMethod === 'CASH' ? t('cash') : sale.paymentMethod === 'CARD' ? 'Karparativ' : sale.paymentMethod === 'INSTALLMENT' ? 'Avans' : sale.paymentMethod}
-                    </span>
-                    <span className="text-slate-400">{new Date(sale.createdAt).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' })}</span>
-                  </div>
-                  
-                  {sale.payments && sale.payments.length > 0 && (
-                    <div className="text-[10px] text-slate-400 mt-1 flex flex-col">
-                      {sale.payments.map((p: any) => (
-                        <span key={p.id}>{p.method}: {p.amount.toLocaleString()} so'm</span>
-                      ))}
-                    </div>
-                  )}
-                  
-                  {(sale.status === 'INCOMPLETE' || sale.balance > 0) && (
-                    <div className="mt-3 flex flex-col gap-1">
-                       <div className="text-[10px] font-black text-rose-600 bg-rose-100 dark:bg-rose-900/30 dark:text-rose-400 px-3 py-1.5 rounded-xl border border-rose-200 dark:border-rose-800/50 inline-block w-fit shadow-sm">
-                        ⚠️ Qarz: {sale.balance?.toLocaleString()} so'm
-                      </div>
-                    </div>
-                  )}
+            Object.entries(groupedHistory).map(([date, dateSales]: [string, any]) => (
+              <div key={date} className="border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm">
+                <div className="bg-slate-100/50 dark:bg-slate-800/50 px-4 py-2 font-bold text-slate-600 dark:text-slate-300 text-xs uppercase border-b border-slate-100 dark:border-slate-800">
+                  {date}
                 </div>
-                <div className="text-right flex flex-col items-end">
-                  <div className="font-black text-emerald-600 dark:text-emerald-400 text-lg">
-                    {(sale.totalPrice || 0).toLocaleString()} <span className="text-xs font-normal text-emerald-600/70">so'm</span>
-                  </div>
-                  
-                  {(sale.status === 'INCOMPLETE' || sale.balance > 0) && (
-                    <button 
-                      onClick={() => setPayDebtModal({saleId: sale.id, balance: sale.balance})}
-                      className="mt-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs font-bold px-4 py-2 rounded-xl active:scale-95 transition-all shadow-md shadow-emerald-500/20 flex items-center justify-center gap-1 w-full"
-                    >
-                      <CheckCircle2 className="w-4 h-4" /> Qarzni to'lash
-                    </button>
-                  )}
-                  
-                  <button 
-                    onClick={() => openPDF(sale.id)}
-                    className="text-xs text-blue-600 font-bold hover:underline flex items-center justify-end gap-1 mt-3 cursor-pointer w-full"
-                  >
-                    <FileText className="w-4 h-4" /> Chekni ko'rish
-                  </button>
+                <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                  {dateSales.map((sale: any) => {
+                    const allItems = [...(sale.items || []), ...(sale.orders || [])];
+                    return (
+                      <div key={sale.id} className="p-4 bg-white dark:bg-slate-900 flex justify-between items-start gap-2">
+                        <div className="flex-1">
+                          <div className="font-bold text-slate-800 dark:text-slate-200 text-xs bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded inline-block mb-2">
+                            {allItems.length} ta mebel
+                          </div>
+                          
+                          <div className="space-y-1 mb-2">
+                            {allItems.map((item, idx) => (
+                              <div key={idx} className="flex flex-col sm:flex-row sm:justify-between text-xs sm:items-center">
+                                <span className="text-slate-700 dark:text-slate-300 font-medium">
+                                  • {item.name} {item.deadline ? <span className="text-blue-500">(📦)</span> : ''}
+                                </span>
+                                <span className="text-slate-900 dark:text-slate-100 font-bold">{item.price?.toLocaleString()} so'm</span>
+                              </div>
+                            ))}
+                          </div>
+
+                          <div className="flex items-center gap-2 text-xs flex-wrap">
+                            <span className="text-blue-600 font-medium bg-blue-100 dark:bg-blue-900/30 px-2 py-0.5 rounded-full">
+                              {sale.paymentMethod === 'CASH' ? t('cash') : sale.paymentMethod === 'CARD' ? 'Karparativ' : sale.paymentMethod === 'INSTALLMENT' ? 'Avans' : sale.paymentMethod}
+                            </span>
+                            <span className="text-slate-400">{new Date(sale.createdAt).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' })}</span>
+                          </div>
+                          
+                          {sale.payments && sale.payments.length > 0 && (
+                            <div className="text-[10px] text-slate-400 mt-1 flex flex-col">
+                              {sale.payments.map((p: any) => (
+                                <span key={p.id}>{p.method}: {p.amount.toLocaleString()} so'm</span>
+                              ))}
+                            </div>
+                          )}
+                          
+                          {(sale.status === 'INCOMPLETE' || sale.balance > 0) && (
+                            <div className="mt-3 flex flex-col gap-1">
+                               <div className="text-[10px] font-black text-rose-600 bg-rose-100 dark:bg-rose-900/30 dark:text-rose-400 px-3 py-1.5 rounded-xl border border-rose-200 dark:border-rose-800/50 inline-block w-fit shadow-sm">
+                                ⚠️ Qarz: {sale.balance?.toLocaleString()} so'm
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        <div className="text-right flex flex-col items-end shrink-0">
+                          <div className="font-black text-emerald-600 dark:text-emerald-400 text-base sm:text-lg">
+                            {(sale.totalPrice || 0).toLocaleString()} <span className="text-xs font-normal text-emerald-600/70">so'm</span>
+                          </div>
+                          
+                          {(sale.status === 'INCOMPLETE' || sale.balance > 0) && (
+                            <button 
+                              onClick={() => setPayDebtModal({saleId: sale.id, balance: sale.balance})}
+                              className="mt-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs font-bold px-3 sm:px-4 py-2 rounded-xl active:scale-95 transition-all shadow-md shadow-emerald-500/20 flex items-center justify-center gap-1 w-full"
+                            >
+                              <CheckCircle2 className="w-4 h-4" /> To'lash
+                            </button>
+                          )}
+                          
+                          <button 
+                            onClick={() => openPDF(sale.id)}
+                            className="text-xs text-blue-600 font-bold hover:underline flex items-center justify-end gap-1 mt-3 cursor-pointer w-full"
+                          >
+                            <FileText className="w-4 h-4" /> Chek
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             ))
@@ -580,9 +617,14 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
                 </button>
                 <button 
                   onClick={payDebt}
-                  className="flex-1 p-3 rounded-xl font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-600/30"
+                  disabled={payDebtLoading}
+                  className="flex-1 p-3 rounded-xl font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-600/30 disabled:opacity-70 disabled:cursor-not-allowed flex justify-center items-center gap-2"
                 >
-                  Saqlash
+                  {payDebtLoading ? (
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    "Saqlash"
+                  )}
                 </button>
               </div>
             </div>

@@ -160,7 +160,7 @@ export async function GET(req: Request) {
 
     const sales = await prisma.sale.findMany({
       where: whereClause,
-      include: { user: true, items: true },
+      include: { user: true, items: true, orders: true },
       orderBy: { createdAt: 'desc' }
     });
     return NextResponse.json(sales);
