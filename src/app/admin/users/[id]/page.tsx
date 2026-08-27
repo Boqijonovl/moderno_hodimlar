@@ -108,9 +108,19 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
         <Link href="/admin/users" className="p-2 bg-white rounded-full shadow-sm">
           <ArrowLeft className="w-6 h-6 text-slate-700" />
         </Link>
-        <h1 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-          <User className="w-6 h-6" /> {user.name}
-        </h1>
+        <div className="flex flex-col">
+          <h1 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+            <User className="w-6 h-6" /> {user.name}
+          </h1>
+          <a 
+            href={`tg://user?id=${telegramId}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs font-bold text-blue-600 hover:underline mt-1 inline-block"
+          >
+            Telegram profilni ochish
+          </a>
+        </div>
       </div>
 
       <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">

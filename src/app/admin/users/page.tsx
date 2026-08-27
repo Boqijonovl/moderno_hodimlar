@@ -43,20 +43,33 @@ export default function UsersPage() {
         
         <div className="space-y-3">
           {users.map((user) => (
-            <Link 
-              key={user.id} 
-              href={`/admin/users/${user.telegramId}`}
-              className="p-4 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between hover:bg-slate-100 transition-colors"
-            >
-              <div>
+            <div key={user.id} className="p-4 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between hover:bg-slate-100 transition-colors">
+              <Link 
+                href={`/admin/users/${user.telegramId}`}
+                className="flex-1"
+              >
                 <div className="font-bold text-slate-800 text-lg flex items-center gap-2">
                   {user.name} 
                   {user.role === 'ADMIN' && <span className="bg-rose-100 text-rose-700 text-[10px] px-2 py-0.5 rounded-full uppercase">Admin</span>}
                 </div>
                 <div className="text-sm text-slate-500 mt-1">ID: {user.telegramId}</div>
+              </Link>
+              
+              <div className="flex items-center gap-3">
+                <a 
+                  href={`tg://user?id=${user.telegramId}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-blue-100 text-blue-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-blue-200 transition-colors flex items-center gap-1"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  Telegram'da ochish
+                </a>
+                <Link href={`/admin/users/${user.telegramId}`}>
+                  <ChevronRight className="w-5 h-5 text-slate-400" />
+                </Link>
               </div>
-              <ChevronRight className="w-5 h-5 text-slate-400" />
-            </Link>
+            </div>
           ))}
 
           {users.length === 0 && (
