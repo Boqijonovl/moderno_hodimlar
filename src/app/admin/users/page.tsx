@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Users, ChevronRight } from 'lucide-react';
-import WebApp from '@twa-dev/sdk';
 
 export default function UsersPage() {
   const [users, setUsers] = useState<any[]>([]);
@@ -28,6 +27,8 @@ export default function UsersPage() {
 
   const requestContact = async (targetTelegramId: string) => {
     try {
+      const mod = await import('@twa-dev/sdk');
+      const WebApp = mod.default;
       const adminId = WebApp.initDataUnsafe?.user?.id?.toString();
       
       if (!adminId) {
@@ -47,7 +48,7 @@ export default function UsersPage() {
         return;
       }
       
-      if (WebApp.close) WebApp.close();
+      if (WebApp?.close) WebApp.close();
       else alert("Xabar yuborildi! Botga qayting.");
     } catch (e: any) {
       alert("Tarmoq xatosi: " + e.message);
