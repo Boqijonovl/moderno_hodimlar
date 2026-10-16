@@ -19,6 +19,8 @@ model User {
   canUseSales      Boolean      @default(true)
   canUseExpenses   Boolean      @default(true)
   canUseOrders     Boolean      @default(true)
+  canUseConstructor Boolean     @default(false)
+  constructorToken  String?     @unique
   workStartTime    String       @default("09:00")
   workEndTime      String       @default("18:00")
   language         String       @default("uz") // uz, ru

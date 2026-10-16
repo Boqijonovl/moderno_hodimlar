@@ -74,14 +74,29 @@ export default function MainApp() {
     }
   };
 
-  // Open Furniture Constructor in External Browser (Chrome / Safari / etc.)
-  const handleOpenConstructor = () => {
-    const appOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://moderno-hodimlar.vercel.app';
-    const constructorUrl = `${appOrigin}/constructor`;
-    if (WebApp && typeof WebApp.openLink === 'function') {
-      WebApp.openLink(constructorUrl);
-    } else {
-      window.open(constructorUrl, '_blank');
+  // Open Furniture Constructor in External Browser with Personalized Access Token
+  const handleOpenConstructor = async () => {
+    if (!user?.telegramId) return;
+    try {
+      const res = await fetch('/api/constructor/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ telegramId: user.telegramId })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || 'Konstruktorga kirishda xatolik yuz berdi');
+        return;
+      }
+      const appOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://moderno-hodimlar.vercel.app';
+      const constructorUrl = `${appOrigin}/constructor?token=${data.token}`;
+      if (WebApp && typeof WebApp.openLink === 'function') {
+        WebApp.openLink(constructorUrl);
+      } else {
+        window.open(constructorUrl, '_blank');
+      }
+    } catch (e: any) {
+      alert("Tarmoq xatosi: " + e.message);
     }
   };
 
@@ -141,6 +156,7 @@ export default function MainApp() {
   const showSales = user.canUseSales !== false;
   const showExpenses = user.canUseExpenses !== false;
   const showOrders = user.canUseOrders !== false;
+  const showConstructor = user.role === 'ADMIN' || user.canUseConstructor === true;
   
   let currentTab = activeTab;
   if (!showAttendance && currentTab === 'attendance') {
@@ -221,19 +237,21 @@ export default function MainApp() {
           </button>
         )}
 
-        <button 
-          onClick={handleOpenConstructor}
-          className="flex flex-col items-center transition-all duration-300 w-16 sm:w-20 text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 group relative"
-          title="Mebel Konstruktor (Brauzerda ochish)"
-        >
-          <div className="relative">
-            <Ruler className="w-6 h-6 mb-1 text-slate-400 dark:text-slate-500 group-hover:text-blue-600 dark:group-hover:text-blue-400 group-hover:scale-110 transition-all" />
-            <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-          </div>
-          <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-            {t('menu_constructor')}
-          </span>
-        </button>
+        {showConstructor && (
+          <button 
+            onClick={handleOpenConstructor}
+            className="flex flex-col items-center transition-all duration-300 w-16 sm:w-20 text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 group relative"
+            title="Mebel Konstruktor (Brauzerda ochish)"
+          >
+            <div className="relative">
+              <Ruler className="w-6 h-6 mb-1 text-slate-400 dark:text-slate-500 group-hover:text-blue-600 dark:group-hover:text-blue-400 group-hover:scale-110 transition-all" />
+              <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+            </div>
+            <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+              {t('menu_constructor')}
+            </span>
+          </button>
+        )}
 
         <button 
           onClick={() => setActiveTab('settings')}

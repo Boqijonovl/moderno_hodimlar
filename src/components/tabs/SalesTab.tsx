@@ -63,6 +63,30 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
     return Number(raw).toLocaleString('uz-UZ').replace(/,/g, ' ');
   };
 
+  const formatPhoneNumber = (val: string) => {
+    let digits = val.replace(/\D/g, '');
+    if (digits.startsWith('998')) {
+      digits = digits.slice(3);
+    }
+    digits = digits.slice(0, 9);
+    if (!digits) return '';
+
+    let res = '+998';
+    if (digits.length > 0) res += ' ' + digits.slice(0, 2);
+    if (digits.length > 2) res += ' ' + digits.slice(2, 5);
+    if (digits.length > 5) res += ' ' + digits.slice(5, 7);
+    if (digits.length > 7) res += ' ' + digits.slice(7, 9);
+    return res;
+  };
+
+  const handlePhoneChange = (inputVal: string) => {
+    if (!inputVal || inputVal === '+998' || inputVal === '+998 ') {
+      setCustomerPhone('');
+      return;
+    }
+    setCustomerPhone(formatPhoneNumber(inputVal));
+  };
+
   const parseNumber = (val: string) => parseFloat(val.replace(/\s/g, '')) || 0;
 
   const handleRemoveItem = (index: number) => {
@@ -389,7 +413,7 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
                   <input
                     type="tel"
                     value={customerPhone}
-                    onChange={(e) => setCustomerPhone(e.target.value)}
+                    onChange={(e) => handlePhoneChange(e.target.value)}
                     placeholder="+998 90 123 45 67"
                     className="w-full p-3.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-emerald-500 dark:text-white font-mono text-sm"
                   />

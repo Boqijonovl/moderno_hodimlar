@@ -109,11 +109,17 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
       // Optimistic update
       setUser((prev: any) => ({ ...prev, [field]: value }));
       
-      await fetch(`/api/admin/users/${user.id}`, {
+      const res = await fetch(`/api/admin/users/${user.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ [field]: value })
       });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.user) {
+          setUser(data.user);
+        }
+      }
     } catch (e) {
       // Revert on error
       fetchData();
@@ -253,6 +259,61 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
             >
               <div className={`w-5 h-5 bg-white rounded-full absolute top-0.5 transition-all ${user.canUseOrders !== false ? 'left-6.5 right-0.5' : 'left-0.5'}`} style={{ transform: user.canUseOrders !== false ? 'translateX(24px)' : 'translateX(0)' }}></div>
             </button>
+          </div>
+
+          <div className="p-3 bg-slate-50 rounded-xl space-y-2.5 border border-slate-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="font-semibold text-slate-800 text-sm flex items-center gap-1.5">
+                  <span>📐</span>
+                  <span>3D Mebel Konstruktor Ruxsati</span>
+                </div>
+                <div className="text-xs text-slate-500">Ushbu xodimga maxsus shaxsiy link orqali 3D konstruktor ochiladi</div>
+              </div>
+              <button 
+                onClick={() => toggleSetting('canUseConstructor', !user.canUseConstructor)}
+                className={`w-12 h-6 rounded-full transition-colors relative ${user.canUseConstructor ? 'bg-emerald-500' : 'bg-slate-300'}`}
+              >
+                <div className={`w-5 h-5 bg-white rounded-full absolute top-0.5 transition-all ${user.canUseConstructor ? 'left-6.5 right-0.5' : 'left-0.5'}`} style={{ transform: user.canUseConstructor ? 'translateX(24px)' : 'translateX(0)' }}></div>
+              </button>
+            </div>
+
+            {user.canUseConstructor && user.constructorToken && (
+              <div className="pt-2 border-t border-slate-200 space-y-2">
+                <div className="text-[11px] font-semibold text-slate-700">Xodimning shaxsiy Konstruktor havolasi:</div>
+                <div className="flex items-center gap-1.5 bg-white border border-slate-300 p-2 rounded-lg">
+                  <input 
+                    readOnly 
+                    value={`${typeof window !== 'undefined' ? window.location.origin : 'https://moderno-hodimlar.vercel.app'}/constructor?token=${user.constructorToken}`}
+                    className="text-xs text-slate-700 bg-transparent flex-1 outline-none font-mono truncate"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const url = `${typeof window !== 'undefined' ? window.location.origin : 'https://moderno-hodimlar.vercel.app'}/constructor?token=${user.constructorToken}`;
+                      navigator.clipboard.writeText(url);
+                      alert("Shaxsiy havola nusxalandi!");
+                    }}
+                    className="px-2.5 py-1 bg-blue-600 text-white rounded text-xs font-bold hover:bg-blue-700 transition-colors shrink-0"
+                  >
+                    Nusxalash
+                  </button>
+                </div>
+
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!confirm("Haqiqatan ham yangi havola yaratmoqchimisiz? Eski havola o'z kuchini yo'qotadi.")) return;
+                      toggleSetting('regenerateToken', true);
+                    }}
+                    className="text-[11px] text-slate-500 hover:text-rose-600 underline"
+                  >
+                    Havolani yangilash (Eskisini bekor qilish)
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="p-3 bg-slate-50 rounded-xl space-y-3">

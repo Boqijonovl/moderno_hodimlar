@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect, Suspense } from 'react';
 import dynamic from 'next/dynamic';
+import { useSearchParams } from 'next/navigation';
 import { 
   Ruler, 
   Box, 
@@ -27,7 +28,10 @@ import {
   SunMedium,
   MousePointerClick,
   Sliders,
-  Scale
+  Scale,
+  ShieldAlert,
+  Lock,
+  UserCheck
 } from 'lucide-react';
 import Link from 'next/link';
 import { WOOD_COLORS, FACADE_TYPES, HANDLE_COLORS, SectionData } from '@/components/constructor/Furniture3DViewer';
@@ -385,7 +389,7 @@ const PRESETS: PresetItem[] = [
   }
 ];
 
-export default function FurnitureConstructorPage() {
+function FurnitureConstructorPage({ authUser }: { authUser?: any }) {
   // Dimensions
   const [height, setHeight] = useState<number>(2100);
   const [width, setWidth] = useState<number>(1200);
@@ -1272,6 +1276,14 @@ Polkalar: ${calculations.totalShelves} ta | Tortmalar: ${calculations.totalDrawe
             </div>
           </div>
         </div>
+
+        {/* Authorized User Badge */}
+        {authUser && (
+          <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium">
+            <UserCheck className="w-3.5 h-3.5 text-emerald-400" />
+            <span>{authUser.name}</span>
+          </div>
+        )}
 
         {/* Action Buttons */}
         <div className="flex items-center gap-2">
@@ -2848,5 +2860,135 @@ Polkalar: ${calculations.totalShelves} ta | Tortmalar: ${calculations.totalDrawe
       )}
 
     </div>
+  );
+}
+
+function ConstructorGuard() {
+  const searchParams = useSearchParams();
+  const token = searchParams.get('token');
+  const [authStatus, setAuthStatus] = useState<'loading' | 'authorized' | 'denied'>('loading');
+  const [deniedError, setDeniedError] = useState<string>('');
+  const [authUser, setAuthUser] = useState<any>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    const verifyToken = async () => {
+      if (!token || token.trim() === '') {
+        if (isMounted) {
+          setAuthStatus('denied');
+          setDeniedError("Havola xato yoki to‘g‘ridan-to‘g‘ri kirish cheklangan. Ushbu 3D Konstruktor bo‘limi faqat admin tomonidan ruxsat berilgan xodimlar uchun maxsus havola orqali ochiladi.");
+        }
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/constructor/verify?token=${encodeURIComponent(token.trim())}`);
+        const data = await res.json();
+        if (isMounted) {
+          if (res.ok && data.valid) {
+            setAuthUser(data.user);
+            setAuthStatus('authorized');
+          } else {
+            setAuthStatus('denied');
+            setDeniedError(data.error || 'Konstruktorga kirish ruxsati berilmagan.');
+          }
+        }
+      } catch (err: any) {
+        if (isMounted) {
+          setAuthStatus('denied');
+          setDeniedError('Tarmoq xatosi yuz berdi. Iltimos qaytadan urinib ko‘ring.');
+        }
+      }
+    };
+
+    verifyToken();
+    return () => { isMounted = false; };
+  }, [token]);
+
+  if (authStatus === 'loading') {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 text-slate-300 font-sans">
+        <div className="relative mb-6">
+          <div className="w-16 h-16 rounded-2xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center animate-pulse">
+            <Lock className="w-8 h-8 text-blue-400" />
+          </div>
+          <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-blue-600 border-2 border-slate-950 flex items-center justify-center shadow-lg">
+            <RotateCw className="w-3.5 h-3.5 text-white animate-spin" />
+          </div>
+        </div>
+        <h2 className="text-lg font-bold text-white mb-1.5">Xavfsizlik tekshiruvi...</h2>
+        <p className="text-slate-400 text-xs text-center max-w-xs leading-relaxed">
+          Konstruktor ruxsati va xodim litsenziyasi tekshirilmoqda. Iltimos kuting.
+        </p>
+      </div>
+    );
+  }
+
+  if (authStatus === 'denied') {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4 sm:p-6 text-slate-300 font-sans">
+        <div className="max-w-md w-full bg-slate-900/90 border border-red-500/30 rounded-3xl p-6 sm:p-8 shadow-2xl shadow-red-950/50 text-center relative overflow-hidden backdrop-blur-xl">
+          <div className="absolute -top-24 -right-24 w-48 h-48 bg-red-600/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
+
+          <div className="w-20 h-20 mx-auto rounded-3xl bg-red-500/10 border border-red-500/30 flex items-center justify-center mb-5 shadow-inner">
+            <ShieldAlert className="w-10 h-10 text-red-400" />
+          </div>
+
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 text-[11px] font-bold tracking-wide uppercase mb-3">
+            <Lock className="w-3 h-3" />
+            Kirish Cheklangan (403)
+          </div>
+
+          <h1 className="text-2xl font-black text-white mb-2.5">
+            Ruxsatsiz Kirish Cheklangan
+          </h1>
+
+          <p className="text-slate-400 text-xs sm:text-sm leading-relaxed mb-6">
+            {deniedError || "Ushbu 3D Mebel Konstruktor bo‘limiga to‘g‘ridan-to‘g‘ri havola orqali kirish mumkin emas. Bo‘lim faqat administrator tomonidan ruxsat berilgan xodimlar uchun shaxsiy xavfsiz havola orqali ochiladi."}
+          </p>
+
+          <div className="p-4 bg-slate-950/80 rounded-2xl border border-slate-800 text-left text-xs text-slate-400 space-y-2.5 mb-6">
+            <div className="flex items-start gap-2">
+              <span className="text-blue-400 font-bold mt-0.5">•</span>
+              <span><strong>Yangi foydalanuvchilar:</strong> Ushbu bo‘lim tizimda avtomatik ravishda barcha foydalanuvchilar uchun o‘chiq bo‘ladi.</span>
+            </div>
+            <div className="flex items-start gap-2">
+              <span className="text-blue-400 font-bold mt-0.5">•</span>
+              <span><strong>Ruxsat olish:</strong> Tizim administratoriga murojaat qilib konstruktordan foydalanish ruxsatini yoqdiring.</span>
+            </div>
+            <div className="flex items-start gap-2">
+              <span className="text-blue-400 font-bold mt-0.5">•</span>
+              <span><strong>Kirish usuli:</strong> Admin ruxsat bergach, Moderno bot ilovasi pastki menyusidagi <strong>Konstruktor</strong> tugmasi orqali kiring.</span>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-2.5">
+            <a
+              href="https://t.me/moderno_hodimlar_bot"
+              className="w-full py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-blue-600/30 transition-all"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Telegram Botga Qaytish
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return <FurnitureConstructorPage authUser={authUser} />;
+}
+
+export default function ConstructorPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 text-slate-400 font-sans">
+        <RotateCw className="w-8 h-8 text-blue-500 animate-spin mb-3" />
+        <span className="text-xs font-mono">Konstruktor yuklanmoqda...</span>
+      </div>
+    }>
+      <ConstructorGuard />
+    </Suspense>
   );
 }
