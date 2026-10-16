@@ -47,6 +47,12 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     const startY3 = doc.y;
     doc.font('Helvetica').text("To'lov turi:", 30, startY3).font('Helvetica-Bold').text(sale.paymentMethod === 'CASH' ? 'Naqd' : sale.paymentMethod === 'CARD' ? 'Karta' : 'Muddatli', 150, startY3, { align: 'right', width: 170 });
     
+    if (sale.customerPhone || sale.customerName) {
+      doc.moveDown(0.5);
+      const startYCustomer = doc.y;
+      doc.font('Helvetica').text('Mijoz:', 30, startYCustomer).font('Helvetica-Bold').text(`${sale.customerName ? sale.customerName + ' ' : ''}${sale.customerPhone ? '(' + sale.customerPhone + ')' : ''}`, 130, startYCustomer, { align: 'right', width: 190 });
+    }
+    
     doc.moveDown(1.5);
     doc.moveTo(30, doc.y).lineTo(320, doc.y).strokeColor('#cccccc').stroke();
     doc.moveDown(1);

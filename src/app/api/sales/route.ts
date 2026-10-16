@@ -4,7 +4,7 @@ import { Telegraf } from 'telegraf';
 
 export async function POST(req: Request) {
   try {
-    const { items, paymentDetails, telegramId, userId, employeeName } = await req.json();
+    const { items, paymentDetails, telegramId, userId, employeeName, customerName, customerPhone } = await req.json();
 
     if (!items || !items.length) {
       return NextResponse.json({ error: 'Missing items' }, { status: 400 });
@@ -47,6 +47,8 @@ export async function POST(req: Request) {
     const sale = await prisma.sale.create({
       data: {
         userId: user.id,
+        customerName: customerName ? String(customerName).trim() : null,
+        customerPhone: customerPhone ? String(customerPhone).trim() : null,
         totalPrice,
         advance,
         balance,
@@ -98,7 +100,11 @@ export async function POST(req: Request) {
         
         let paymentBreakdown = paymentDetails.filter((p:any) => parseFloat(p.amount) > 0).map((p:any) => `- ${p.method}: ${parseFloat(p.amount).toLocaleString()}`).join('\n');
         
-        const message = `🟢 <b>Yangi Savdo!</b>\n\n👤 Xodim: ${user.name}\n\n🛍 <b>Sotilgan tovarlar:</b>\n${itemsText}\n\n${amountText}\n\n💳 <b>To'lov turi:</b> ${paymentName}\n${paymentBreakdown}`;
+        let customerInfo = '';
+        if (customerName) customerInfo += `\n👤 <b>Mijoz:</b> ${customerName}`;
+        if (customerPhone) customerInfo += `\n📞 <b>Mijoz tel:</b> <code>${customerPhone}</code>`;
+        
+        const message = `🟢 <b>Yangi Savdo!</b>\n\n👤 Xodim: ${user.name}${customerInfo}\n\n🛍 <b>Sotilgan tovarlar:</b>\n${itemsText}\n\n${amountText}\n\n💳 <b>To'lov turi:</b> ${paymentName}\n${paymentBreakdown}`;
 
         for (const admin of admins) {
           if (admin.telegramId) {
@@ -110,7 +116,8 @@ export async function POST(req: Request) {
         for (const order of sale.orders) {
           if (order.assignedTo && order.assignedTo.telegramId) {
             const dateStr = order.deadline ? new Date(order.deadline).toLocaleDateString('uz-UZ') : 'Noma\'lum';
-            const orderMessage = `📦 <b>Sizga yangi buyurtma biriktirildi!</b>\n\n📝 <b>Mebel nomi:</b> ${order.name}\n💬 <b>Izohi:</b> ${order.description || 'Yo\'q'}\n📅 <b>Muddati:</b> ${dateStr}\n👤 <b>Savdoni kiritdi:</b> ${user.name}`;
+            const orderCustomer = customerPhone ? `\n📞 <b>Mijoz tel:</b> ${customerPhone}` : '';
+            const orderMessage = `📦 <b>Sizga yangi buyurtma biriktirildi!</b>\n\n📝 <b>Mebel nomi:</b> ${order.name}\n💬 <b>Izohi:</b> ${order.description || 'Yo\'q'}\n📅 <b>Muddati:</b> ${dateStr}\n👤 <b>Savdoni kiritdi:</b> ${user.name}${orderCustomer}`;
             
             try {
               await bot.telegram.sendMessage(order.assignedTo.telegramId, orderMessage, { parse_mode: 'HTML' });

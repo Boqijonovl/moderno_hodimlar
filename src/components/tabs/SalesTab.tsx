@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Send, CheckCircle2, Package, Plus, Trash2, FileText, List } from 'lucide-react';
+import { Send, CheckCircle2, Package, Plus, Trash2, FileText, List, Phone, User as UserIcon } from 'lucide-react';
 import { useTranslation, Language } from '@/lib/i18n';
 
 export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
@@ -16,6 +16,8 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
   const [employees, setEmployees] = useState<{id: string, name: string}[]>([]);
   const [selectedMonth, setSelectedMonth] = useState('');
   const [paymentMethods, setPaymentMethods] = useState<{id: string, name: string}[]>([]);
+  const [customerPhone, setCustomerPhone] = useState('');
+  const [customerName, setCustomerName] = useState('');
   
   // Debt modal state
   const [payDebtModal, setPayDebtModal] = useState<{saleId: string, balance: number} | null>(null);
@@ -137,6 +139,8 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
           telegramId: user?.telegramId,
           userId: user?.id,
           employeeName: user?.name,
+          customerPhone: customerPhone.trim() || undefined,
+          customerName: customerName.trim() || undefined,
         })
       });
 
@@ -147,6 +151,8 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
         if (WebApp?.HapticFeedback) WebApp.HapticFeedback.notificationOccurred('success');
         setItems([{ name: '', price: '', isOrder: false, description: '', deadline: '', assignedToId: '' }]);
         setPaymentAmounts({});
+        setCustomerPhone('');
+        setCustomerName('');
         setIsPartial(false);
         fetchHistory();
       } else {
@@ -371,6 +377,36 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
               </div>
             )}
 
+            {/* Mijoz Ma'lumotlari (Telefon raqam) */}
+            <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 space-y-3">
+              <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                <Phone className="w-4 h-4 text-emerald-500" />
+                Mijoz Ma'lumotlari (Telefon raqami)
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1">Mijoz telefon raqami:</label>
+                  <input
+                    type="tel"
+                    value={customerPhone}
+                    onChange={(e) => setCustomerPhone(e.target.value)}
+                    placeholder="+998 90 123 45 67"
+                    className="w-full p-3.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-emerald-500 dark:text-white font-mono text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1">Mijoz ismi (Ixtiyoriy):</label>
+                  <input
+                    type="text"
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                    placeholder="Masalan: Sardor aka"
+                    className="w-full p-3.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-emerald-500 dark:text-white text-sm"
+                  />
+                </div>
+              </div>
+            </div>
+
             <div className="space-y-3">
               <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">
                 To'lov Turlarini Tanlang
@@ -518,6 +554,13 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
                               </div>
                             ))}
                           </div>
+
+                          {(sale.customerPhone || sale.customerName) && (
+                            <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-semibold mb-2 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 rounded-lg w-fit">
+                              <Phone className="w-3.5 h-3.5" />
+                              <span>{sale.customerName ? `${sale.customerName}: ` : ''}{sale.customerPhone || ''}</span>
+                            </div>
+                          )}
 
                           <div className="flex items-center gap-2 text-xs flex-wrap">
                             <span className="text-blue-600 font-medium bg-blue-100 dark:bg-blue-900/30 px-2 py-0.5 rounded-full">

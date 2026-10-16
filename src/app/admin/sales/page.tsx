@@ -144,6 +144,11 @@ export default function SalesAnalytics() {
                             </div>
                             <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-xs">
                               <span className="text-slate-500 truncate">Sotuvchi: <span className="font-semibold text-slate-700">{sale.user?.name || 'Noma\'lum'}</span></span>
+                              {(sale.customerPhone || sale.customerName) && (
+                                <span className="text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100 flex items-center gap-1">
+                                  📞 {sale.customerName ? `${sale.customerName}: ` : ''}{sale.customerPhone || ''}
+                                </span>
+                              )}
                             </div>
                           </div>
                           <div className="text-right flex items-center gap-2 shrink-0">

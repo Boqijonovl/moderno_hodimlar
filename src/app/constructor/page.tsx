@@ -66,6 +66,16 @@ export interface PresetItem {
   facadeColor: string;
   facadeType: 'standard' | 'mirror' | 'glass' | 'mdf_frame';
   sections: SectionData[];
+  hasCountertop?: boolean;
+  countertopThickness?: number;
+  countertopColor?: string;
+  hasSink?: boolean;
+  hasAntresol?: boolean;
+  isFloating?: boolean;
+  drawerRunnerType?: 'roller' | 'telescopic' | 'soft_close' | 'push_to_open';
+  hasShoeRack?: boolean;
+  hasKeyboardTray?: boolean;
+  hasCentralLock?: boolean;
 }
 
 const PRESETS: PresetItem[] = [
@@ -85,6 +95,8 @@ const PRESETS: PresetItem[] = [
     bodyColor: '#d4b38a',
     facadeColor: '#f8fafc',
     facadeType: 'standard',
+    hasAntresol: false,
+    drawerRunnerType: 'telescopic',
     sections: [
       { id: 'sec_1', width: 450, shelvesCount: 4, drawersCount: 0, hasHanger: false },
       { id: 'sec_2', width: 718, shelvesCount: 1, drawersCount: 2, hasHanger: true, hangerType: 'single' }
@@ -106,6 +118,8 @@ const PRESETS: PresetItem[] = [
     bodyColor: '#27272a',
     facadeColor: '#27272a',
     facadeType: 'mirror',
+    hasAntresol: false,
+    drawerRunnerType: 'soft_close',
     sections: [
       { id: 'sec_1', width: 550, shelvesCount: 4, drawersCount: 0, hasHanger: false },
       { id: 'sec_2', width: 636, shelvesCount: 1, drawersCount: 0, hasHanger: true, hangerType: 'single' },
@@ -114,7 +128,7 @@ const PRESETS: PresetItem[] = [
   },
   {
     id: 'wardrobe_4door',
-    name: '4-Eshikli Oilaviy Shkaf',
+    name: '4-Eshikli Oilaviy Shkaf (Antresolli)',
     category: 'Shkaflar',
     icon: '🏰',
     height: 2300,
@@ -128,6 +142,8 @@ const PRESETS: PresetItem[] = [
     bodyColor: '#3e2723',
     facadeColor: '#f8fafc',
     facadeType: 'mdf_frame',
+    hasAntresol: true,
+    drawerRunnerType: 'soft_close',
     sections: [
       { id: 'sec_1', width: 550, shelvesCount: 5, drawersCount: 0, hasHanger: false },
       { id: 'sec_2', width: 618, shelvesCount: 1, drawersCount: 2, hasHanger: true, hangerType: 'single' },
@@ -151,6 +167,8 @@ const PRESETS: PresetItem[] = [
     bodyColor: '#3e2723',
     facadeColor: '#3e2723',
     facadeType: 'glass',
+    hasAntresol: true,
+    drawerRunnerType: 'soft_close',
     sections: [
       { id: 'sec_1', width: 784, shelvesCount: 4, drawersCount: 0, hasHanger: false },
       { id: 'sec_2', width: 784, shelvesCount: 2, drawersCount: 2, hasHanger: true, hangerType: 'single' }
@@ -172,6 +190,10 @@ const PRESETS: PresetItem[] = [
     bodyColor: '#85512b',
     facadeColor: '#f8fafc',
     facadeType: 'mdf_frame',
+    hasCountertop: true,
+    countertopThickness: 38,
+    countertopColor: '#eceef1',
+    hasSink: true,
     sections: [
       { id: 'sec_1', width: 768, shelvesCount: 0, drawersCount: 0, hasHanger: false }
     ]
@@ -192,8 +214,39 @@ const PRESETS: PresetItem[] = [
     bodyColor: '#85512b',
     facadeColor: '#f8fafc',
     facadeType: 'standard',
+    hasCountertop: true,
+    countertopThickness: 38,
+    countertopColor: '#94a3b8',
+    drawerRunnerType: 'soft_close',
     sections: [
       { id: 'sec_1', width: 768, shelvesCount: 0, drawersCount: 3, hasHanger: false }
+    ]
+  },
+  {
+    id: 'kitchen_full_set',
+    name: 'Oshxona Garnitur (Moyka + Tortmalar)',
+    category: 'Oshxona',
+    icon: '🧑‍🍳',
+    height: 860,
+    width: 1800,
+    depth: 600,
+    socleHeight: 100,
+    thickness: 16,
+    doorType: 'hinged',
+    doorsCount: 2,
+    hasLed: true,
+    bodyColor: '#27272a',
+    facadeColor: '#f8fafc',
+    facadeType: 'mdf_frame',
+    hasCountertop: true,
+    countertopThickness: 38,
+    countertopColor: '#eceef1',
+    hasSink: true,
+    drawerRunnerType: 'soft_close',
+    sections: [
+      { id: 'sec_1', width: 780, shelvesCount: 0, drawersCount: 0, hasHanger: false },
+      { id: 'sec_2', width: 480, shelvesCount: 0, drawersCount: 3, hasHanger: false },
+      { id: 'sec_3', width: 476, shelvesCount: 1, drawersCount: 0, hasHanger: false }
     ]
   },
   {
@@ -212,13 +265,14 @@ const PRESETS: PresetItem[] = [
     bodyColor: '#f8fafc',
     facadeColor: '#f8fafc',
     facadeType: 'glass',
+    hasCountertop: false,
     sections: [
       { id: 'sec_1', width: 768, shelvesCount: 2, drawersCount: 0, hasHanger: false }
     ]
   },
   {
     id: 'dresser_4',
-    name: 'Tortmali Komod (4 qavat)',
+    name: 'Tortmali Komod (4 qavat Soft-Close)',
     category: 'Komodlar',
     icon: '🗄',
     height: 900,
@@ -232,8 +286,30 @@ const PRESETS: PresetItem[] = [
     bodyColor: '#d4b38a',
     facadeColor: '#d4b38a',
     facadeType: 'standard',
+    drawerRunnerType: 'soft_close',
     sections: [
       { id: 'sec_1', width: 868, shelvesCount: 0, drawersCount: 4, hasHanger: false }
+    ]
+  },
+  {
+    id: 'dresser_5',
+    name: '5-Qavatli Baland Komod (Push-to-Open)',
+    category: 'Komodlar',
+    icon: '🗄',
+    height: 1150,
+    width: 850,
+    depth: 450,
+    socleHeight: 60,
+    thickness: 16,
+    doorType: 'none',
+    doorsCount: 0,
+    hasLed: false,
+    bodyColor: '#85512b',
+    facadeColor: '#85512b',
+    facadeType: 'standard',
+    drawerRunnerType: 'push_to_open',
+    sections: [
+      { id: 'sec_1', width: 818, shelvesCount: 0, drawersCount: 5, hasHanger: false }
     ]
   },
   {
@@ -252,6 +328,11 @@ const PRESETS: PresetItem[] = [
     bodyColor: '#27272a',
     facadeColor: '#d4b38a',
     facadeType: 'standard',
+    hasCountertop: true,
+    countertopThickness: 28,
+    countertopColor: '#c29b68',
+    hasKeyboardTray: true,
+    hasCentralLock: true,
     sections: [
       { id: 'sec_1', width: 820, shelvesCount: 0, drawersCount: 0, hasHanger: false },
       { id: 'sec_2', width: 408, shelvesCount: 0, drawersCount: 3, hasHanger: false }
@@ -259,7 +340,7 @@ const PRESETS: PresetItem[] = [
   },
   {
     id: 'tv_modern',
-    name: 'Zamonaviy TV Tumba (1.8m)',
+    name: 'Zamonaviy TV Tumba (Podvesnoy Osma)',
     category: 'TV & Dalanma',
     icon: '📺',
     height: 500,
@@ -273,6 +354,7 @@ const PRESETS: PresetItem[] = [
     bodyColor: '#27272a',
     facadeColor: '#f8fafc',
     facadeType: 'standard',
+    isFloating: true,
     sections: [
       { id: 'sec_1', width: 578, shelvesCount: 1, drawersCount: 0, hasHanger: false },
       { id: 'sec_2', width: 578, shelvesCount: 0, drawersCount: 2, hasHanger: false },
@@ -295,29 +377,10 @@ const PRESETS: PresetItem[] = [
     bodyColor: '#d4b38a',
     facadeColor: '#f8fafc',
     facadeType: 'mirror',
+    hasShoeRack: true,
     sections: [
       { id: 'sec_1', width: 660, shelvesCount: 3, drawersCount: 2, hasHanger: false },
       { id: 'sec_2', width: 676, shelvesCount: 1, drawersCount: 0, hasHanger: true, hangerType: 'double' }
-    ]
-  },
-  {
-    id: 'dresser_5',
-    name: '5-Qavatli Baland Komod',
-    category: 'Komodlar',
-    icon: '🗄',
-    height: 1150,
-    width: 850,
-    depth: 450,
-    socleHeight: 60,
-    thickness: 16,
-    doorType: 'none',
-    doorsCount: 0,
-    hasLed: false,
-    bodyColor: '#85512b',
-    facadeColor: '#85512b',
-    facadeType: 'standard',
-    sections: [
-      { id: 'sec_1', width: 818, shelvesCount: 0, drawersCount: 5, hasHanger: false }
     ]
   }
 ];
@@ -346,6 +409,19 @@ export default function FurnitureConstructorPage() {
   const [syncColors, setSyncColors] = useState<boolean>(false);
   const [facadeType, setFacadeType] = useState<'standard' | 'mirror' | 'glass' | 'mdf_frame'>('standard');
   const [handleColor, setHandleColor] = useState<string>('#cbd5e1');
+  const [activeColorGroup, setActiveColorGroup] = useState<string>('Barchasi');
+
+  // Category-Specific Options
+  const [hasCountertop, setHasCountertop] = useState<boolean>(false);
+  const [countertopThickness, setCountertopThickness] = useState<number>(38);
+  const [countertopColor, setCountertopColor] = useState<string>('#eceef1');
+  const [hasSink, setHasSink] = useState<boolean>(false);
+  const [hasAntresol, setHasAntresol] = useState<boolean>(false);
+  const [isFloating, setIsFloating] = useState<boolean>(false);
+  const [drawerRunnerType, setDrawerRunnerType] = useState<'roller' | 'telescopic' | 'soft_close' | 'push_to_open'>('telescopic');
+  const [hasShoeRack, setHasShoeRack] = useState<boolean>(false);
+  const [hasKeyboardTray, setHasKeyboardTray] = useState<boolean>(false);
+  const [hasCentralLock, setHasCentralLock] = useState<boolean>(false);
 
   // Interactive Door Opening: 0% to 100%
   const [doorsOpenPercent, setDoorsOpenPercent] = useState<number>(100);
@@ -554,6 +630,28 @@ export default function FurnitureConstructorPage() {
     setHasLedLighting(preset.hasLed);
     setProjectName(preset.name);
     setSectionsData(preset.sections.map((s, idx) => ({ ...s, id: `sec_${idx + 1}` })));
+    setHasCountertop(!!preset.hasCountertop);
+    setCountertopThickness(preset.countertopThickness ?? 38);
+    setCountertopColor(preset.countertopColor ?? '#eceef1');
+    setHasSink(!!preset.hasSink);
+    setHasAntresol(!!preset.hasAntresol);
+    setIsFloating(!!preset.isFloating);
+    setDrawerRunnerType(preset.drawerRunnerType ?? 'telescopic');
+    setHasShoeRack(!!preset.hasShoeRack);
+    setHasKeyboardTray(!!preset.hasKeyboardTray);
+    setHasCentralLock(!!preset.hasCentralLock);
+  };
+
+  // Direct 3D Detail Manipulation Handler
+  const handleUpdateSectionProp = (sectionIndex: number, field: 'shelvesCount' | 'drawersCount', delta: number) => {
+    if (sectionIndex < 0 || sectionIndex >= sectionsData.length) return;
+    setSectionsData(prev => {
+      const next = [...prev];
+      const curVal = next[sectionIndex][field] || 0;
+      const newVal = Math.max(0, Math.min(8, curVal + delta));
+      next[sectionIndex] = { ...next[sectionIndex], [field]: newVal };
+      return next;
+    });
   };
 
   // Filtered Presets
@@ -820,6 +918,63 @@ export default function FurnitureConstructorPage() {
       drillingNote: 'Mebel shurupi yoki skoba'
     });
 
+    // 9. Stoleshnitsa (Countertop if enabled)
+    if (hasCountertop) {
+      const ctThick = countertopThickness || 38;
+      const ctLength = width + 30;
+      const ctDepth = depth + 35;
+      parts.push({
+        id: 'countertop',
+        name: `Stoleshnitsa (${ctThick}mm Namga Chidamli)`,
+        detailNameRu: 'Столешница влагостойкая',
+        length: ctLength,
+        width: ctDepth,
+        qty: 1,
+        material: `Stoleshnitsa ${ctThick}mm`,
+        edgeU1: '2.0 mm (Oldi postforming)',
+        edgeU2: '—',
+        edgeK1: '2.0 mm (Yon)',
+        edgeK2: '2.0 mm (Yon)',
+        area: (ctLength * ctDepth) / 1000000,
+        drillingNote: hasSink ? 'Moyka o‘rni kesilgan' : 'Standart o‘rnatish'
+      });
+    }
+
+    // 10. Antresol (Mezzanine if enabled)
+    if (hasAntresol) {
+      const antH = 400;
+      parts.push({
+        id: 'antresol_sides',
+        name: 'Antresol yon devorlari',
+        detailNameRu: 'Боковины антресоли',
+        length: antH,
+        width: depth,
+        qty: 2,
+        material: `DSP ${T}mm`,
+        edgeU1: '2.0 mm',
+        edgeU2: '—',
+        edgeK1: '—',
+        edgeK2: '—',
+        area: (antH * depth * 2) / 1000000,
+        drillingNote: 'Minifiks'
+      });
+      parts.push({
+        id: 'antresol_top',
+        name: 'Antresol tepasi (Krysha)',
+        detailNameRu: 'Крыша антресоли',
+        length: width - 2 * T,
+        width: depth,
+        qty: 1,
+        material: `DSP ${T}mm`,
+        edgeU1: '2.0 mm',
+        edgeU2: '—',
+        edgeK1: '—',
+        edgeK2: '—',
+        area: ((width - 2 * T) * depth) / 1000000,
+        drillingNote: 'Konfirmat'
+      });
+    }
+
     // Material Totals
     const dspParts = parts.filter(p => p.material.includes('DSP'));
     const dvpParts = parts.filter(p => p.material.includes('DVP'));
@@ -854,29 +1009,38 @@ export default function FurnitureConstructorPage() {
     if (doorType === 'hinged' && doorsCount > 0) {
       const doorH = bodyHeight;
       const hingesPerDoor = doorH < 1000 ? 2 : doorH < 1600 ? 3 : doorH < 2050 ? 4 : 5;
-      hingesCount = doorsCount * hingesPerDoor;
+      hingesCount = doorsCount * hingesPerDoor + (hasAntresol ? doorsCount * 2 : 0);
     }
 
     const drawerSlidesCount = totalDrawers;
-    const handlesCount = (doorType === 'hinged' ? doorsCount : 0) + totalDrawers;
-    const legsCount = width < 1200 ? 4 : width < 2000 ? 6 : 8;
+    const handlesCount = (doorType === 'hinged' ? doorsCount : 0) + totalDrawers + (hasAntresol ? doorsCount : 0);
+    const legsCount = isFloating ? 0 : (width < 1200 ? 4 : width < 2000 ? 6 : 8);
     const confirmatsCount = (sectionsData.length * 8) + (totalShelves * 4) + (totalDrawers * 8) + 20;
 
     // LED Lighting
     const totalLedMeters = hasLedLighting ? Math.ceil(((totalShelves * (width / sectionsData.length)) + width) / 1000) : 0;
     const costLed = hasLedLighting ? (totalLedMeters * ledPricePerMeter) + transformerPrice : 0;
 
-    // Cost Breakdown
+    // Cost Breakdown with Runner Mechanism & Specialty Add-ons
+    const slideUnitPrice = 
+      drawerRunnerType === 'roller' ? 25000 :
+      drawerRunnerType === 'soft_close' ? 95000 :
+      drawerRunnerType === 'push_to_open' ? 85000 :
+      drawerSlidePrice;
+
     const costDsp = dspSheetsNeeded * dspSheetPrice;
     const costDvp = dvpSheetsNeeded * dvpSheetPrice;
     const costEdge = totalEdgeMeters * edgePricePerMeter;
     const costHinges = hingesCount * hingePrice;
-    const costSlides = drawerSlidesCount * drawerSlidePrice;
+    const costSlides = drawerSlidesCount * slideUnitPrice;
     const costHandles = handlesCount * handlePrice;
     const costFasteners = confirmatsCount * 500 + legsCount * 4000;
     const costSpecialFacade = (facadeType === 'mirror' || facadeType === 'glass') ? (doorsCount * 180000) : 0;
+    const costCountertop = hasCountertop ? Math.round((width / 1000) * 350000) : 0;
+    const costSink = hasSink ? 380000 : 0;
+    const costFloatingMount = isFloating ? 70000 : 0;
 
-    const materialsCost = costDsp + costDvp + costEdge + costHinges + costSlides + costHandles + costFasteners + costLed + costSpecialFacade;
+    const materialsCost = costDsp + costDvp + costEdge + costHinges + costSlides + costHandles + costFasteners + costLed + costSpecialFacade + costCountertop + costSink + costFloatingMount;
     const laborAndMargin = Math.round((materialsCost * laborPercent) / 100);
     const totalSellingPrice = materialsCost + laborAndMargin;
 
@@ -998,13 +1162,22 @@ export default function FurnitureConstructorPage() {
       costFasteners,
       costLed,
       costSpecialFacade,
+      costCountertop,
+      costSink,
+      costFloatingMount,
+      hasCountertop,
+      hasAntresol,
+      hasSink,
+      isFloating,
+      drawerRunnerType,
       sheetLayouts
     };
   }, [
     height, width, depth, thickness, socleHeight, sectionsData,
     hasLedLighting, doorType, doorsCount, dspSheetPrice, dvpSheetPrice,
     edgePricePerMeter, hingePrice, drawerSlidePrice, handlePrice,
-    ledPricePerMeter, transformerPrice, laborPercent, facadeType
+    ledPricePerMeter, transformerPrice, laborPercent, facadeType,
+    hasCountertop, countertopThickness, hasSink, hasAntresol, isFloating, drawerRunnerType
   ]);
 
   const handlePrint = () => {
@@ -1296,6 +1469,188 @@ Polkalar: ${calculations.totalShelves} ta | Tortmalar: ${calculations.totalDrawe
             </div>
           </div>
 
+          {/* KATEGORIYA MAXSUS FUNKSIYALARI */}
+          <div className="bg-slate-800/60 border border-slate-700/70 rounded-2xl p-4 shadow-xl backdrop-blur-sm space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+                <Sparkles className="w-4 h-4 text-emerald-400" />
+                Kategoriya Maxsus Funksiyalari
+              </h2>
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                {activePresetCategory === 'Barchasi' ? 'Barcha parametrlar' : activePresetCategory}
+              </span>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              {/* 1. OSHXONA XUSUSIYATLARI */}
+              {(activePresetCategory === 'Barchasi' || activePresetCategory === 'Oshxona') && (
+                <div className="bg-slate-900/70 border border-slate-700/60 rounded-xl p-3 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-slate-200 flex items-center gap-1.5">
+                      <span>🍳</span>
+                      <span>Oshxona: Stoleshnitsa (Stol usti qoplami)</span>
+                    </span>
+                    <button
+                      onClick={() => setHasCountertop(!hasCountertop)}
+                      className={`px-2.5 py-1 rounded-lg font-bold text-[11px] transition-colors ${
+                        hasCountertop ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-400'
+                      }`}
+                    >
+                      {hasCountertop ? 'Yoqilgan' : 'O‘chirilgan'}
+                    </button>
+                  </div>
+
+                  {hasCountertop && (
+                    <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-800">
+                      <div>
+                        <span className="text-[10px] text-slate-400 block mb-1">Qalinligi:</span>
+                        <div className="flex gap-1.5">
+                          {[28, 38].map((th) => (
+                            <button
+                              key={th}
+                              onClick={() => setCountertopThickness(th)}
+                              className={`flex-1 py-1 text-[11px] rounded font-bold border transition-all ${
+                                countertopThickness === th 
+                                  ? 'bg-blue-600/40 border-blue-500 text-white' 
+                                  : 'bg-slate-800 border-slate-700 text-slate-400'
+                              }`}
+                            >
+                              {th} mm
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div>
+                        <span className="text-[10px] text-slate-400 block mb-1">Moyka (Sink) o‘rni:</span>
+                        <button
+                          onClick={() => setHasSink(!hasSink)}
+                          className={`w-full py-1 text-[11px] rounded font-bold border transition-all ${
+                            hasSink 
+                              ? 'bg-emerald-600/40 border-emerald-500 text-emerald-200' 
+                              : 'bg-slate-800 border-slate-700 text-slate-400'
+                          }`}
+                        >
+                          {hasSink ? '🚰 Moyka + Kran bor' : 'Moykasiz'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* 2. SHKAFLAR XUSUSIYATLARI */}
+              {(activePresetCategory === 'Barchasi' || activePresetCategory === 'Shkaflar') && (
+                <div className="bg-slate-900/70 border border-slate-700/60 rounded-xl p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-slate-200 flex items-center gap-1.5">
+                      <span>🚪</span>
+                      <span>Shkaflar: Antresol (Tepa anjomlar bo‘limi +400mm)</span>
+                    </span>
+                    <button
+                      onClick={() => setHasAntresol(!hasAntresol)}
+                      className={`px-2.5 py-1 rounded-lg font-bold text-[11px] transition-colors ${
+                        hasAntresol ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-400'
+                      }`}
+                    >
+                      {hasAntresol ? 'Yoqilgan' : 'O‘chirilgan'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* 3. KOMODLAR XUSUSIYATLARI (RELS MEXANIZMI) */}
+              {(activePresetCategory === 'Barchasi' || activePresetCategory === 'Komodlar') && (
+                <div className="bg-slate-900/70 border border-slate-700/60 rounded-xl p-3 space-y-2">
+                  <span className="font-semibold text-slate-200 flex items-center gap-1.5 block">
+                    <span>🗄️</span>
+                    <span>Komodlar: Tortma Rels Mexanizmi</span>
+                  </span>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {[
+                      { id: 'roller', name: 'Rolikli (Oddiy)' },
+                      { id: 'telescopic', name: 'Teleskopik (Sharikli)' },
+                      { id: 'soft_close', name: 'Soft-Close (Plavniy)' },
+                      { id: 'push_to_open', name: 'Push-To-Open' },
+                    ].map((rm) => (
+                      <button
+                        key={rm.id}
+                        onClick={() => setDrawerRunnerType(rm.id as any)}
+                        className={`p-1.5 rounded-lg text-[10px] font-bold border text-left transition-all ${
+                          drawerRunnerType === rm.id 
+                            ? 'bg-blue-600/30 border-blue-500 text-blue-200' 
+                            : 'bg-slate-800 border-slate-700 text-slate-400'
+                        }`}
+                      >
+                        {rm.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 4. TV & DALANMA XUSUSIYATLARI */}
+              {(activePresetCategory === 'Barchasi' || activePresetCategory === 'TV & Dalanma') && (
+                <div className="bg-slate-900/70 border border-slate-700/60 rounded-xl p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-slate-200 flex items-center gap-1.5">
+                      <span>📺</span>
+                      <span>TV & Dalanma: O‘rnatish Turi</span>
+                    </span>
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => setIsFloating(false)}
+                        className={`px-2 py-1 rounded text-[10px] font-bold border transition-colors ${
+                          !isFloating ? 'bg-blue-600 border-blue-500 text-white' : 'bg-slate-800 border-slate-700 text-slate-400'
+                        }`}
+                      >
+                        Oyoqli
+                      </button>
+                      <button
+                        onClick={() => setIsFloating(true)}
+                        className={`px-2 py-1 rounded text-[10px] font-bold border transition-colors ${
+                          isFloating ? 'bg-blue-600 border-blue-500 text-white' : 'bg-slate-800 border-slate-700 text-slate-400'
+                        }`}
+                      >
+                        Podvesnoy (Osma)
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 5. OFIS XUSUSIYATLARI */}
+              {(activePresetCategory === 'Barchasi' || activePresetCategory === 'Ofis') && (
+                <div className="bg-slate-900/70 border border-slate-700/60 rounded-xl p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-slate-200 flex items-center gap-1.5">
+                      <span>💻</span>
+                      <span>Ofis: Klaviatura javoni & Markaziy Qulf</span>
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => setHasKeyboardTray(!hasKeyboardTray)}
+                        className={`px-2 py-0.5 rounded text-[10px] font-bold border transition-colors ${
+                          hasKeyboardTray ? 'bg-emerald-600 border-emerald-500 text-white' : 'bg-slate-800 border-slate-700 text-slate-400'
+                        }`}
+                      >
+                        Klaviatura
+                      </button>
+                      <button
+                        onClick={() => setHasCentralLock(!hasCentralLock)}
+                        className={`px-2 py-0.5 rounded text-[10px] font-bold border transition-colors ${
+                          hasCentralLock ? 'bg-emerald-600 border-emerald-500 text-white' : 'bg-slate-800 border-slate-700 text-slate-400'
+                        }`}
+                      >
+                        Qulf
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* 2. ERKIN BO'LIMLAR VA DETALLARNI SOZLASH (CUSTOM SECTION LAYOUT) */}
           <div className="bg-slate-800/60 border border-slate-700/70 rounded-2xl p-4 shadow-xl backdrop-blur-sm space-y-3">
             <div className="flex items-center justify-between">
@@ -1495,10 +1850,30 @@ Polkalar: ${calculations.totalShelves} ta | Tortmalar: ${calculations.totalDrawe
               </div>
             </div>
 
+            {/* Color Category Tabs */}
+            <div>
+              <span className="text-[10px] text-slate-400 font-semibold block mb-1">Dekorlar Guruhi:</span>
+              <div className="flex items-center gap-1 mb-2 bg-slate-900/80 p-1 rounded-xl border border-slate-800">
+                {['Barchasi', 'Yog‘och', 'Monoxrom', 'Tosh/Marmar'].map((grp) => (
+                  <button
+                    key={grp}
+                    onClick={() => setActiveColorGroup(grp)}
+                    className={`flex-1 py-1 rounded-lg text-[10px] font-bold transition-all ${
+                      activeColorGroup === grp 
+                        ? 'bg-blue-600 text-white shadow' 
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    {grp}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Korpus Rangi */}
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="text-[11px] font-semibold text-slate-300">Korpus DSP Rangi:</label>
+                <label className="text-[11px] font-semibold text-slate-300">Korpus Rangi:</label>
                 <label className="flex items-center gap-1.5 text-[10px] text-slate-400 cursor-pointer">
                   <input
                     type="checkbox"
@@ -1513,8 +1888,8 @@ Polkalar: ${calculations.totalShelves} ta | Tortmalar: ${calculations.totalDrawe
                 </label>
               </div>
 
-              <div className="grid grid-cols-3 gap-2">
-                {WOOD_COLORS.map((c) => (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 max-h-48 overflow-y-auto pr-1">
+                {WOOD_COLORS.filter(c => activeColorGroup === 'Barchasi' || (c as any).group === activeColorGroup).map((c) => (
                   <button
                     key={c.id}
                     onClick={() => {
@@ -1538,8 +1913,8 @@ Polkalar: ${calculations.totalShelves} ta | Tortmalar: ${calculations.totalDrawe
             {!syncColors && facadeType !== 'mirror' && facadeType !== 'glass' && (
               <div>
                 <label className="text-[11px] font-semibold text-slate-300 block mb-1.5">Fasad (Eshiklar) Rangi:</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {WOOD_COLORS.map((c) => (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 max-h-48 overflow-y-auto pr-1">
+                  {WOOD_COLORS.filter(c => activeColorGroup === 'Barchasi' || (c as any).group === activeColorGroup).map((c) => (
                     <button
                       key={c.id}
                       onClick={() => setFacadeColor(c.hex)}
@@ -1556,6 +1931,27 @@ Polkalar: ${calculations.totalShelves} ta | Tortmalar: ${calculations.totalDrawe
                 </div>
               </div>
             )}
+
+            {/* Tutqich (Ruchka) Rangi */}
+            <div>
+              <label className="text-[11px] font-semibold text-slate-300 block mb-1.5">Tutqich (Ruchka) Rangi:</label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+                {HANDLE_COLORS.map((hc) => (
+                  <button
+                    key={hc.id}
+                    onClick={() => setHandleColor(hc.hex)}
+                    className={`flex items-center gap-2 p-1.5 rounded-xl border text-xs text-left transition-all ${
+                      handleColor === hc.hex 
+                        ? 'border-blue-500 bg-blue-500/15 font-bold text-white shadow' 
+                        : 'border-slate-700/80 bg-slate-900/60 text-slate-400 hover:border-slate-600'
+                    }`}
+                  >
+                    <span className="w-3.5 h-3.5 rounded-full border border-slate-600 shrink-0" style={{ backgroundColor: hc.hex }} />
+                    <span className="truncate text-[10px]">{hc.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
 
           {/* 4. Eshiklar & LED */}
@@ -1783,6 +2179,15 @@ Polkalar: ${calculations.totalShelves} ta | Tortmalar: ${calculations.totalDrawe
                   handleColor={handleColor}
                   doorsOpenPercent={doorsOpenPercent}
                   onDoorsOpenPercentChange={(val) => setDoorsOpenPercent(val)}
+                  hasCountertop={hasCountertop}
+                  countertopThickness={countertopThickness}
+                  countertopColor={countertopColor}
+                  hasSink={hasSink}
+                  hasAntresol={hasAntresol}
+                  isFloating={isFloating}
+                  onUpdateSectionProp={handleUpdateSectionProp}
+                  onSectionWidthChange={handleSectionWidthChange}
+                  onMoveSection={handleMoveSection}
                 />
 
                 {/* Quick Info bar */}
@@ -2281,6 +2686,27 @@ Polkalar: ${calculations.totalShelves} ta | Tortmalar: ${calculations.totalDrawe
                       <div className="flex justify-between text-xs py-1 border-b border-slate-800/60">
                         <span className="text-slate-300">LED Podsvetka ({calculations.totalLedMeters}m + Blok):</span>
                         <span className="font-mono font-bold text-amber-300">{calculations.costLed.toLocaleString()} UZS</span>
+                      </div>
+                    )}
+
+                    {hasCountertop && (
+                      <div className="flex justify-between text-xs py-1 border-b border-slate-800/60">
+                        <span className="text-slate-300">Stoleshnitsa ({countertopThickness}mm):</span>
+                        <span className="font-mono font-bold text-slate-200">{calculations.costCountertop.toLocaleString()} UZS</span>
+                      </div>
+                    )}
+
+                    {hasSink && (
+                      <div className="flex justify-between text-xs py-1 border-b border-slate-800/60">
+                        <span className="text-slate-300">Moyka + Xrom Smesitel Kran:</span>
+                        <span className="font-mono font-bold text-slate-200">{calculations.costSink.toLocaleString()} UZS</span>
+                      </div>
+                    )}
+
+                    {isFloating && (
+                      <div className="flex justify-between text-xs py-1 border-b border-slate-800/60">
+                        <span className="text-slate-300">Podvesnoy Naves Fitinglari:</span>
+                        <span className="font-mono font-bold text-slate-200">{calculations.costFloatingMount.toLocaleString()} UZS</span>
                       </div>
                     )}
 

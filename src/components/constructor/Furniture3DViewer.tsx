@@ -9,12 +9,17 @@ import {
   EyeOff, 
   Camera, 
   Grid, 
-  Layers,
-  Sparkles,
-  SunMedium,
-  Sliders,
-  Maximize2,
-  MousePointerClick
+  Layers, 
+  Sliders, 
+  MousePointerClick,
+  Wrench,
+  Plus,
+  Minus,
+  Move,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Maximize2
 } from 'lucide-react';
 
 export interface SectionData {
@@ -42,16 +47,50 @@ export interface Furniture3DProps {
   handleColor: string;
   doorsOpenPercent: number; // 0 to 100
   onDoorsOpenPercentChange?: (percent: number) => void;
+  // Category-specific enhancements
+  hasCountertop?: boolean;
+  countertopThickness?: number;
+  countertopColor?: string;
+  hasSink?: boolean;
+  hasAntresol?: boolean;
+  isFloating?: boolean;
+  // 3D Edit Mode direct manipulation callbacks
+  onUpdateSectionProp?: (sectionIndex: number, field: 'shelvesCount' | 'drawersCount', delta: number) => void;
+  onSectionWidthChange?: (index: number, newW: number) => void;
+  onMoveSection?: (fromIdx: number, direction: 'left' | 'right') => void;
 }
 
+// 24+ Expanded Rich Materials & Colors Palette
 export const WOOD_COLORS = [
-  { id: 'white', name: 'Oq Matoviy', hex: '#f8fafc', roughness: 0.35 },
-  { id: 'sonoma', name: 'Dub Sonoma', hex: '#d4b38a', roughness: 0.6 },
-  { id: 'anthracite', name: 'Antratsit (To‘q)', hex: '#27272a', roughness: 0.45 },
-  { id: 'wenge', name: 'Venge (Klassik)', hex: '#3e2723', roughness: 0.65 },
-  { id: 'walnut', name: 'Oltin Yong‘oq', hex: '#85512b', roughness: 0.55 },
-  { id: 'sand', name: 'Krem / Qum', hex: '#e2d5c3', roughness: 0.4 },
-  { id: 'oak_smoke', name: 'Tutunli Eman', hex: '#78716c', roughness: 0.5 },
+  // 1. Eman va Yog'och (Oak & Natural Wood)
+  { id: 'sonoma', name: 'Dub Sonoma', hex: '#d4b38a', roughness: 0.6, group: 'Yog‘och' },
+  { id: 'kraft_gold', name: 'Dub Kraft Oltin', hex: '#c29b68', roughness: 0.58, group: 'Yog‘och' },
+  { id: 'shamonix', name: 'Dub Shamoniks', hex: '#8f7762', roughness: 0.62, group: 'Yog‘och' },
+  { id: 'bleached_oak', name: 'Oqartirilgan Dub', hex: '#e5ded3', roughness: 0.55, group: 'Yog‘och' },
+  { id: 'wenge', name: 'Venge Magiya (To‘q)', hex: '#3e2723', roughness: 0.65, group: 'Yog‘och' },
+  { id: 'walnut_classic', name: 'Klassik Yong‘oq (Orex)', hex: '#7d4f27', roughness: 0.55, group: 'Yog‘och' },
+  { id: 'walnut_gold', name: 'Oltin Yong‘oq', hex: '#85512b', roughness: 0.55, group: 'Yog‘och' },
+  { id: 'oak_smoke', name: 'Tutunli Eman (Loft)', hex: '#78716c', roughness: 0.5, group: 'Yog‘och' },
+  { id: 'pine_nordic', name: 'Nordik Sosna', hex: '#eedaa2', roughness: 0.6, group: 'Yog‘och' },
+  { id: 'beech', name: 'Bavariya Buki', hex: '#d9a566', roughness: 0.58, group: 'Yog‘och' },
+
+  // 2. Monoxrom va Zamonaviy Mat (Matte & Solid)
+  { id: 'white_matte', name: 'Oq Matoviy (Soft)', hex: '#f8fafc', roughness: 0.35, group: 'Monoxrom' },
+  { id: 'white_gloss', name: 'Oq Yaltiroq (Gloss)', hex: '#ffffff', roughness: 0.15, group: 'Monoxrom' },
+  { id: 'light_grey', name: 'Ochiq Kulrang (Silver)', hex: '#cbd5e1', roughness: 0.4, group: 'Monoxrom' },
+  { id: 'anthracite', name: 'Antratsit To‘q Mat', hex: '#27272a', roughness: 0.45, group: 'Monoxrom' },
+  { id: 'graphite', name: 'Qora Grafit', hex: '#18181b', roughness: 0.4, group: 'Monoxrom' },
+  { id: 'sand', name: 'Krem / Qum (Bej)', hex: '#e2d5c3', roughness: 0.4, group: 'Monoxrom' },
+  { id: 'cashmere', name: 'Kashmir (Ivory)', hex: '#d8cfc4', roughness: 0.38, group: 'Monoxrom' },
+  { id: 'olive_sage', name: 'Zaytun Yashil (Sage)', hex: '#556b2f', roughness: 0.45, group: 'Monoxrom' },
+  { id: 'navy_blue', name: 'Chuqur Moviy (Navy)', hex: '#1e3a5f', roughness: 0.45, group: 'Monoxrom' },
+  { id: 'terracotta', name: 'Terrakota Qizil', hex: '#a45a52', roughness: 0.45, group: 'Monoxrom' },
+
+  // 3. Tosh, Marmar va Beton (Stone, Marble & Loft)
+  { id: 'marble_carrara', name: 'Oq Karrara Marmar', hex: '#eceef1', roughness: 0.25, group: 'Tosh/Marmar' },
+  { id: 'marble_marquina', name: 'Qora Marquina Marmar', hex: '#1e2124', roughness: 0.25, group: 'Tosh/Marmar' },
+  { id: 'concrete_loft', name: 'Loft Beton Kulrang', hex: '#94a3b8', roughness: 0.7, group: 'Tosh/Marmar' },
+  { id: 'granite_dark', name: 'To‘q Qora Granit', hex: '#334155', roughness: 0.3, group: 'Tosh/Marmar' },
 ];
 
 export const FACADE_TYPES = [
@@ -62,9 +101,12 @@ export const FACADE_TYPES = [
 ];
 
 export const HANDLE_COLORS = [
+  { id: 'black', name: 'Qora Mat (Loft)', hex: '#18181b' },
   { id: 'silver', name: 'Xrom / Kumush', hex: '#cbd5e1' },
-  { id: 'black', name: 'Qora Mat', hex: '#18181b' },
   { id: 'gold', name: 'Oltin / Brass', hex: '#eab308' },
+  { id: 'titanium', name: 'Titan / Grafit', hex: '#475569' },
+  { id: 'rose_gold', name: 'Rose Gold / Bronza', hex: '#b76e79' },
+  { id: 'gola', name: 'Yashirin Gola Profil', hex: '#0f172a' },
 ];
 
 export default function Furniture3DViewer({
@@ -82,7 +124,16 @@ export default function Furniture3DViewer({
   facadeType,
   handleColor,
   doorsOpenPercent,
-  onDoorsOpenPercentChange
+  onDoorsOpenPercentChange,
+  hasCountertop = false,
+  countertopThickness = 38,
+  countertopColor = '#eceef1',
+  hasSink = false,
+  hasAntresol = false,
+  isFloating = false,
+  onUpdateSectionProp,
+  onSectionWidthChange,
+  onMoveSection
 }: Furniture3DProps) {
   const mountRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
@@ -94,6 +145,23 @@ export default function Furniture3DViewer({
   // Sync doorsOpenPercent via ref for animation frame loop
   const doorsOpenPercentRef = useRef<number>(doorsOpenPercent);
   doorsOpenPercentRef.current = doorsOpenPercent;
+
+  // 3D Edit Mode State & Ref
+  const [isEditMode, setIsEditMode] = useState<boolean>(false);
+  const isEditModeRef = useRef<boolean>(false);
+  isEditModeRef.current = isEditMode;
+
+  const [selectedPart, setSelectedPart] = useState<{
+    type: 'shelf' | 'drawer' | 'section';
+    id: string;
+    sectionIndex: number;
+    shelfIndex?: number;
+    drawerIndex?: number;
+    sectionWidth?: number;
+    mesh?: THREE.Object3D;
+  } | null>(null);
+
+  const boxHelperRef = useRef<THREE.BoxHelper | null>(null);
 
   // Interactive Click Raycasting & Animation items
   const interactableMeshesRef = useRef<THREE.Object3D[]>([]);
@@ -128,6 +196,21 @@ export default function Furniture3DViewer({
       animatedPartsRef.current.drawers.forEach(dr => { dr.targetFraction = fraction; });
     }
   }, [doorsOpenPercent]);
+
+  // Manage 3D Selection Bounding Box Highlight
+  useEffect(() => {
+    if (boxHelperRef.current && sceneRef.current) {
+      sceneRef.current.remove(boxHelperRef.current);
+      boxHelperRef.current.geometry.dispose();
+      boxHelperRef.current = null;
+    }
+
+    if (selectedPart?.mesh && sceneRef.current) {
+      const helper = new THREE.BoxHelper(selectedPart.mesh, 0xf59e0b); // amber highlight box
+      sceneRef.current.add(helper);
+      boxHelperRef.current = helper;
+    }
+  }, [selectedPart]);
 
   // Setup Three.js Scene
   useEffect(() => {
@@ -221,7 +304,7 @@ export default function Furniture3DViewer({
     scene.add(cabinetGroup);
     cabinetGroupRef.current = cabinetGroup;
 
-    // 8. Raycasting for Click-To-Open Doors and Drawers with Drag Differentiation
+    // 8. Raycasting for Click-To-Open Doors and Drawers & 3D Direct Selection
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
     let downX = 0;
@@ -234,7 +317,7 @@ export default function Furniture3DViewer({
 
     const handlePointerUp = (event: PointerEvent) => {
       const dist = Math.hypot(event.clientX - downX, event.clientY - downY);
-      if (dist > 8) return; // User dragged the camera, do not toggle door
+      if (dist > 8) return; // User dragged camera
 
       const rect = renderer.domElement.getBoundingClientRect();
       mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
@@ -249,10 +332,25 @@ export default function Furniture3DViewer({
           hitObj = hitObj.parent;
         }
 
-        if (hitObj && hitObj.userData) {
+        if (hitObj && hitObj.userData && hitObj.userData.interactiveType) {
           const type = hitObj.userData.interactiveType;
           const id = hitObj.userData.id;
 
+          if (isEditModeRef.current) {
+            // EDIT MODE: select part for moving, resizing, or adding/removing
+            setSelectedPart({
+              type: type as any,
+              id,
+              sectionIndex: hitObj.userData.sectionIndex ?? 0,
+              shelfIndex: hitObj.userData.shelfIndex,
+              drawerIndex: hitObj.userData.drawerIndex,
+              sectionWidth: hitObj.userData.sectionWidth,
+              mesh: hitObj
+            });
+            return;
+          }
+
+          // VIEW MODE: Toggle door or drawer open state
           if (type === 'door') {
             const doorObj = animatedPartsRef.current.doors.find(d => d.id === id);
             if (doorObj) {
@@ -265,6 +363,10 @@ export default function Furniture3DViewer({
             }
           }
         }
+      } else {
+        if (isEditModeRef.current) {
+          setSelectedPart(null);
+        }
       }
     };
 
@@ -275,7 +377,7 @@ export default function Furniture3DViewer({
       raycaster.setFromCamera(mouse, camera);
       const intersects = raycaster.intersectObjects(interactableMeshesRef.current, true);
       if (intersects.length > 0) {
-        renderer.domElement.style.cursor = 'pointer';
+        renderer.domElement.style.cursor = isEditModeRef.current ? 'crosshair' : 'pointer';
       } else {
         renderer.domElement.style.cursor = 'grab';
       }
@@ -356,6 +458,13 @@ export default function Furniture3DViewer({
     }
     interactableMeshesRef.current = [];
     animatedPartsRef.current = { doors: [], drawers: [] };
+
+    // Dispose old selection box if any
+    if (boxHelperRef.current && sceneRef.current) {
+      sceneRef.current.remove(boxHelperRef.current);
+      boxHelperRef.current.geometry.dispose();
+      boxHelperRef.current = null;
+    }
 
     const T = thickness;
     const bodyHeight = height - socleHeight;
@@ -450,7 +559,7 @@ export default function Furniture3DViewer({
     bottomPanel.position.set(0, socleHeight + T / 2, 0);
     cabinetGroup.add(bottomPanel);
 
-    // 3. Socle
+    // 3. Socle (Plinth) or Floating Wall Mounts
     if (socleHeight > 0) {
       const frontSocle = createPanel(width - 2 * T, socleHeight, T, edgeMat);
       frontSocle.position.set(0, socleHeight / 2, halfD - 30);
@@ -460,24 +569,38 @@ export default function Furniture3DViewer({
       backSocle.position.set(0, socleHeight / 2, -halfD + 30);
       cabinetGroup.add(backSocle);
 
-      // Feet
-      const footGeo = new THREE.CylinderGeometry(16, 18, 12, 16);
-      const footMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.9 });
-      const footPositions = [
-        [-halfW + 50, halfD - 40],
-        [halfW - 50, halfD - 40],
-        [-halfW + 50, -halfD + 40],
-        [halfW - 50, -halfD + 40],
-      ];
-      if (width >= 1600) {
-        footPositions.push([0, halfD - 40], [0, -halfD + 40]);
+      // Feet (omit if floating)
+      if (!isFloating) {
+        const footGeo = new THREE.CylinderGeometry(16, 18, 12, 16);
+        const footMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.9 });
+        const footPositions = [
+          [-halfW + 50, halfD - 40],
+          [halfW - 50, halfD - 40],
+          [-halfW + 50, -halfD + 40],
+          [halfW - 50, -halfD + 40],
+        ];
+        if (width >= 1600) {
+          footPositions.push([0, halfD - 40], [0, -halfD + 40]);
+        }
+        footPositions.forEach(([fx, fz]) => {
+          const foot = new THREE.Mesh(footGeo, footMat);
+          foot.position.set(fx, 6, fz);
+          foot.castShadow = true;
+          cabinetGroup.add(foot);
+        });
       }
-      footPositions.forEach(([fx, fz]) => {
-        const foot = new THREE.Mesh(footGeo, footMat);
-        foot.position.set(fx, 6, fz);
-        foot.castShadow = true;
-        cabinetGroup.add(foot);
-      });
+    }
+
+    // Floating wall mount brackets
+    if (isFloating) {
+      const bracketGeo = new THREE.BoxGeometry(40, 60, 100);
+      const bracketMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.8, roughness: 0.3 });
+      const b1 = new THREE.Mesh(bracketGeo, bracketMat);
+      b1.position.set(-halfW + 150, Math.max(10, socleHeight) - 10, -halfD + 50);
+      cabinetGroup.add(b1);
+      const b2 = new THREE.Mesh(bracketGeo, bracketMat);
+      b2.position.set(halfW - 150, Math.max(10, socleHeight) - 10, -halfD + 50);
+      cabinetGroup.add(b2);
     }
 
     // 4. Back Panel
@@ -497,7 +620,14 @@ export default function Furniture3DViewer({
         const divX = currentX + secW + T / 2;
         const divider = createPanel(T, innerHeight, depth - 10);
         divider.position.set(divX, socleHeight + T + innerHeight / 2, 5);
+        divider.userData = { 
+          interactiveType: 'section', 
+          sectionIndex: idx, 
+          id: `section_${idx}`,
+          sectionWidth: secW
+        };
         cabinetGroup.add(divider);
+        interactableMeshesRef.current.push(divider);
       }
 
       // Drawers in this section
@@ -512,7 +642,13 @@ export default function Furniture3DViewer({
           drawerGroup.position.set(secCenterX, drawerY, 0);
 
           const drawerId = `drawer_${sec.id}_${dIdx}`;
-          drawerGroup.userData = { interactiveType: 'drawer', id: drawerId };
+          drawerGroup.userData = { 
+            interactiveType: 'drawer', 
+            id: drawerId, 
+            sectionIndex: idx, 
+            drawerIndex: dIdx,
+            sectionWidth: secW
+          };
 
           // Facade
           const facade = createPanel(secW - 6, drawerHeight - 4, T, facadeMat);
@@ -555,7 +691,15 @@ export default function Furniture3DViewer({
         const shelfY = socleHeight + T + drawersTotalH + (sIdx + 1) * shelfGap;
         const shelf = createPanel(secW - 2, T, depth - 15);
         shelf.position.set(secCenterX, shelfY, 5);
+        shelf.userData = { 
+          interactiveType: 'shelf', 
+          sectionIndex: idx, 
+          shelfIndex: sIdx, 
+          id: `shelf_${sec.id}_${sIdx}`,
+          sectionWidth: secW
+        };
         cabinetGroup.add(shelf);
+        interactableMeshesRef.current.push(shelf);
 
         // LED Lighting under shelves
         if (hasLedLighting) {
@@ -714,13 +858,132 @@ export default function Furniture3DViewer({
       }
     }
 
+    // 7. Countertop (Stoleshnitsa) & Sink for Kitchen / Desks
+    if (hasCountertop) {
+      const ctThick = countertopThickness || 38;
+      const ctW = width + 30; // 15mm overhang each side
+      const ctD = depth + 35; // 30mm overhang front, 5mm back
+      const ctMat = new THREE.MeshStandardMaterial({
+        color: new THREE.Color(countertopColor || '#eceef1'),
+        roughness: 0.3,
+        metalness: 0.1,
+        wireframe: wireframe
+      });
+      const countertop = createPanel(ctW, ctThick, ctD, ctMat);
+      countertop.position.set(0, height + ctThick / 2, 12.5);
+      cabinetGroup.add(countertop);
+
+      // Sink and Faucet Tap Cutout
+      if (hasSink) {
+        const sinkW = Math.min(480, width * 0.55);
+        const sinkD = Math.min(400, depth * 0.65);
+        const sinkMat = new THREE.MeshStandardMaterial({
+          color: 0x94a3b8,
+          metalness: 0.85,
+          roughness: 0.2
+        });
+        const sinkX = width > 1000 ? -width / 4 : 0;
+
+        // Sink outer lip rim
+        const sinkRimGeo = new THREE.BoxGeometry(sinkW, 6, sinkD);
+        const sinkRim = new THREE.Mesh(sinkRimGeo, sinkMat);
+        sinkRim.position.set(sinkX, height + ctThick + 3, 10);
+        cabinetGroup.add(sinkRim);
+
+        // Sink recessed basin
+        const basinGeo = new THREE.BoxGeometry(sinkW - 50, 4, sinkD - 50);
+        const basinMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.9, roughness: 0.3 });
+        const basin = new THREE.Mesh(basinGeo, basinMat);
+        basin.position.set(sinkX, height + ctThick + 5, 10);
+        cabinetGroup.add(basin);
+
+        // Chrome Faucet / Mixer Tap
+        const faucetMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, metalness: 0.95, roughness: 0.1 });
+        const stemGeo = new THREE.CylinderGeometry(10, 12, 150, 20);
+        const stem = new THREE.Mesh(stemGeo, faucetMat);
+        stem.position.set(sinkX, height + ctThick + 75, -sinkD / 2 + 35);
+        cabinetGroup.add(stem);
+
+        const spoutGeo = new THREE.BoxGeometry(14, 14, 85);
+        const spout = new THREE.Mesh(spoutGeo, faucetMat);
+        spout.position.set(sinkX, height + ctThick + 150, -sinkD / 2 + 75);
+        cabinetGroup.add(spout);
+
+        const nozzleGeo = new THREE.CylinderGeometry(8, 8, 25, 16);
+        const nozzle = new THREE.Mesh(nozzleGeo, faucetMat);
+        nozzle.position.set(sinkX, height + ctThick + 138, -sinkD / 2 + 115);
+        cabinetGroup.add(nozzle);
+      }
+    }
+
+    // 8. Antresol (Mezzanine Top Tier for Wardrobes)
+    if (hasAntresol) {
+      const antresolH = 400;
+      const antY = height + (hasCountertop ? (countertopThickness || 38) : 0) + antresolH / 2;
+      const antresolGroup = new THREE.Group();
+      antresolGroup.position.set(0, antY, 0);
+
+      // Sides & Top
+      const aLeft = createPanel(T, antresolH, depth, bodyMat);
+      aLeft.position.set(-halfW + T / 2, 0, 0);
+      antresolGroup.add(aLeft);
+
+      const aRight = createPanel(T, antresolH, depth, bodyMat);
+      aRight.position.set(halfW - T / 2, 0, 0);
+      antresolGroup.add(aRight);
+
+      const aTop = createPanel(width - 2 * T, T, depth, bodyMat);
+      aTop.position.set(0, antresolH / 2 - T / 2, 0);
+      antresolGroup.add(aTop);
+
+      const aBack = createPanel(width, antresolH, 3.5, backPanelMat);
+      aBack.position.set(0, 0, -halfD + 1.75);
+      antresolGroup.add(aBack);
+
+      // Antresol Doors
+      const aDoorsCount = Math.max(1, doorsCount || 2);
+      const aDoorW = (width - 4) / aDoorsCount;
+      for (let ad = 0; ad < aDoorsCount; ad++) {
+        const isLeft = ad % 2 === 0;
+        const aDoor = createPanel(aDoorW - 2, antresolH - 4, T, facadeMat);
+        const adX = -halfW + 2 + ad * aDoorW + (aDoorW - 2) / 2;
+        aDoor.position.set(adX, 0, halfD + T / 2);
+        antresolGroup.add(aDoor);
+
+        // Handle
+        const aHandleGeo = new THREE.CylinderGeometry(5, 5, 80, 16);
+        const aHandle = new THREE.Mesh(aHandleGeo, metalHandleMat);
+        const ahX = isLeft ? adX + (aDoorW / 2) - 20 : adX - (aDoorW / 2) + 20;
+        aHandle.position.set(ahX, -antresolH / 2 + 50, halfD + T / 2 + 8);
+        antresolGroup.add(aHandle);
+      }
+
+      cabinetGroup.add(antresolGroup);
+    }
+
+    // Refresh BoxHelper if a part is selected
+    if (selectedPart && sceneRef.current) {
+      const match = interactableMeshesRef.current.find(m => 
+        m.userData?.interactiveType === selectedPart.type && 
+        m.userData?.sectionIndex === selectedPart.sectionIndex &&
+        (selectedPart.type !== 'shelf' || m.userData?.shelfIndex === selectedPart.shelfIndex) &&
+        (selectedPart.type !== 'drawer' || m.userData?.drawerIndex === selectedPart.drawerIndex)
+      );
+      if (match) {
+        const helper = new THREE.BoxHelper(match, 0xf59e0b);
+        sceneRef.current.add(helper);
+        boxHelperRef.current = helper;
+      }
+    }
+
     if (controlsRef.current) {
       controlsRef.current.target.set(0, height / 2, 0);
     }
   }, [
     height, width, depth, thickness, socleHeight, sectionsData,
     hasLedLighting, doorType, doorsCount, bodyColor, facadeColor, 
-    facadeType, handleColor, wireframe
+    facadeType, handleColor, wireframe,
+    hasCountertop, countertopThickness, countertopColor, hasSink, hasAntresol, isFloating
   ]);
 
   const setCameraView = (view: 'iso' | 'front' | 'side' | 'top') => {
@@ -768,11 +1031,11 @@ export default function Furniture3DViewer({
   };
 
   return (
-    <div className="relative w-full h-[540px] bg-slate-950 rounded-2xl overflow-hidden border border-slate-800 shadow-2xl flex flex-col">
+    <div className="relative w-full h-[550px] bg-slate-950 rounded-2xl overflow-hidden border border-slate-800 shadow-2xl flex flex-col">
       <div ref={mountRef} className="w-full flex-1 cursor-grab active:cursor-grabbing" />
 
       {/* Top Left: Views & Door Controls */}
-      <div className="absolute top-3 left-3 flex flex-wrap items-center gap-1.5 z-10 max-w-[80%]">
+      <div className="absolute top-3 left-3 flex flex-wrap items-center gap-1.5 z-10 max-w-[70%]">
         <div className="bg-slate-900/90 backdrop-blur-md border border-slate-700/80 rounded-xl p-1 flex items-center gap-1 shadow-lg">
           <button
             onClick={() => setCameraView('iso')}
@@ -827,6 +1090,25 @@ export default function Furniture3DViewer({
 
       {/* Top Right Quick Tools */}
       <div className="absolute top-3 right-3 flex items-center gap-1.5 z-10">
+        {/* 3D Direct Edit Mode Toggle */}
+        <button
+          onClick={() => {
+            const next = !isEditMode;
+            setIsEditMode(next);
+            isEditModeRef.current = next;
+            setSelectedPart(null);
+          }}
+          className={`px-3 py-1.5 rounded-xl text-xs font-bold border backdrop-blur-md flex items-center gap-1.5 transition-all shadow-lg ${
+            isEditMode 
+              ? 'bg-amber-500 border-amber-300 text-slate-950 ring-2 ring-amber-400/50 shadow-amber-500/30' 
+              : 'bg-slate-900/90 border-slate-700 text-slate-200 hover:bg-slate-800'
+          }`}
+          title="3D Tahrirlash rejimi: detallarni tanlab joyini o'zgartirish"
+        >
+          <Wrench className={`w-3.5 h-3.5 ${isEditMode ? 'text-slate-950' : 'text-amber-400'}`} />
+          <span>{isEditMode ? 'Tahrirlash: FAOL' : 'Tahrirlash'}</span>
+        </button>
+
         <button
           onClick={() => setWireframe(!wireframe)}
           className={`p-2 rounded-xl text-xs font-medium border backdrop-blur-md transition-all ${
@@ -860,8 +1142,141 @@ export default function Furniture3DViewer({
         </button>
       </div>
 
+      {/* Top Banner when Edit Mode is Active */}
+      {isEditMode && !selectedPart && (
+        <div className="absolute top-14 left-1/2 -translate-x-1/2 bg-amber-500/95 text-slate-950 font-bold text-xs px-3.5 py-1.5 rounded-full shadow-xl border border-amber-300 backdrop-blur-md flex items-center gap-2 z-10 animate-in fade-in">
+          <Wrench className="w-3.5 h-3.5" />
+          <span>Polka, tortma yoki bo‘lim to‘sig‘ini bosib tanlang</span>
+        </div>
+      )}
+
+      {/* FLOATING 3D ACTION BAR WHEN A PART IS SELECTED IN EDIT MODE */}
+      {isEditMode && selectedPart && (
+        <div className="absolute bottom-12 left-1/2 -translate-x-1/2 bg-slate-900/95 backdrop-blur-xl border-2 border-amber-500/80 text-white rounded-2xl p-3 shadow-2xl z-20 flex flex-col sm:flex-row items-center gap-3 animate-in fade-in zoom-in-95 max-w-[95%]">
+          <div className="flex items-center gap-2 pr-2 sm:border-r border-slate-700">
+            <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping" />
+            <div>
+              <div className="text-[10px] text-amber-300 font-bold uppercase tracking-wider">
+                {selectedPart.type === 'shelf' ? 'Polka Tanlandi' : selectedPart.type === 'drawer' ? 'Tortma Tanlandi' : 'Bo‘lim Tanlandi'}
+              </div>
+              <div className="text-xs font-bold text-slate-100 flex items-center gap-1.5">
+                <span>{selectedPart.sectionIndex + 1}-Bo‘lma</span>
+                {selectedPart.type === 'shelf' && <span className="text-slate-400">| #{ (selectedPart.shelfIndex ?? 0) + 1}-polka</span>}
+                {selectedPart.type === 'drawer' && <span className="text-slate-400">| #{ (selectedPart.drawerIndex ?? 0) + 1}-tortma</span>}
+                {selectedPart.type === 'section' && <span className="text-blue-400">({sectionsData[selectedPart.sectionIndex]?.width} mm)</span>}
+              </div>
+            </div>
+          </div>
+
+          {/* Buttons for Shelf */}
+          {selectedPart.type === 'shelf' && (
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => onUpdateSectionProp?.(selectedPart.sectionIndex, 'shelvesCount', 1)}
+                className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg flex items-center gap-1 shadow transition-colors"
+                title="Yangi polka qo'shish"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Polka qo‘shish</span>
+              </button>
+
+              <button
+                onClick={() => onUpdateSectionProp?.(selectedPart.sectionIndex, 'shelvesCount', -1)}
+                className="px-2.5 py-1.5 bg-rose-600/80 hover:bg-rose-600 text-white text-xs font-semibold rounded-lg flex items-center gap-1 shadow transition-colors"
+                title="Polkani o'chirish"
+              >
+                <Minus className="w-3.5 h-3.5" />
+                <span>O‘chirish</span>
+              </button>
+            </div>
+          )}
+
+          {/* Buttons for Drawer */}
+          {selectedPart.type === 'drawer' && (
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => onUpdateSectionProp?.(selectedPart.sectionIndex, 'drawersCount', 1)}
+                className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg flex items-center gap-1 shadow transition-colors"
+                title="Yangi tortma qo'shish"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Tortma qo‘shish</span>
+              </button>
+
+              <button
+                onClick={() => onUpdateSectionProp?.(selectedPart.sectionIndex, 'drawersCount', -1)}
+                className="px-2.5 py-1.5 bg-rose-600/80 hover:bg-rose-600 text-white text-xs font-semibold rounded-lg flex items-center gap-1 shadow transition-colors"
+                title="Tortmani o'chirish"
+              >
+                <Minus className="w-3.5 h-3.5" />
+                <span>O‘chirish</span>
+              </button>
+            </div>
+          )}
+
+          {/* Buttons for Section / Divider */}
+          {selectedPart.type === 'section' && (
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => {
+                  const currentW = sectionsData[selectedPart.sectionIndex]?.width || 400;
+                  onSectionWidthChange?.(selectedPart.sectionIndex, currentW + 50);
+                }}
+                className="px-2.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-lg flex items-center gap-1 shadow transition-colors"
+                title="Kenglikni oshirish"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>+50 mm</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  const currentW = sectionsData[selectedPart.sectionIndex]?.width || 400;
+                  onSectionWidthChange?.(selectedPart.sectionIndex, currentW - 50);
+                }}
+                className="px-2.5 py-1.5 bg-slate-700 hover:bg-slate-600 text-white text-xs font-semibold rounded-lg flex items-center gap-1 shadow transition-colors"
+                title="Kenglikni kamaytirish"
+              >
+                <Minus className="w-3.5 h-3.5" />
+                <span>-50 mm</span>
+              </button>
+
+              {selectedPart.sectionIndex > 0 && (
+                <button
+                  onClick={() => onMoveSection?.(selectedPart.sectionIndex, 'left')}
+                  className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg flex items-center gap-1 shadow border border-slate-700 transition-colors"
+                  title="Chapga surish"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                  <span>Chapga</span>
+                </button>
+              )}
+
+              {selectedPart.sectionIndex < sectionsData.length - 1 && (
+                <button
+                  onClick={() => onMoveSection?.(selectedPart.sectionIndex, 'right')}
+                  className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg flex items-center gap-1 shadow border border-slate-700 transition-colors"
+                  title="O'ngga surish"
+                >
+                  <span>O‘ngga</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          )}
+
+          <button
+            onClick={() => setSelectedPart(null)}
+            className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors ml-1"
+            title="Yopish"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       {/* Interactive Click Tip Overlay */}
-      {interactHint && (
+      {!isEditMode && interactHint && (
         <div 
           onClick={() => setInteractHint(false)}
           className="absolute bottom-10 left-3 right-3 sm:left-auto sm:right-3 bg-blue-600/90 hover:bg-blue-600 text-white text-[11px] font-semibold px-3 py-1.5 rounded-xl shadow-xl flex items-center gap-2 cursor-pointer transition-all border border-blue-400/50 backdrop-blur-md animate-bounce"
@@ -876,10 +1291,12 @@ export default function Furniture3DViewer({
       <div className="bg-slate-900/95 backdrop-blur-md border-t border-slate-800/80 px-4 py-2 flex items-center justify-between text-[11px] text-slate-400">
         <span className="flex items-center gap-1.5 font-mono">
           <RotateCw className="w-3.5 h-3.5 text-blue-400" />
-          360° erkin aylantirish • Bosish orqali eshik/tortmani ochish
+          {isEditMode 
+            ? '3D Tahrirlash: Detallarni bosib tanlang va boshqaring' 
+            : '360° erkin aylantirish • Bosish orqali eshik/tortmani ochish'}
         </span>
         <span className="font-mono text-slate-500 hidden sm:inline">
-          Three.js Studio Engine • WebGL
+          Three.js CAD Studio Engine • WebGL
         </span>
       </div>
     </div>
