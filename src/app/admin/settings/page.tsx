@@ -172,12 +172,12 @@ export default function SettingsPage() {
         <div className="space-y-2 mt-4">
           {paymentMethods.map(method => (
             <div key={method.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
-              {editingMethod?.id === method.id ? (
+              {editingMethod && editingMethod.id === method.id ? (
                 <div className="flex-1 flex items-center gap-2 mr-2">
                   <input 
                     type="text" 
                     value={editingMethod.name}
-                    onChange={e => setEditingMethod({...editingMethod, name: e.target.value})}
+                    onChange={e => setEditingMethod({ id: method.id, name: e.target.value })}
                     className="flex-1 p-2 border border-blue-500 rounded-lg text-sm"
                   />
                   <button 

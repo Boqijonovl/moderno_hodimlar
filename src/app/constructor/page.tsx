@@ -19,18 +19,18 @@ import {
   Copy, 
   Sparkles,
   Palette,
-  FileText,
   RotateCw,
   LayoutGrid,
   Tag,
   Bookmark,
   Trash2,
-  ExternalLink,
   SunMedium,
-  CheckCircle2
+  MousePointerClick,
+  Sliders,
+  Scale
 } from 'lucide-react';
 import Link from 'next/link';
-import { WOOD_COLORS, FACADE_TYPES, HANDLE_COLORS } from '@/components/constructor/Furniture3DViewer';
+import { WOOD_COLORS, FACADE_TYPES, HANDLE_COLORS, SectionData } from '@/components/constructor/Furniture3DViewer';
 
 // Dynamic 3D Viewer with SSR disabled
 const Furniture3DViewer = dynamic(
@@ -46,133 +46,216 @@ const Furniture3DViewer = dynamic(
   }
 );
 
-// Presets
-const PRESETS = [
+// Presets by Category
+const PRESET_CATEGORIES = ['Barchasi', 'Shkaflar', 'Oshxona', 'Komodlar', 'Ofis'];
+
+export interface PresetItem {
+  id: string;
+  name: string;
+  category: string;
+  icon: string;
+  height: number;
+  width: number;
+  depth: number;
+  socleHeight: number;
+  thickness: number;
+  doorType: 'hinged' | 'sliding' | 'none';
+  doorsCount: number;
+  hasLed: boolean;
+  bodyColor: string;
+  facadeColor: string;
+  facadeType: 'standard' | 'mirror' | 'glass' | 'mdf_frame';
+  sections: SectionData[];
+}
+
+const PRESETS: PresetItem[] = [
   {
     id: 'wardrobe_2door',
     name: '2-Eshikli Garderob',
-    category: 'Garderob',
+    category: 'Shkaflar',
     icon: '🚪',
     height: 2100,
     width: 1200,
     depth: 550,
-    sections: 2,
-    shelves: [4, 1],
-    hasHanger: true,
-    hasLed: true,
-    drawers: 2,
     socleHeight: 80,
     thickness: 16,
     doorType: 'hinged',
     doorsCount: 2,
+    hasLed: true,
     bodyColor: '#d4b38a',
     facadeColor: '#f8fafc',
-    facadeType: 'standard'
+    facadeType: 'standard',
+    sections: [
+      { id: 'sec_1', width: 450, shelvesCount: 4, drawersCount: 0, hasHanger: false },
+      { id: 'sec_2', width: 718, shelvesCount: 1, drawersCount: 2, hasHanger: true, hangerType: 'single' }
+    ]
   },
   {
     id: 'wardrobe_3door',
     name: '3-Eshikli Katta Shkaf',
-    category: 'Shkaf',
+    category: 'Shkaflar',
     icon: '👔',
     height: 2200,
     width: 1800,
     depth: 600,
-    sections: 3,
-    shelves: [4, 1, 4],
-    hasHanger: true,
-    hasLed: true,
-    drawers: 3,
     socleHeight: 80,
     thickness: 16,
     doorType: 'hinged',
     doorsCount: 3,
+    hasLed: true,
     bodyColor: '#27272a',
     facadeColor: '#27272a',
-    facadeType: 'mirror'
+    facadeType: 'mirror',
+    sections: [
+      { id: 'sec_1', width: 550, shelvesCount: 4, drawersCount: 0, hasHanger: false },
+      { id: 'sec_2', width: 636, shelvesCount: 1, drawersCount: 0, hasHanger: true, hangerType: 'single' },
+      { id: 'sec_3', width: 550, shelvesCount: 3, drawersCount: 3, hasHanger: false }
+    ]
+  },
+  {
+    id: 'wardrobe_4door',
+    name: '4-Eshikli Oilaviy Shkaf',
+    category: 'Shkaflar',
+    icon: '🏰',
+    height: 2300,
+    width: 2400,
+    depth: 600,
+    socleHeight: 80,
+    thickness: 16,
+    doorType: 'hinged',
+    doorsCount: 4,
+    hasLed: true,
+    bodyColor: '#3e2723',
+    facadeColor: '#f8fafc',
+    facadeType: 'mdf_frame',
+    sections: [
+      { id: 'sec_1', width: 550, shelvesCount: 5, drawersCount: 0, hasHanger: false },
+      { id: 'sec_2', width: 618, shelvesCount: 1, drawersCount: 2, hasHanger: true, hangerType: 'single' },
+      { id: 'sec_3', width: 618, shelvesCount: 1, drawersCount: 2, hasHanger: true, hangerType: 'single' },
+      { id: 'sec_4', width: 550, shelvesCount: 5, drawersCount: 0, hasHanger: false }
+    ]
   },
   {
     id: 'wardrobe_sliding',
     name: 'Shkaf-Kupé (Suriladigan)',
-    category: 'Kupé',
+    category: 'Shkaflar',
     icon: '✨',
     height: 2400,
     width: 1600,
     depth: 650,
-    sections: 2,
-    shelves: [4, 2],
-    hasHanger: true,
-    hasLed: true,
-    drawers: 2,
     socleHeight: 100,
     thickness: 16,
     doorType: 'sliding',
     doorsCount: 2,
+    hasLed: true,
     bodyColor: '#3e2723',
     facadeColor: '#3e2723',
-    facadeType: 'glass'
+    facadeType: 'glass',
+    sections: [
+      { id: 'sec_1', width: 784, shelvesCount: 4, drawersCount: 0, hasHanger: false },
+      { id: 'sec_2', width: 784, shelvesCount: 2, drawersCount: 2, hasHanger: true, hangerType: 'single' }
+    ]
   },
   {
-    id: 'kitchen_bottom',
-    name: 'Oshxona Pastki Tumba',
+    id: 'kitchen_bottom_sink',
+    name: 'Oshxona Pastki Tumba (Moyka)',
+    category: 'Oshxona',
+    icon: '🚰',
+    height: 850,
+    width: 800,
+    depth: 600,
+    socleHeight: 100,
+    thickness: 16,
+    doorType: 'hinged',
+    doorsCount: 2,
+    hasLed: false,
+    bodyColor: '#85512b',
+    facadeColor: '#f8fafc',
+    facadeType: 'mdf_frame',
+    sections: [
+      { id: 'sec_1', width: 768, shelvesCount: 0, drawersCount: 0, hasHanger: false }
+    ]
+  },
+  {
+    id: 'kitchen_bottom_drawers',
+    name: 'Oshxona 3-Tortmali Tumba',
     category: 'Oshxona',
     icon: '🍳',
     height: 850,
     width: 800,
     depth: 600,
-    sections: 1,
-    shelves: [1],
-    hasHanger: false,
-    hasLed: false,
-    drawers: 1,
     socleHeight: 100,
     thickness: 16,
-    doorType: 'hinged',
-    doorsCount: 2,
+    doorType: 'none',
+    doorsCount: 0,
+    hasLed: false,
     bodyColor: '#85512b',
     facadeColor: '#f8fafc',
-    facadeType: 'mdf_frame'
+    facadeType: 'standard',
+    sections: [
+      { id: 'sec_1', width: 768, shelvesCount: 0, drawersCount: 3, hasHanger: false }
+    ]
   },
   {
     id: 'kitchen_top',
-    name: 'Oshxona Osma Shkaf',
+    name: 'Oshxona Osma 2-Eshikli Shkaf',
     category: 'Oshxona',
     icon: '🍽',
     height: 720,
     width: 800,
     depth: 320,
-    sections: 1,
-    shelves: [2],
-    hasHanger: false,
-    hasLed: true,
-    drawers: 0,
     socleHeight: 0,
     thickness: 16,
     doorType: 'hinged',
     doorsCount: 2,
+    hasLed: true,
     bodyColor: '#f8fafc',
     facadeColor: '#f8fafc',
-    facadeType: 'glass'
+    facadeType: 'glass',
+    sections: [
+      { id: 'sec_1', width: 768, shelvesCount: 2, drawersCount: 0, hasHanger: false }
+    ]
   },
   {
-    id: 'dresser',
-    name: 'Tortmali Komod',
-    category: 'Komod',
+    id: 'dresser_4',
+    name: 'Tortmali Komod (4 qavat)',
+    category: 'Komodlar',
     icon: '🗄',
     height: 900,
     width: 900,
     depth: 450,
-    sections: 1,
-    shelves: [0],
-    hasHanger: false,
-    hasLed: false,
-    drawers: 4,
     socleHeight: 60,
     thickness: 16,
     doorType: 'none',
     doorsCount: 0,
+    hasLed: false,
     bodyColor: '#d4b38a',
     facadeColor: '#d4b38a',
-    facadeType: 'standard'
+    facadeType: 'standard',
+    sections: [
+      { id: 'sec_1', width: 868, shelvesCount: 0, drawersCount: 4, hasHanger: false }
+    ]
+  },
+  {
+    id: 'office_desk',
+    name: 'Ofis / Yozuv Stoli Tumbasi bilan',
+    category: 'Ofis',
+    icon: '💻',
+    height: 750,
+    width: 1300,
+    depth: 600,
+    socleHeight: 0,
+    thickness: 18,
+    doorType: 'none',
+    doorsCount: 0,
+    hasLed: false,
+    bodyColor: '#27272a',
+    facadeColor: '#d4b38a',
+    facadeType: 'standard',
+    sections: [
+      { id: 'sec_1', width: 820, shelvesCount: 0, drawersCount: 0, hasHanger: false },
+      { id: 'sec_2', width: 408, shelvesCount: 0, drawersCount: 3, hasHanger: false }
+    ]
   }
 ];
 
@@ -183,20 +266,26 @@ export default function FurnitureConstructorPage() {
   const [depth, setDepth] = useState<number>(550);
   const [thickness, setThickness] = useState<number>(16);
   const [socleHeight, setSocleHeight] = useState<number>(80);
-  const [sections, setSections] = useState<number>(2);
-  const [shelvesPerSection, setShelvesPerSection] = useState<number[]>([4, 1]);
-  const [hasHanger, setHasHanger] = useState<boolean>(true);
+
+  // Sections Data (Fully customizable layout)
+  const [sectionsData, setSectionsData] = useState<SectionData[]>([
+    { id: 'sec_1', width: 450, shelvesCount: 4, drawersCount: 0, hasHanger: false },
+    { id: 'sec_2', width: 718, shelvesCount: 1, drawersCount: 2, hasHanger: true, hangerType: 'single' }
+  ]);
+
   const [hasLedLighting, setHasLedLighting] = useState<boolean>(true);
-  const [drawers, setDrawers] = useState<number>(2);
   const [doorType, setDoorType] = useState<'hinged' | 'sliding' | 'none'>('hinged');
   const [doorsCount, setDoorsCount] = useState<number>(2);
 
   // Materials & Finishes
-  const [bodyColor, setBodyColor] = useState<string>('#d4b38a'); // Sonoma default
-  const [facadeColor, setFacadeColor] = useState<string>('#f8fafc'); // White facade default
+  const [bodyColor, setBodyColor] = useState<string>('#d4b38a');
+  const [facadeColor, setFacadeColor] = useState<string>('#f8fafc');
   const [syncColors, setSyncColors] = useState<boolean>(false);
   const [facadeType, setFacadeType] = useState<'standard' | 'mirror' | 'glass' | 'mdf_frame'>('standard');
-  const [handleColor, setHandleColor] = useState<string>('#cbd5e1'); // Silver default
+  const [handleColor, setHandleColor] = useState<string>('#cbd5e1');
+
+  // Interactive Door Opening: 0% to 100%
+  const [doorsOpenPercent, setDoorsOpenPercent] = useState<number>(100);
 
   // Pricing Parameters (UZS)
   const [dspSheetPrice, setDspSheetPrice] = useState<number>(460000);
@@ -205,8 +294,8 @@ export default function FurnitureConstructorPage() {
   const [hingePrice, setHingePrice] = useState<number>(15000);
   const [drawerSlidePrice, setDrawerSlidePrice] = useState<number>(45000);
   const [handlePrice, setHandlePrice] = useState<number>(20000);
-  const [ledPricePerMeter, setLedPricePerMeter] = useState<number>(35000); // 1 metr LED tasma + profil
-  const [transformerPrice, setTransformerPrice] = useState<number>(75000); // 12V transformator
+  const [ledPricePerMeter, setLedPricePerMeter] = useState<number>(35000);
+  const [transformerPrice, setTransformerPrice] = useState<number>(75000);
   const [laborPercent, setLaborPercent] = useState<number>(30);
 
   // Client / Order Info for saving
@@ -215,9 +304,11 @@ export default function FurnitureConstructorPage() {
   const [clientPhone, setClientPhone] = useState<string>('');
   const [savedProjects, setSavedProjects] = useState<any[]>([]);
 
+  // Presets Category Filter
+  const [activePresetCategory, setActivePresetCategory] = useState<string>('Barchasi');
+
   // Main View States
   const [activeTab, setActiveTab] = useState<'3d' | 'blueprint' | 'cutlist' | 'raskroy' | 'labels' | 'pricing'>('3d');
-  const [doorsOpen, setDoorsOpen] = useState<boolean>(true);
   const [blueprintStyle, setBlueprintStyle] = useState<'dark_cad' | 'white_paper'>('dark_cad');
   const [blueprintSideView, setBlueprintSideView] = useState<boolean>(false);
   const [copied, setCopied] = useState<boolean>(false);
@@ -225,6 +316,70 @@ export default function FurnitureConstructorPage() {
   const [showSaveModal, setShowSaveModal] = useState<boolean>(false);
 
   const printRef = useRef<HTMLDivElement>(null);
+
+  // Calculate inner available width
+  const totalDividersThickness = (sectionsData.length - 1) * thickness;
+  const innerTotalWidth = Math.max(100, width - 2 * thickness - totalDividersThickness);
+
+  // Balance sections equally
+  const balanceSectionWidths = (sectionsList: SectionData[] = sectionsData) => {
+    const count = sectionsList.length;
+    const equalW = Math.floor(innerTotalWidth / count);
+    const updated = sectionsList.map((sec, i) => ({
+      ...sec,
+      width: i === count - 1 ? (innerTotalWidth - equalW * (count - 1)) : equalW
+    }));
+    setSectionsData(updated);
+  };
+
+  // Adjust section width directly
+  const handleSectionWidthChange = (index: number, newW: number) => {
+    if (sectionsData.length <= 1) return;
+    const clampedW = Math.max(200, Math.min(innerTotalWidth - (sectionsData.length - 1) * 200, newW));
+    const delta = clampedW - sectionsData[index].width;
+
+    const updated = [...sectionsData];
+    updated[index] = { ...updated[index], width: clampedW };
+
+    // Distribute delta across neighbor section
+    const neighborIdx = index === sectionsData.length - 1 ? index - 1 : index + 1;
+    updated[neighborIdx] = {
+      ...updated[neighborIdx],
+      width: Math.max(150, updated[neighborIdx].width - delta)
+    };
+
+    setSectionsData(updated);
+  };
+
+  // Add a new section
+  const handleAddSection = () => {
+    if (sectionsData.length >= 4) return;
+    const newCount = sectionsData.length + 1;
+    const newSection: SectionData = {
+      id: `sec_${Date.now()}`,
+      width: Math.floor(innerTotalWidth / newCount),
+      shelvesCount: 3,
+      drawersCount: 0,
+      hasHanger: false
+    };
+    balanceSectionWidths([...sectionsData, newSection]);
+    if (doorType !== 'none') setDoorsCount(newCount);
+  };
+
+  // Remove a section
+  const handleRemoveSection = (index: number) => {
+    if (sectionsData.length <= 1) return;
+    const filtered = sectionsData.filter((_, i) => i !== index);
+    balanceSectionWidths(filtered);
+    if (doorType !== 'none') setDoorsCount(filtered.length);
+  };
+
+  // Update Section attributes
+  const updateSectionProp = (index: number, key: keyof SectionData, val: any) => {
+    const updated = [...sectionsData];
+    updated[index] = { ...updated[index], [key]: val };
+    setSectionsData(updated);
+  };
 
   // Load saved projects on mount
   useEffect(() => {
@@ -242,8 +397,9 @@ export default function FurnitureConstructorPage() {
       clientName: clientName || 'Mijoz',
       clientPhone,
       date: new Date().toLocaleDateString('uz-UZ'),
-      height, width, depth, thickness, socleHeight, sections,
-      shelvesPerSection, hasHanger, hasLedLighting, drawers,
+      height, width, depth, thickness, socleHeight,
+      sectionsData,
+      hasLedLighting,
       doorType, doorsCount, bodyColor, facadeColor, facadeType,
       totalPrice: calculations.totalSellingPrice
     };
@@ -266,11 +422,8 @@ export default function FurnitureConstructorPage() {
     setDepth(p.depth);
     setThickness(p.thickness);
     setSocleHeight(p.socleHeight);
-    setSections(p.sections);
-    setShelvesPerSection(p.shelvesPerSection);
-    setHasHanger(p.hasHanger);
+    if (p.sectionsData) setSectionsData(p.sectionsData);
     setHasLedLighting(p.hasLedLighting ?? true);
-    setDrawers(p.drawers);
     setDoorType(p.doorType);
     setDoorsCount(p.doorsCount);
     setBodyColor(p.bodyColor);
@@ -288,45 +441,27 @@ export default function FurnitureConstructorPage() {
   };
 
   // Apply Preset
-  const handleApplyPreset = (preset: typeof PRESETS[0]) => {
+  const handleApplyPreset = (preset: PresetItem) => {
     setHeight(preset.height);
     setWidth(preset.width);
     setDepth(preset.depth);
     setThickness(preset.thickness);
     setSocleHeight(preset.socleHeight);
-    setSections(preset.sections);
-    setShelvesPerSection([...preset.shelves]);
-    setHasHanger(preset.hasHanger);
-    setHasLedLighting(preset.hasLed);
-    setDrawers(preset.drawers);
-    setDoorType(preset.doorType as any);
+    setDoorType(preset.doorType);
     setDoorsCount(preset.doorsCount);
     setBodyColor(preset.bodyColor);
     setFacadeColor(preset.facadeColor);
-    setFacadeType(preset.facadeType as any);
+    setFacadeType(preset.facadeType);
+    setHasLedLighting(preset.hasLed);
     setProjectName(preset.name);
+    setSectionsData(preset.sections.map((s, idx) => ({ ...s, id: `sec_${idx + 1}` })));
   };
 
-  const updateSectionShelves = (index: number, count: number) => {
-    const updated = [...shelvesPerSection];
-    updated[index] = Math.max(0, Math.min(10, count));
-    setShelvesPerSection(updated);
-  };
-
-  const handleSectionsChange = (newCount: number) => {
-    const validCount = Math.max(1, Math.min(4, newCount));
-    setSections(validCount);
-    let newShelves = [...shelvesPerSection];
-    if (validCount > newShelves.length) {
-      while (newShelves.length < validCount) newShelves.push(2);
-    } else {
-      newShelves = newShelves.slice(0, validCount);
-    }
-    setShelvesPerSection(newShelves);
-    if (doorType !== 'none') {
-      setDoorsCount(validCount);
-    }
-  };
+  // Filtered Presets
+  const filteredPresets = useMemo(() => {
+    if (activePresetCategory === 'Barchasi') return PRESETS;
+    return PRESETS.filter(p => p.category === activePresetCategory);
+  }, [activePresetCategory]);
 
   // ==========================================
   // MATHEMATICAL CUTLIST & COST ENGINE
@@ -335,8 +470,6 @@ export default function FurnitureConstructorPage() {
     const T = thickness;
     const bodyHeight = height - socleHeight;
     const innerHeight = bodyHeight - 2 * T;
-    const innerTotalWidth = width - 2 * T - (sections - 1) * T;
-    const sectionWidth = Math.floor(innerTotalWidth / sections);
 
     interface Part {
       id: string;
@@ -356,7 +489,7 @@ export default function FurnitureConstructorPage() {
 
     const parts: Part[] = [];
 
-    // 1. Bogovinalar
+    // 1. Bogovinalar (Yon devorlar)
     parts.push({
       id: 'bogovina',
       name: 'Yon devor (Боковина)',
@@ -409,9 +542,9 @@ export default function FurnitureConstructorPage() {
       });
     }
 
-    // 4. Peregorodka
-    if (sections > 1) {
-      const dividerCount = sections - 1;
+    // 4. Peregorodkalar (To'siqlar)
+    if (sectionsData.length > 1) {
+      const dividerCount = sectionsData.length - 1;
       parts.push({
         id: 'peregorodka',
         name: "O'rta to'siq (Перегородка)",
@@ -429,96 +562,105 @@ export default function FurnitureConstructorPage() {
       });
     }
 
-    // 5. Polkalar
-    const totalShelves = shelvesPerSection.reduce((acc, curr) => acc + curr, 0);
-    if (totalShelves > 0) {
-      parts.push({
-        id: 'polka',
-        name: 'Polkalar (Полка)',
-        detailNameRu: 'Полка',
-        length: sectionWidth,
-        width: depth - 20,
-        qty: totalShelves,
-        material: `DSP ${T}mm`,
-        edgeU1: '2.0 mm (Oldi)',
-        edgeU2: '—',
-        edgeK1: '—',
-        edgeK2: '—',
-        area: (sectionWidth * (depth - 20) * totalShelves) / 1000000,
-        drillingNote: 'Polkodershatel o‘rni'
-      });
-    }
+    // 5. Polkalar (har bir sektsiya bo'yicha)
+    let totalShelves = 0;
+    sectionsData.forEach((sec, idx) => {
+      const sCount = sec.shelvesCount || 0;
+      totalShelves += sCount;
+      if (sCount > 0) {
+        parts.push({
+          id: `polka_sec_${idx}`,
+          name: `Polka (${idx + 1}-bo'lim: ${sec.width}mm)`,
+          detailNameRu: 'Полка',
+          length: sec.width,
+          width: depth - 20,
+          qty: sCount,
+          material: `DSP ${T}mm`,
+          edgeU1: '2.0 mm (Oldi)',
+          edgeU2: '—',
+          edgeK1: '—',
+          edgeK2: '—',
+          area: (sec.width * (depth - 20) * sCount) / 1000000,
+          drillingNote: 'Polkodershatel o‘rni'
+        });
+      }
+    });
 
-    // 6. Tortmalar
-    if (drawers > 0) {
-      const runnerLen = depth >= 550 ? 500 : depth >= 500 ? 450 : depth >= 450 ? 400 : 350;
-      const boxHeight = 140;
-      const innerDrawerWidth = sectionWidth - 26;
+    // 6. Tortmalar (Drawers)
+    let totalDrawers = 0;
+    sectionsData.forEach((sec, idx) => {
+      const dCount = sec.drawersCount || 0;
+      totalDrawers += dCount;
+      if (dCount > 0) {
+        const runnerLen = depth >= 550 ? 500 : depth >= 500 ? 450 : depth >= 450 ? 400 : 350;
+        const boxHeight = 140;
+        const innerDrawerWidth = sec.width - 26;
 
-      parts.push({
-        id: 'drawer_sides',
-        name: 'Tortma yonlari (Боковина ящика)',
-        detailNameRu: 'Боковина ящика',
-        length: runnerLen,
-        width: boxHeight,
-        qty: drawers * 2,
-        material: `DSP ${T}mm`,
-        edgeU1: '0.4 mm (Ustki)',
-        edgeU2: '—',
-        edgeK1: '—',
-        edgeK2: '—',
-        area: (runnerLen * boxHeight * drawers * 2) / 1000000,
-        drillingNote: 'Teleskopik rels o‘rni'
-      });
+        parts.push({
+          id: `drawer_sides_${idx}`,
+          name: `Tortma yonlari (${idx + 1}-bo'lim)`,
+          detailNameRu: 'Боковина ящика',
+          length: runnerLen,
+          width: boxHeight,
+          qty: dCount * 2,
+          material: `DSP ${T}mm`,
+          edgeU1: '0.4 mm (Ustki)',
+          edgeU2: '—',
+          edgeK1: '—',
+          edgeK2: '—',
+          area: (runnerLen * boxHeight * dCount * 2) / 1000000,
+          drillingNote: 'Teleskopik rels o‘rni'
+        });
 
-      parts.push({
-        id: 'drawer_front_back',
-        name: 'Tortma old/orqa devori',
-        detailNameRu: 'Перед/зад ящика',
-        length: innerDrawerWidth - 2 * T,
-        width: boxHeight,
-        qty: drawers * 2,
-        material: `DSP ${T}mm`,
-        edgeU1: '0.4 mm (Ustki)',
-        edgeU2: '—',
-        edgeK1: '—',
-        edgeK2: '—',
-        area: ((innerDrawerWidth - 2 * T) * boxHeight * drawers * 2) / 1000000,
-        drillingNote: 'Konfirmat teshiklari'
-      });
+        parts.push({
+          id: `drawer_front_back_${idx}`,
+          name: `Tortma old/orqa (${idx + 1}-bo'lim)`,
+          detailNameRu: 'Перед/зад ящика',
+          length: innerDrawerWidth - 2 * T,
+          width: boxHeight,
+          qty: dCount * 2,
+          material: `DSP ${T}mm`,
+          edgeU1: '0.4 mm (Ustki)',
+          edgeU2: '—',
+          edgeK1: '—',
+          edgeK2: '—',
+          area: ((innerDrawerWidth - 2 * T) * boxHeight * dCount * 2) / 1000000,
+          drillingNote: 'Konfirmat teshiklari'
+        });
 
-      parts.push({
-        id: 'drawer_bottom',
-        name: 'Tortma tagligi (Дно ДВП)',
-        detailNameRu: 'Дно ящика (ДВП)',
-        length: innerDrawerWidth,
-        width: runnerLen,
-        qty: drawers,
-        material: 'DVP 3mm',
-        edgeU1: '—',
-        edgeU2: '—',
-        edgeK1: '—',
-        edgeK2: '—',
-        area: (innerDrawerWidth * runnerLen * drawers) / 1000000,
-        drillingNote: 'Pazga kiradi yoki shurup'
-      });
+        parts.push({
+          id: `drawer_bottom_${idx}`,
+          name: `Tortma tagligi (${idx + 1}-bo'lim DVP)`,
+          detailNameRu: 'Дно ящика (ДВП)',
+          length: innerDrawerWidth,
+          width: runnerLen,
+          qty: dCount,
+          material: 'DVP 3mm',
+          edgeU1: '—',
+          edgeU2: '—',
+          edgeK1: '—',
+          edgeK2: '—',
+          area: (innerDrawerWidth * runnerLen * dCount) / 1000000,
+          drillingNote: 'Pazga kiradi yoki shurup'
+        });
 
-      parts.push({
-        id: 'drawer_facade',
-        name: 'Tortma fasadi (Фасад ящика)',
-        detailNameRu: 'Фасад ящика',
-        length: sectionWidth - 4,
-        width: 180,
-        qty: drawers,
-        material: `DSP ${T}mm`,
-        edgeU1: '2.0 mm',
-        edgeU2: '2.0 mm',
-        edgeK1: '2.0 mm',
-        edgeK2: '2.0 mm',
-        area: ((sectionWidth - 4) * 180 * drawers) / 1000000,
-        drillingNote: 'Tutqich (Ruchka) teshigi'
-      });
-    }
+        parts.push({
+          id: `drawer_facade_${idx}`,
+          name: `Tortma fasadi (${idx + 1}-bo'lim)`,
+          detailNameRu: 'Фасад ящика',
+          length: sec.width - 4,
+          width: 180,
+          qty: dCount,
+          material: `DSP ${T}mm`,
+          edgeU1: '2.0 mm',
+          edgeU2: '2.0 mm',
+          edgeK1: '2.0 mm',
+          edgeK2: '2.0 mm',
+          area: ((sec.width - 4) * 180 * dCount) / 1000000,
+          drillingNote: 'Tutqich (Ruchka) teshigi'
+        });
+      }
+    });
 
     // 7. Fasadlar / Eshiklar
     if (doorType !== 'none' && doorsCount > 0) {
@@ -616,13 +758,13 @@ export default function FurnitureConstructorPage() {
       hingesCount = doorsCount * hingesPerDoor;
     }
 
-    const drawerSlidesCount = drawers;
-    const handlesCount = (doorType === 'hinged' ? doorsCount : 0) + drawers;
+    const drawerSlidesCount = totalDrawers;
+    const handlesCount = (doorType === 'hinged' ? doorsCount : 0) + totalDrawers;
     const legsCount = width < 1200 ? 4 : width < 2000 ? 6 : 8;
-    const confirmatsCount = (sections * 8) + (totalShelves * 4) + (drawers * 8) + 20;
+    const confirmatsCount = (sectionsData.length * 8) + (totalShelves * 4) + (totalDrawers * 8) + 20;
 
     // LED Lighting
-    const totalLedMeters = hasLedLighting ? Math.ceil(((totalShelves * sectionWidth) + width) / 1000) : 0;
+    const totalLedMeters = hasLedLighting ? Math.ceil(((totalShelves * (width / sectionsData.length)) + width) / 1000) : 0;
     const costLed = hasLedLighting ? (totalLedMeters * ledPricePerMeter) + transformerPrice : 0;
 
     // Cost Breakdown
@@ -639,12 +781,10 @@ export default function FurnitureConstructorPage() {
     const laborAndMargin = Math.round((materialsCost * laborPercent) / 100);
     const totalSellingPrice = materialsCost + laborAndMargin;
 
-    // ==========================================
-    // 2D CUTTING STOCK (RASKROY) BIN-PACKING
-    // ==========================================
+    // 2D Guillotine Bin-Packing Layout
     const SHEET_W = 2750;
     const SHEET_H = 1830;
-    const KERF = 4; // Saw kerf 4mm
+    const KERF = 4;
 
     interface PlacedItem {
       x: number;
@@ -662,9 +802,8 @@ export default function FurnitureConstructorPage() {
       wastePercent: number;
     }
 
-    // Unroll parts into individual cutting pieces
     const cutPieces: { w: number; h: number; name: string }[] = [];
-    dspParts.forEach((p, idx) => {
+    dspParts.forEach((p) => {
       for (let i = 0; i < p.qty; i++) {
         cutPieces.push({
           w: Math.max(p.length, p.width),
@@ -674,7 +813,6 @@ export default function FurnitureConstructorPage() {
       }
     });
 
-    // Sort descending by height
     cutPieces.sort((a, b) => b.h - a.h || b.w - a.w);
 
     const sheetLayouts: SheetLayout[] = [];
@@ -687,17 +825,13 @@ export default function FurnitureConstructorPage() {
     const colorPalette = ['#3b82f6', '#6366f1', '#10b981', '#f59e0b', '#06b6d4', '#ec4899', '#8b5cf6'];
 
     cutPieces.forEach((piece, pIdx) => {
-      // Check if piece fits in current row
       if (curX + piece.w + KERF > SHEET_W - 10) {
-        // Move to next row
         curX = 10;
         curY += shelfHeight + KERF;
         shelfHeight = 0;
       }
 
-      // Check if fits vertically on sheet
       if (curY + piece.h + KERF > SHEET_H - 10) {
-        // Push sheet layout and start new sheet
         sheetLayouts.push({
           sheetIndex: sheetLayouts.length + 1,
           items: [...currentSheet],
@@ -711,7 +845,6 @@ export default function FurnitureConstructorPage() {
         sheetAreaUsed = 0;
       }
 
-      // Place piece
       currentSheet.push({
         x: curX,
         y: curY,
@@ -736,13 +869,13 @@ export default function FurnitureConstructorPage() {
     }
 
     return {
-      innerTotalWidth,
-      sectionWidth,
       bodyHeight,
       innerHeight,
       parts,
       totalDspArea,
       totalDvpArea,
+      totalDrawers,
+      totalShelves,
       dspSheetsNeeded: Math.max(dspSheetsNeeded, sheetLayouts.length),
       dvpSheetsNeeded,
       edge2mmMeters,
@@ -769,11 +902,10 @@ export default function FurnitureConstructorPage() {
       sheetLayouts
     };
   }, [
-    height, width, depth, thickness, socleHeight, sections, 
-    shelvesPerSection, hasHanger, hasLedLighting, drawers, doorType, doorsCount,
-    dspSheetPrice, dvpSheetPrice, edgePricePerMeter, hingePrice, 
-    drawerSlidePrice, handlePrice, ledPricePerMeter, transformerPrice, laborPercent,
-    facadeType
+    height, width, depth, thickness, socleHeight, sectionsData,
+    hasLedLighting, doorType, doorsCount, dspSheetPrice, dvpSheetPrice,
+    edgePricePerMeter, hingePrice, drawerSlidePrice, handlePrice,
+    ledPricePerMeter, transformerPrice, laborPercent, facadeType
   ]);
 
   const handlePrint = () => {
@@ -800,7 +932,7 @@ export default function FurnitureConstructorPage() {
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
       pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-      pdf.save(`Moderno_Mebel_${projectName.replace(/\s+/g, '_')}_${width}x${height}x${depth}.pdf`);
+      pdf.save(`Moderno_${projectName.replace(/\s+/g, '_')}_${width}x${height}x${depth}.pdf`);
     } catch (e) {
       console.error('PDF export error:', e);
       alert("PDF yuklab olishda xatolik yuz berdi. Iltimos 'Chop etish' tugmasidan foydalaning.");
@@ -816,7 +948,8 @@ Mijoz: ${clientName || 'Moderno mijozi'} | Tel: ${clientPhone || '—'}
 O'lchamlari: ${width} x ${height} x ${depth} mm
 Material: DSP ${thickness} mm (${WOOD_COLORS.find(w => w.hex === bodyColor)?.name || 'Maxsus'})
 Fasad: ${FACADE_TYPES.find(f => f.id === facadeType)?.name} (${WOOD_COLORS.find(w => w.hex === facadeColor)?.name})
-Bo'limlar: ${sections} ta | Polkalar: ${shelvesPerSection.reduce((a, b) => a + b, 0)} ta | Tortmalar: ${drawers} ta | LED: ${hasLedLighting ? 'Bor' : 'Yo‘q'}
+Bo'limlar: ${sectionsData.length} ta (Kengliklari: ${sectionsData.map(s => s.width + 'mm').join(' + ')})
+Polkalar: ${calculations.totalShelves} ta | Tortmalar: ${calculations.totalDrawers} ta | LED: ${hasLedLighting ? 'Bor' : 'Yo‘q'}
 
 📋 DETALIZATSIYA VA MATERIALLAR:
 • Jami detallar: ${calculations.parts.reduce((a, b) => a + b.qty, 0)} dona
@@ -831,7 +964,7 @@ Bo'limlar: ${sections} ta | Polkalar: ${shelvesPerSection.reduce((a, b) => a + b
 • LED profil va tasma: ${calculations.totalLedMeters} metr
 
 💰 YAKUNIY SOTUV NARXI: ${calculations.totalSellingPrice.toLocaleString()} so'm
-(Materiallar tannarxi: ${calculations.materialsCost.toLocaleString()} so'm | Ish haqi & Daromad: ${calculations.laborAndMargin.toLocaleString()} so'm)`;
+(Materiallar: ${calculations.materialsCost.toLocaleString()} so'm | Ish haqi & Daromad: ${calculations.laborAndMargin.toLocaleString()} so'm)`;
 
     navigator.clipboard.writeText(text);
     setCopied(true);
@@ -860,10 +993,10 @@ Bo'limlar: ${sections} ta | Polkalar: ${shelvesPerSection.reduce((a, b) => a + b
               <h1 className="text-sm font-bold tracking-tight text-white flex items-center gap-2">
                 Moderno Konstruktor Pro
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/30">
-                  3D + 2D CAD + Raskroy
+                  Custom Layout CAD
                 </span>
               </h1>
-              <p className="text-[11px] text-slate-400">3D dizayn, texnik chizma, kroy va sex etiketkalari</p>
+              <p className="text-[11px] text-slate-400">Erkin joylashuv, 3D interaktiv eshiklar va avto-raskroy</p>
             </div>
           </div>
         </div>
@@ -907,14 +1040,50 @@ Bo'limlar: ${sections} ta | Polkalar: ${shelvesPerSection.reduce((a, b) => a + b
         </div>
       </header>
 
-      {/* Preset Templates Carousel */}
-      <div className="bg-slate-950/80 border-b border-slate-800 px-4 py-2.5 overflow-x-auto no-scrollbar">
-        <div className="flex items-center gap-2 min-w-max">
+      {/* Preset Category Bar */}
+      <div className="bg-slate-950/80 border-b border-slate-800 px-4 py-2 flex items-center justify-between gap-3 overflow-x-auto no-scrollbar">
+        <div className="flex items-center gap-1.5 shrink-0">
           <span className="text-xs font-semibold text-slate-400 flex items-center gap-1 mr-1">
             <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-            Mebel Shablonlari:
+            Kategoriya:
           </span>
-          {PRESETS.map((preset) => (
+          {PRESET_CATEGORIES.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setActivePresetCategory(cat)}
+              className={`px-3 py-1 rounded-xl text-xs font-medium transition-all ${
+                activePresetCategory === cat 
+                  ? 'bg-blue-600 text-white font-bold shadow' 
+                  : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700'
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+
+        {/* Master Door Toggle */}
+        {doorType !== 'none' && (
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => setDoorsOpenPercent(doorsOpenPercent > 0 ? 0 : 100)}
+              className={`px-3 py-1 rounded-xl text-xs font-bold flex items-center gap-1.5 border transition-all ${
+                doorsOpenPercent > 0 
+                  ? 'bg-blue-600/30 border-blue-500 text-blue-300' 
+                  : 'bg-slate-800 border-slate-700 text-slate-400'
+              }`}
+            >
+              {doorsOpenPercent > 0 ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+              <span>{doorsOpenPercent > 0 ? "Barchasini Yopish" : "Barchasini Ochish"}</span>
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Presets Horizontal Slider */}
+      <div className="bg-slate-950/60 border-b border-slate-800/80 px-4 py-2.5 overflow-x-auto no-scrollbar">
+        <div className="flex items-center gap-2 min-w-max">
+          {filteredPresets.map((preset) => (
             <button
               key={preset.id}
               onClick={() => handleApplyPreset(preset)}
@@ -930,7 +1099,7 @@ Bo'limlar: ${sections} ta | Polkalar: ${shelvesPerSection.reduce((a, b) => a + b
         </div>
       </div>
 
-      {/* Main Workspace Layout */}
+      {/* Main Workspace */}
       <div className="max-w-7xl mx-auto p-4 grid grid-cols-1 lg:grid-cols-12 gap-6 mt-2">
         
         {/* LEFT COLUMN: Controls & Parameters (5 Cols) */}
@@ -955,7 +1124,11 @@ Bo'limlar: ${sections} ta | Polkalar: ${shelvesPerSection.reduce((a, b) => a + b
                   <input
                     type="number"
                     value={width}
-                    onChange={(e) => setWidth(Number(e.target.value))}
+                    onChange={(e) => {
+                      const newW = Number(e.target.value);
+                      setWidth(newW);
+                      balanceSectionWidths();
+                    }}
                     step={10}
                     min={400}
                     max={4000}
@@ -998,7 +1171,6 @@ Bo'limlar: ${sections} ta | Polkalar: ${shelvesPerSection.reduce((a, b) => a + b
               </div>
             </div>
 
-            {/* Range Sliders */}
             <div className="mt-3 space-y-2 pt-2 border-t border-slate-700/60">
               <div className="flex items-center gap-2 text-xs">
                 <span className="w-16 text-slate-400 text-[11px]">Kenglik:</span>
@@ -1008,7 +1180,10 @@ Bo'limlar: ${sections} ta | Polkalar: ${shelvesPerSection.reduce((a, b) => a + b
                   max={3000} 
                   step={50} 
                   value={width} 
-                  onChange={(e) => setWidth(Number(e.target.value))} 
+                  onChange={(e) => {
+                    setWidth(Number(e.target.value));
+                    balanceSectionWidths();
+                  }} 
                   className="flex-1 accent-blue-500 h-1.5 bg-slate-700 rounded-lg cursor-pointer"
                 />
                 <span className="w-12 text-right font-mono text-[11px]">{width}</span>
@@ -1029,7 +1204,138 @@ Bo'limlar: ${sections} ta | Polkalar: ${shelvesPerSection.reduce((a, b) => a + b
             </div>
           </div>
 
-          {/* 2. Fasad Turlari va Ranglar */}
+          {/* 2. ERKIN BO'LIMLAR VA DETALLARNI SOZLASH (CUSTOM SECTION LAYOUT) */}
+          <div className="bg-slate-800/60 border border-slate-700/70 rounded-2xl p-4 shadow-xl backdrop-blur-sm space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xs font-bold uppercase tracking-wider text-blue-400 flex items-center gap-1.5">
+                <Sliders className="w-4 h-4" />
+                Detallarning Joyini Erkin Sozlash
+              </h2>
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => balanceSectionWidths()}
+                  className="px-2 py-0.5 text-[10px] bg-slate-800 hover:bg-slate-700 text-blue-400 rounded-lg border border-slate-700 flex items-center gap-1"
+                  title="Bo'limlar kengligini teng taqsimlash"
+                >
+                  <Scale className="w-3 h-3" />
+                  <span>Tenglash</span>
+                </button>
+                <button
+                  onClick={handleAddSection}
+                  disabled={sectionsData.length >= 4}
+                  className="px-2 py-0.5 text-[10px] bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white rounded-lg flex items-center gap-0.5 font-bold"
+                  title="Yangi sektsiya qo'shish"
+                >
+                  <Plus className="w-3 h-3" />
+                  <span>Bo'lim</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Individual Section Cards */}
+            <div className="space-y-2.5">
+              {sectionsData.map((sec, idx) => (
+                <div key={sec.id} className="bg-slate-900/80 border border-slate-700/70 rounded-xl p-3 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                      <span className="w-4 h-4 rounded-full bg-blue-600/30 border border-blue-500 text-blue-300 text-[10px] flex items-center justify-center font-mono">
+                        {idx + 1}
+                      </span>
+                      {idx + 1}-Bo'lim ({sec.width} mm)
+                    </span>
+
+                    {sectionsData.length > 1 && (
+                      <button
+                        onClick={() => handleRemoveSection(idx)}
+                        className="text-slate-500 hover:text-rose-400 p-1"
+                        title="Ushbu bo'limni o'chirish"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Width slider for this section */}
+                  {sectionsData.length > 1 && (
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className="text-[10px] text-slate-400 w-14">Kenglik:</span>
+                      <input
+                        type="range"
+                        min={150}
+                        max={innerTotalWidth - 150}
+                        value={sec.width}
+                        onChange={(e) => handleSectionWidthChange(idx, Number(e.target.value))}
+                        className="flex-1 accent-blue-500 h-1 bg-slate-700 rounded-lg cursor-pointer"
+                      />
+                      <span className="font-mono text-[11px] text-blue-300 w-12 text-right">{sec.width} mm</span>
+                    </div>
+                  )}
+
+                  {/* Shelves, Drawers, Hangers inside this section */}
+                  <div className="grid grid-cols-3 gap-2 pt-1 border-t border-slate-800">
+                    {/* Shelves */}
+                    <div className="bg-slate-950 p-2 rounded-lg border border-slate-800 flex items-center justify-between">
+                      <div className="text-[10px]">
+                        <span className="text-slate-400 block">Polkalar</span>
+                        <strong className="text-white font-mono">{sec.shelvesCount} ta</strong>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => updateSectionProp(idx, 'shelvesCount', Math.max(0, sec.shelvesCount - 1))}
+                          className="w-5 h-5 rounded bg-slate-800 hover:bg-slate-700 text-xs flex items-center justify-center"
+                        >
+                          -
+                        </button>
+                        <button
+                          onClick={() => updateSectionProp(idx, 'shelvesCount', Math.min(8, sec.shelvesCount + 1))}
+                          className="w-5 h-5 rounded bg-slate-800 hover:bg-slate-700 text-xs flex items-center justify-center"
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Drawers in this section */}
+                    <div className="bg-slate-950 p-2 rounded-lg border border-slate-800 flex items-center justify-between">
+                      <div className="text-[10px]">
+                        <span className="text-slate-400 block">Tortmalar</span>
+                        <strong className="text-white font-mono">{sec.drawersCount} ta</strong>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => updateSectionProp(idx, 'drawersCount', Math.max(0, sec.drawersCount - 1))}
+                          className="w-5 h-5 rounded bg-slate-800 hover:bg-slate-700 text-xs flex items-center justify-center"
+                        >
+                          -
+                        </button>
+                        <button
+                          onClick={() => updateSectionProp(idx, 'drawersCount', Math.min(4, sec.drawersCount + 1))}
+                          className="w-5 h-5 rounded bg-slate-800 hover:bg-slate-700 text-xs flex items-center justify-center"
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Hanger */}
+                    <div className="bg-slate-950 p-2 rounded-lg border border-slate-800 flex flex-col justify-between">
+                      <span className="text-[10px] text-slate-400 block">Kiyim Ilgich</span>
+                      <button
+                        onClick={() => updateSectionProp(idx, 'hasHanger', !sec.hasHanger)}
+                        className={`py-0.5 rounded text-[10px] font-bold mt-1 transition-colors ${
+                          sec.hasHanger ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400'
+                        }`}
+                      >
+                        {sec.hasHanger ? 'Bor (Truba)' : 'Yo‘q'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* 3. Fasad Turlari va Ranglar */}
           <div className="bg-slate-800/60 border border-slate-700/70 rounded-2xl p-4 shadow-xl backdrop-blur-sm space-y-3">
             <h2 className="text-xs font-bold uppercase tracking-wider text-blue-400 flex items-center gap-1.5">
               <Palette className="w-4 h-4" />
@@ -1096,7 +1402,7 @@ Bo'limlar: ${sections} ta | Polkalar: ${shelvesPerSection.reduce((a, b) => a + b
               </div>
             </div>
 
-            {/* Fasad Rangi (if not mirror/glass and not synced) */}
+            {/* Fasad Rangi */}
             {!syncColors && facadeType !== 'mirror' && facadeType !== 'glass' && (
               <div>
                 <label className="text-[11px] font-semibold text-slate-300 block mb-1.5">Fasad (Eshiklar) Rangi:</label>
@@ -1120,127 +1426,13 @@ Bo'limlar: ${sections} ta | Polkalar: ${shelvesPerSection.reduce((a, b) => a + b
             )}
           </div>
 
-          {/* 3. Ichki Bo'limlar, Polkalar va LED */}
-          <div className="bg-slate-800/60 border border-slate-700/70 rounded-2xl p-4 shadow-xl backdrop-blur-sm space-y-3">
-            <h2 className="text-xs font-bold uppercase tracking-wider text-blue-400 flex items-center gap-1.5">
-              <Box className="w-4 h-4" />
-              Ichki Bo'limlar va Polkalar
-            </h2>
-
-            {/* Sections count */}
-            <div className="flex items-center justify-between">
-              <div>
-                <span className="text-xs font-semibold text-slate-200">Vertikal Bo'limlar (Sektsiyalar)</span>
-                <p className="text-[10px] text-slate-400">Har bir bo'lim kengligi: ~{calculations.sectionWidth} mm</p>
-              </div>
-              <div className="flex items-center gap-2 bg-slate-900 border border-slate-700 rounded-xl p-1">
-                <button 
-                  onClick={() => handleSectionsChange(sections - 1)}
-                  className="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-white flex items-center justify-center font-bold"
-                >
-                  <Minus className="w-3.5 h-3.5" />
-                </button>
-                <span className="w-6 text-center font-bold text-sm text-blue-400 font-mono">{sections}</span>
-                <button 
-                  onClick={() => handleSectionsChange(sections + 1)}
-                  className="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-white flex items-center justify-center font-bold"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
-
-            {/* Shelves per section */}
-            <div className="bg-slate-900/60 border border-slate-700/60 rounded-xl p-2.5 space-y-2">
-              <span className="text-[11px] font-semibold text-slate-300 block">Bo'limlar bo'yicha polkalar soni:</span>
-              <div className="grid grid-cols-2 gap-2">
-                {shelvesPerSection.map((count, idx) => (
-                  <div key={idx} className="flex items-center justify-between bg-slate-800/80 px-2.5 py-1.5 rounded-lg border border-slate-700/50">
-                    <span className="text-[11px] text-slate-300">{idx + 1}-bo'lim:</span>
-                    <div className="flex items-center gap-1.5">
-                      <button 
-                        onClick={() => updateSectionShelves(idx, count - 1)}
-                        className="w-5 h-5 rounded bg-slate-700 hover:bg-slate-600 text-xs flex items-center justify-center"
-                      >
-                        -
-                      </button>
-                      <span className="font-mono text-xs font-bold text-blue-300 w-4 text-center">{count}</span>
-                      <button 
-                        onClick={() => updateSectionShelves(idx, count + 1)}
-                        className="w-5 h-5 rounded bg-slate-700 hover:bg-slate-600 text-xs flex items-center justify-center"
-                      >
-                        +
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Drawers, Hangers, and LED lighting */}
-            <div className="grid grid-cols-3 gap-2 pt-1">
-              {/* Drawers */}
-              <div className="bg-slate-900/60 border border-slate-700/60 rounded-xl p-2 flex flex-col justify-between">
-                <div>
-                  <span className="text-[10px] font-semibold text-slate-300 block">Tortmalar</span>
-                  <span className="text-[9px] text-slate-500">{drawers} dona</span>
-                </div>
-                <div className="flex items-center justify-between mt-1.5">
-                  <button 
-                    onClick={() => setDrawers(Math.max(0, drawers - 1))}
-                    className="w-5 h-5 rounded bg-slate-800 text-xs flex items-center justify-center"
-                  >
-                    -
-                  </button>
-                  <span className="font-mono text-xs font-bold text-blue-300">{drawers}</span>
-                  <button 
-                    onClick={() => setDrawers(Math.min(8, drawers + 1))}
-                    className="w-5 h-5 rounded bg-slate-800 text-xs flex items-center justify-center"
-                  >
-                    +
-                  </button>
-                </div>
-              </div>
-
-              {/* Hanger */}
-              <div className="bg-slate-900/60 border border-slate-700/60 rounded-xl p-2 flex flex-col justify-between">
-                <div>
-                  <span className="text-[10px] font-semibold text-slate-300 block">Kiyim Ilgich</span>
-                  <span className="text-[9px] text-slate-500">Truba</span>
-                </div>
-                <button 
-                  onClick={() => setHasHanger(!hasHanger)}
-                  className={`mt-1.5 py-1 rounded-lg text-[10px] font-bold transition-colors ${hasHanger ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400'}`}
-                >
-                  {hasHanger ? 'Bor' : 'Yo‘q'}
-                </button>
-              </div>
-
-              {/* LED Lighting */}
-              <div className="bg-slate-900/60 border border-slate-700/60 rounded-xl p-2 flex flex-col justify-between">
-                <div>
-                  <span className="text-[10px] font-semibold text-slate-300 block">LED Podsvetka</span>
-                  <span className="text-[9px] text-slate-500">Yoritish</span>
-                </div>
-                <button 
-                  onClick={() => setHasLedLighting(!hasLedLighting)}
-                  className={`mt-1.5 py-1 rounded-lg text-[10px] font-bold transition-colors flex items-center justify-center gap-1 ${hasLedLighting ? 'bg-amber-600 text-white' : 'bg-slate-800 text-slate-400'}`}
-                >
-                  <SunMedium className="w-3 h-3" />
-                  <span>{hasLedLighting ? 'Yoqilgan' : 'O‘chiq'}</span>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* 4. Eshiklar & Tsokol */}
+          {/* 4. Eshiklar & LED */}
           <div className="bg-slate-800/60 border border-slate-700/70 rounded-2xl p-4 shadow-xl backdrop-blur-sm space-y-3">
             <h2 className="text-xs font-bold uppercase tracking-wider text-blue-400 flex items-center gap-1.5">
               <Layers className="w-4 h-4" />
-              Eshik Turi va Tsokol
+              Eshiklar, Tsokol va LED
             </h2>
 
-            {/* Door Type */}
             <div className="grid grid-cols-3 gap-2">
               {[
                 { id: 'hinged', name: 'Ochiladigan' },
@@ -1252,7 +1444,7 @@ Bo'limlar: ${sections} ta | Polkalar: ${shelvesPerSection.reduce((a, b) => a + b
                   onClick={() => {
                     setDoorType(dt.id as any);
                     if (dt.id === 'none') setDoorsCount(0);
-                    else if (doorsCount === 0) setDoorsCount(sections);
+                    else if (doorsCount === 0) setDoorsCount(sectionsData.length);
                   }}
                   className={`p-2 rounded-xl text-xs font-medium border text-center transition-all ${
                     doorType === dt.id 
@@ -1288,18 +1480,6 @@ Bo'limlar: ${sections} ta | Polkalar: ${shelvesPerSection.reduce((a, b) => a + b
 
             <div className="grid grid-cols-2 gap-3 pt-1">
               <div>
-                <label className="text-[11px] font-semibold text-slate-300 block mb-1">DSP Qalinligi</label>
-                <select 
-                  value={thickness}
-                  onChange={(e) => setThickness(Number(e.target.value))}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs font-bold text-white focus:outline-none focus:border-blue-500"
-                >
-                  <option value={16}>16 mm (Standart)</option>
-                  <option value={18}>18 mm (Mustahkam)</option>
-                </select>
-              </div>
-
-              <div>
                 <label className="text-[11px] font-semibold text-slate-300 block mb-1">Tsokol (Oyoq) balandligi</label>
                 <div className="relative">
                   <input
@@ -1314,78 +1494,23 @@ Bo'limlar: ${sections} ta | Polkalar: ${shelvesPerSection.reduce((a, b) => a + b
                   <span className="absolute right-2 top-2 text-[10px] text-slate-500">mm</span>
                 </div>
               </div>
+
+              <div>
+                <label className="text-[11px] font-semibold text-slate-300 block mb-1">LED Podsvetka</label>
+                <button
+                  onClick={() => setHasLedLighting(!hasLedLighting)}
+                  className={`w-full py-1.5 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1.5 ${
+                    hasLedLighting ? 'bg-amber-600 text-white' : 'bg-slate-900 border border-slate-700 text-slate-400'
+                  }`}
+                >
+                  <SunMedium className="w-3.5 h-3.5" />
+                  <span>{hasLedLighting ? 'LED Yoqilgan' : 'LED Yo‘q'}</span>
+                </button>
+              </div>
             </div>
           </div>
 
-          {/* 5. Narx va Tarif Sozlamalari */}
-          <details className="bg-slate-800/40 border border-slate-700/60 rounded-2xl p-3 shadow-lg">
-            <summary className="text-xs font-bold text-slate-300 cursor-pointer flex items-center justify-between">
-              <span className="flex items-center gap-1.5">
-                <DollarSign className="w-4 h-4 text-emerald-400" />
-                Material va Xizmat Narxlarini Sozlash
-              </span>
-              <span className="text-[10px] text-blue-400">O'zgartirish</span>
-            </summary>
-            
-            <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-slate-700 text-xs">
-              <div>
-                <label className="text-[10px] text-slate-400">DSP 1 List (so'm)</label>
-                <input 
-                  type="number" 
-                  value={dspSheetPrice} 
-                  onChange={(e) => setDspSheetPrice(Number(e.target.value))} 
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-xs font-mono"
-                />
-              </div>
-              <div>
-                <label className="text-[10px] text-slate-400">Kromka 1 m (so'm)</label>
-                <input 
-                  type="number" 
-                  value={edgePricePerMeter} 
-                  onChange={(e) => setEdgePricePerMeter(Number(e.target.value))} 
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-xs font-mono"
-                />
-              </div>
-              <div>
-                <label className="text-[10px] text-slate-400">1 ta Petlya (so'm)</label>
-                <input 
-                  type="number" 
-                  value={hingePrice} 
-                  onChange={(e) => setHingePrice(Number(e.target.value))} 
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-xs font-mono"
-                />
-              </div>
-              <div>
-                <label className="text-[10px] text-slate-400">Napravlyayushaya (juft)</label>
-                <input 
-                  type="number" 
-                  value={drawerSlidePrice} 
-                  onChange={(e) => setDrawerSlidePrice(Number(e.target.value))} 
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-xs font-mono"
-                />
-              </div>
-              <div>
-                <label className="text-[10px] text-slate-400">Ish haqi & foyda (%)</label>
-                <input 
-                  type="number" 
-                  value={laborPercent} 
-                  onChange={(e) => setLaborPercent(Number(e.target.value))} 
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-xs font-mono"
-                />
-              </div>
-              <div>
-                <label className="text-[10px] text-slate-400">LED 1 metr (so'm)</label>
-                <input 
-                  type="number" 
-                  value={ledPricePerMeter} 
-                  onChange={(e) => setLedPricePerMeter(Number(e.target.value))} 
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-xs font-mono"
-                />
-              </div>
-            </div>
-          </details>
-
-          {/* 6. Saqlangan Loyihalar (Saved Projects) Drawer */}
+          {/* 5. Saqlangan Loyihalar */}
           {savedProjects.length > 0 && (
             <div className="bg-slate-800/40 border border-slate-700/60 rounded-2xl p-3 shadow-lg">
               <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5 mb-2">
@@ -1516,10 +1641,7 @@ Bo'limlar: ${sections} ta | Polkalar: ${shelvesPerSection.reduce((a, b) => a + b
                   depth={depth}
                   thickness={thickness}
                   socleHeight={socleHeight}
-                  sections={sections}
-                  shelvesPerSection={shelvesPerSection}
-                  drawers={drawers}
-                  hasHanger={hasHanger}
+                  sectionsData={sectionsData}
                   hasLedLighting={hasLedLighting}
                   doorType={doorType}
                   doorsCount={doorsCount}
@@ -1527,11 +1649,11 @@ Bo'limlar: ${sections} ta | Polkalar: ${shelvesPerSection.reduce((a, b) => a + b
                   facadeColor={facadeColor}
                   facadeType={facadeType}
                   handleColor={handleColor}
-                  doorsOpen={doorsOpen}
-                  onToggleDoors={() => setDoorsOpen(!doorsOpen)}
+                  doorsOpenPercent={doorsOpenPercent}
+                  onDoorsOpenPercentChange={(val) => setDoorsOpenPercent(val)}
                 />
 
-                {/* Quick Info bar under 3D */}
+                {/* Quick Info bar */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs">
                   <div className="bg-slate-800/70 p-2.5 rounded-xl border border-slate-700/80">
                     <span className="text-slate-400 text-[10px] block">Korpus / Fasad</span>
@@ -1614,61 +1736,79 @@ Bo'limlar: ${sections} ta | Polkalar: ${shelvesPerSection.reduce((a, b) => a + b
                         </g>
                       )}
 
-                      {/* Dividers */}
-                      {Array.from({ length: sections - 1 }).map((_, i) => {
-                        const divX = thickness + (i + 1) * calculations.sectionWidth + i * thickness;
-                        return (
-                          <rect key={`div-${i}`} x={divX} y={thickness} width={thickness} height={height - socleHeight - 2 * thickness} fill={blueprintStyle === 'dark_cad' ? "#1e293b" : "#e2e8f0"} stroke="#3b82f6" strokeWidth="1.8" />
-                        );
-                      })}
+                      {/* Sections Content & Dividers */}
+                      {(() => {
+                        let curX = thickness;
+                        return sectionsData.map((sec, idx) => {
+                          const secX = curX;
+                          const secW = sec.width;
+                          const secInnerH = height - socleHeight - 2 * thickness;
+                          const shelvesCount = sec.shelvesCount || 0;
+                          const drawersCount = sec.drawersCount || 0;
+                          const drawersTotalH = drawersCount * 164;
+                          const availableH = secInnerH - drawersTotalH;
+                          const shelfGap = availableH / (shelvesCount + 1);
 
-                      {/* Shelves & Content */}
-                      {Array.from({ length: sections }).map((_, secIdx) => {
-                        const secX = thickness + secIdx * (calculations.sectionWidth + thickness);
-                        const secW = calculations.sectionWidth;
-                        const secInnerH = height - socleHeight - 2 * thickness;
-                        const shelvesCount = shelvesPerSection[secIdx] || 0;
-                        const shelfGap = secInnerH / (shelvesCount + 1);
+                          const elements = [];
 
-                        return (
-                          <g key={`sec-${secIdx}`}>
-                            {Array.from({ length: shelvesCount }).map((_, sIdx) => {
-                              const shelfY = thickness + (sIdx + 1) * shelfGap;
-                              return (
-                                <g key={`sh-${sIdx}`}>
-                                  <rect x={secX + 1} y={shelfY} width={secW - 2} height={thickness} fill="#3b82f6" fillOpacity="0.25" stroke="#3b82f6" strokeWidth="1.5" />
-                                  <text x={secX + secW / 2} y={shelfY - 6} textAnchor="middle" fill={blueprintStyle === 'dark_cad' ? "#94a3b8" : "#64748b"} fontSize="14" fontFamily="monospace">
-                                    ↕ {Math.round(shelfGap)} mm
-                                  </text>
+                          // Divider on right (if not last)
+                          if (idx < sectionsData.length - 1) {
+                            elements.push(
+                              <rect key={`div-${idx}`} x={secX + secW} y={thickness} width={thickness} height={secInnerH} fill={blueprintStyle === 'dark_cad' ? "#1e293b" : "#e2e8f0"} stroke="#3b82f6" strokeWidth="1.8" />
+                            );
+                          }
+
+                          // Drawers
+                          if (drawersCount > 0) {
+                            for (let d = 0; d < drawersCount; d++) {
+                              const dY = height - socleHeight - thickness - (drawersCount - d) * 164;
+                              elements.push(
+                                <g key={`drw-${idx}-${d}`}>
+                                  <rect x={secX + 4} y={dY} width={secW - 8} height={160} fill={blueprintStyle === 'dark_cad' ? "#0f172a" : "#f1f5f9"} stroke="#38bdf8" strokeWidth="2" rx="3" />
+                                  <rect x={secX + secW / 2 - 25} y={dY + 76} width="50" height="8" fill="#64748b" rx="2" />
+                                  <text x={secX + secW / 2} y={dY + 24} textAnchor="middle" fill="#94a3b8" fontSize="12" fontFamily="monospace">Tortma #{d + 1}</text>
                                 </g>
                               );
-                            })}
+                            }
+                          }
 
-                            {hasHanger && secIdx === 1 && (
-                              <g>
+                          // Shelves
+                          for (let s = 0; s < shelvesCount; s++) {
+                            const shelfY = thickness + drawersTotalH + (s + 1) * shelfGap;
+                            elements.push(
+                              <g key={`sh-${idx}-${s}`}>
+                                <rect x={secX + 1} y={shelfY} width={secW - 2} height={thickness} fill="#3b82f6" fillOpacity="0.25" stroke="#3b82f6" strokeWidth="1.5" />
+                                <text x={secX + secW / 2} y={shelfY - 6} textAnchor="middle" fill={blueprintStyle === 'dark_cad' ? "#94a3b8" : "#64748b"} fontSize="13" fontFamily="monospace">
+                                  ↕ {Math.round(shelfGap)} mm
+                                </text>
+                              </g>
+                            );
+                          }
+
+                          // Hanger
+                          if (sec.hasHanger) {
+                            elements.push(
+                              <g key={`hng-${idx}`}>
                                 <line x1={secX + 10} y1={thickness + 90} x2={secX + secW - 10} y2={thickness + 90} stroke="#38bdf8" strokeWidth="5" />
-                                <text x={secX + secW / 2} y={thickness + 130} textAnchor="middle" fill="#38bdf8" fontSize="14" fontWeight="bold">Truba / Ilgich</text>
+                                <text x={secX + secW / 2} y={thickness + 125} textAnchor="middle" fill="#38bdf8" fontSize="13" fontWeight="bold">Truba / Ilgich</text>
                               </g>
-                            )}
+                            );
+                          }
 
-                            {drawers > 0 && secIdx === 0 && (
-                              <g>
-                                {Array.from({ length: drawers }).map((_, dIdx) => {
-                                  const dHeight = 160;
-                                  const dY = height - socleHeight - thickness - (drawers - dIdx) * (dHeight + 6);
-                                  return (
-                                    <g key={`drw-${dIdx}`}>
-                                      <rect x={secX + 4} y={dY} width={secW - 8} height={dHeight} fill={blueprintStyle === 'dark_cad' ? "#0f172a" : "#f1f5f9"} stroke="#38bdf8" strokeWidth="2" rx="3" />
-                                      <rect x={secX + secW / 2 - 25} y={dY + dHeight / 2 - 4} width="50" height="8" fill="#64748b" rx="2" />
-                                      <text x={secX + secW / 2} y={dY + 24} textAnchor="middle" fill="#94a3b8" fontSize="12" fontFamily="monospace">Tortma #{dIdx + 1} (H:{dHeight})</text>
-                                    </g>
-                                  );
-                                })}
-                              </g>
-                            )}
-                          </g>
-                        );
-                      })}
+                          // Section width dimension on top
+                          elements.push(
+                            <g key={`sec-dim-${idx}`}>
+                              <line x1={secX} y1="-15" x2={secX + secW} y2="-15" stroke="#94a3b8" strokeWidth="1.2" strokeDasharray="3 3" />
+                              <text x={secX + secW / 2} y="-20" textAnchor="middle" fill={blueprintStyle === 'dark_cad' ? "#94a3b8" : "#475569"} fontSize="13" fontFamily="monospace">
+                                {secW} mm
+                              </text>
+                            </g>
+                          );
+
+                          curX += secW + thickness;
+                          return elements;
+                        });
+                      })()}
 
                       {/* Dimensions */}
                       <g>
@@ -1788,7 +1928,7 @@ Bo'limlar: ${sections} ta | Polkalar: ${shelvesPerSection.reduce((a, b) => a + b
               </div>
             )}
 
-            {/* TAB 4: 2D ALGORITHMIC RASKROY (BIN PACKING) */}
+            {/* TAB 4: 2D ALGORITHMIC RASKROY */}
             {activeTab === 'raskroy' && (
               <div className="bg-slate-950 border border-slate-800 rounded-2xl p-5 shadow-2xl space-y-4">
                 <div className="flex flex-wrap items-center justify-between border-b border-slate-800 pb-3 gap-2">
@@ -1800,7 +1940,7 @@ Bo'limlar: ${sections} ta | Polkalar: ${shelvesPerSection.reduce((a, b) => a + b
                     <p className="text-[11px] text-slate-400">Standart 2750 × 1830 mm listlarda pilyan oraliq masofasi (4mm) hisobi bilan</p>
                   </div>
                   <span className="text-xs font-mono text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/30">
-                    Optimal listlar soni: {calculations.sheetLayouts.length} dona
+                    Optimal listlar: {calculations.sheetLayouts.length} dona
                   </span>
                 </div>
 
@@ -1820,13 +1960,9 @@ Bo'limlar: ${sections} ta | Polkalar: ${shelvesPerSection.reduce((a, b) => a + b
                         </div>
                       </div>
 
-                      {/* Precise SVG Representation of 2750x1830 sheet */}
                       <div className="w-full bg-slate-950 border border-slate-700/80 rounded-lg p-2 overflow-x-auto">
                         <svg viewBox="0 0 2770 1850" className="w-full h-auto max-h-[380px] drop-shadow">
-                          {/* Sheet Outer Border */}
                           <rect x="0" y="0" width="2750" height="1830" fill="#0f172a" stroke="#475569" strokeWidth="4" />
-
-                          {/* Placed Parts */}
                           {sheet.items.map((item, itIdx) => (
                             <g key={`item-${itIdx}`}>
                               <rect
@@ -1879,7 +2015,7 @@ Bo'limlar: ${sections} ta | Polkalar: ${shelvesPerSection.reduce((a, b) => a + b
                       <Tag className="w-4 h-4 text-blue-400" />
                       Sex uchun Detal Stikerlari (Etiketkalar)
                     </h3>
-                    <p className="text-[11px] text-slate-400">Har bir detalga yopishtiriladigan stikerlar (A4 qog'ozda chop etishga tayyor)</p>
+                    <p className="text-[11px] text-slate-400">Har bir detalga yopishtiriladigan stikerlar (A4 stiker qog'ozda chop etishga tayyor)</p>
                   </div>
                   <button
                     onClick={handlePrint}
@@ -1913,7 +2049,6 @@ Bo'limlar: ${sections} ta | Polkalar: ${shelvesPerSection.reduce((a, b) => a + b
                         <div><strong>Loyiha:</strong> {projectName} ({clientName || 'Mijoz'})</div>
                       </div>
 
-                      {/* Barcode simulation */}
                       <div className="pt-1 flex items-center justify-between border-t border-slate-200">
                         <div className="flex gap-0.5 h-4 items-center">
                           {[2, 1, 3, 1, 2, 4, 1, 2, 3, 1, 2].map((bw, i) => (

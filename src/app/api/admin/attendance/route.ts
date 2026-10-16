@@ -38,7 +38,7 @@ export async function GET(req: Request) {
       orderBy: { checkInTime: 'desc' }
     });
 
-    let fullAttendance = attendance;
+    let fullAttendance: any[] = attendance;
     
     // Only generate mock attendances for single day view
     if (!monthParam) {

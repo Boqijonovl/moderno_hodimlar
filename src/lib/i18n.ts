@@ -28,6 +28,7 @@ export const translations = {
     no_permission: "Sizda ushbu bo'limdan foydalanish ruxsati yo'q",
     
     // Attendance
+    attendance: "Davomat",
     check_in: "Ishga keldim",
     check_out: "Yakunladim",
     history: "Tarix",
@@ -47,6 +48,7 @@ export const translations = {
     
     // Sales
     add_sale: "Savdo qo'shish",
+    sales_desc: "Amalga oshirilgan savdoni tizimga kiritish",
     item_name: "Tovar nomi",
     price: "Summa",
     payment_method: "To'lov turi",
@@ -102,6 +104,7 @@ export const translations = {
     no_permission: "У вас нет разрешения на использование этого раздела",
     
     // Attendance
+    attendance: "Посещаемость",
     check_in: "Пришел на работу",
     check_out: "Завершил",
     history: "История",
@@ -121,6 +124,7 @@ export const translations = {
     
     // Sales
     add_sale: "Добавить продажу",
+    sales_desc: "Внесение совершенных продаж в систему",
     item_name: "Название товара",
     price: "Сумма",
     payment_method: "Тип оплаты",

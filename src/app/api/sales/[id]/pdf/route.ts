@@ -3,9 +3,9 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const saleId = params.id;
+    const { id: saleId } = await params;
     const sale = await prisma.sale.findUnique({
       where: { id: saleId },
       include: { user: true, items: true }
@@ -74,7 +74,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 
     const pdfBuffer = await pdfPromise;
 
-    return new NextResponse(pdfBuffer, {
+    return new NextResponse(pdfBuffer as any, {
       status: 200,
       headers: {
         'Content-Type': 'application/pdf',
