@@ -47,7 +47,7 @@ const Furniture3DViewer = dynamic(
 );
 
 // Presets by Category
-const PRESET_CATEGORIES = ['Barchasi', 'Shkaflar', 'Oshxona', 'Komodlar', 'Ofis'];
+const PRESET_CATEGORIES = ['Barchasi', 'Shkaflar', 'Oshxona', 'Komodlar', 'TV & Dalanma', 'Ofis'];
 
 export interface PresetItem {
   id: string;
@@ -256,6 +256,69 @@ const PRESETS: PresetItem[] = [
       { id: 'sec_1', width: 820, shelvesCount: 0, drawersCount: 0, hasHanger: false },
       { id: 'sec_2', width: 408, shelvesCount: 0, drawersCount: 3, hasHanger: false }
     ]
+  },
+  {
+    id: 'tv_modern',
+    name: 'Zamonaviy TV Tumba (1.8m)',
+    category: 'TV & Dalanma',
+    icon: '📺',
+    height: 500,
+    width: 1800,
+    depth: 420,
+    socleHeight: 50,
+    thickness: 16,
+    doorType: 'hinged',
+    doorsCount: 2,
+    hasLed: true,
+    bodyColor: '#27272a',
+    facadeColor: '#f8fafc',
+    facadeType: 'standard',
+    sections: [
+      { id: 'sec_1', width: 578, shelvesCount: 1, drawersCount: 0, hasHanger: false },
+      { id: 'sec_2', width: 578, shelvesCount: 0, drawersCount: 2, hasHanger: false },
+      { id: 'sec_3', width: 578, shelvesCount: 1, drawersCount: 0, hasHanger: false }
+    ]
+  },
+  {
+    id: 'hallway_wardrobe',
+    name: 'Dalanma / Prihojaya Shkafi',
+    category: 'TV & Dalanma',
+    icon: '🧥',
+    height: 2100,
+    width: 1400,
+    depth: 450,
+    socleHeight: 80,
+    thickness: 16,
+    doorType: 'hinged',
+    doorsCount: 2,
+    hasLed: true,
+    bodyColor: '#d4b38a',
+    facadeColor: '#f8fafc',
+    facadeType: 'mirror',
+    sections: [
+      { id: 'sec_1', width: 660, shelvesCount: 3, drawersCount: 2, hasHanger: false },
+      { id: 'sec_2', width: 676, shelvesCount: 1, drawersCount: 0, hasHanger: true, hangerType: 'double' }
+    ]
+  },
+  {
+    id: 'dresser_5',
+    name: '5-Qavatli Baland Komod',
+    category: 'Komodlar',
+    icon: '🗄',
+    height: 1150,
+    width: 850,
+    depth: 450,
+    socleHeight: 60,
+    thickness: 16,
+    doorType: 'none',
+    doorsCount: 0,
+    hasLed: false,
+    bodyColor: '#85512b',
+    facadeColor: '#85512b',
+    facadeType: 'standard',
+    sections: [
+      { id: 'sec_1', width: 818, shelvesCount: 0, drawersCount: 5, hasHanger: false }
+    ]
   }
 ];
 
@@ -317,47 +380,83 @@ export default function FurnitureConstructorPage() {
 
   const printRef = useRef<HTMLDivElement>(null);
 
-  // Calculate inner available width
-  const totalDividersThickness = (sectionsData.length - 1) * thickness;
-  const innerTotalWidth = Math.max(100, width - 2 * thickness - totalDividersThickness);
+  // Calculate inner available width helper
+  const getInnerWidth = (targetW: number = width, targetThick: number = thickness, count: number = sectionsData.length) => {
+    const totalDivs = Math.max(0, count - 1) * targetThick;
+    return Math.max(100, targetW - 2 * targetThick - totalDivs);
+  };
+
+  const innerTotalWidth = getInnerWidth(width, thickness, sectionsData.length);
 
   // Balance sections equally
-  const balanceSectionWidths = (sectionsList: SectionData[] = sectionsData) => {
+  const balanceSectionWidths = (sectionsList: SectionData[] = sectionsData, targetTotalW?: number) => {
     const count = sectionsList.length;
-    const equalW = Math.floor(innerTotalWidth / count);
+    const currentInnerW = getInnerWidth(targetTotalW ?? width, thickness, count);
+    const equalW = Math.floor(currentInnerW / count);
     const updated = sectionsList.map((sec, i) => ({
       ...sec,
-      width: i === count - 1 ? (innerTotalWidth - equalW * (count - 1)) : equalW
+      width: i === count - 1 ? (currentInnerW - equalW * (count - 1)) : equalW
     }));
     setSectionsData(updated);
   };
 
-  // Adjust section width directly
+  // Adjust section width directly while keeping overall cabinet width 100% constant
   const handleSectionWidthChange = (index: number, newW: number) => {
     if (sectionsData.length <= 1) return;
-    const clampedW = Math.max(200, Math.min(innerTotalWidth - (sectionsData.length - 1) * 200, newW));
-    const delta = clampedW - sectionsData[index].width;
+    const neighborIdx = index === sectionsData.length - 1 ? index - 1 : index + 1;
+    const combinedW = sectionsData[index].width + sectionsData[neighborIdx].width;
+    const minW = 150;
+    const maxW = combinedW - minW;
+    const clampedW = Math.max(minW, Math.min(maxW, newW));
 
     const updated = [...sectionsData];
     updated[index] = { ...updated[index], width: clampedW };
-
-    // Distribute delta across neighbor section
-    const neighborIdx = index === sectionsData.length - 1 ? index - 1 : index + 1;
-    updated[neighborIdx] = {
-      ...updated[neighborIdx],
-      width: Math.max(150, updated[neighborIdx].width - delta)
-    };
-
+    updated[neighborIdx] = { ...updated[neighborIdx], width: combinedW - clampedW };
     setSectionsData(updated);
   };
 
-  // Add a new section
+  // Move a section left or right to re-order layout
+  const handleMoveSection = (fromIdx: number, direction: 'left' | 'right') => {
+    const toIdx = direction === 'left' ? fromIdx - 1 : fromIdx + 1;
+    if (toIdx < 0 || toIdx >= sectionsData.length) return;
+    const updated = [...sectionsData];
+    const temp = updated[fromIdx];
+    updated[fromIdx] = updated[toIdx];
+    updated[toIdx] = temp;
+    setSectionsData(updated);
+  };
+
+  // Scale section widths proportionally when total cabinet width changes
+  const handleWidthChange = (newW: number) => {
+    setWidth(newW);
+    const count = sectionsData.length;
+    const newInnerW = getInnerWidth(newW, thickness, count);
+    const currentSum = sectionsData.reduce((acc, s) => acc + s.width, 0);
+    if (currentSum > 0) {
+      let allocated = 0;
+      const updated = sectionsData.map((sec, idx) => {
+        if (idx === count - 1) {
+          return { ...sec, width: Math.max(100, newInnerW - allocated) };
+        }
+        const scaled = Math.round((sec.width / currentSum) * newInnerW);
+        allocated += scaled;
+        return { ...sec, width: Math.max(100, scaled) };
+      });
+      setSectionsData(updated);
+    } else {
+      balanceSectionWidths(sectionsData, newW);
+    }
+  };
+
+  // Add a new section (up to 6)
   const handleAddSection = () => {
-    if (sectionsData.length >= 4) return;
+    if (sectionsData.length >= 6) return;
     const newCount = sectionsData.length + 1;
+    const newInnerW = getInnerWidth(width, thickness, newCount);
+    const equalW = Math.floor(newInnerW / newCount);
     const newSection: SectionData = {
       id: `sec_${Date.now()}`,
-      width: Math.floor(innerTotalWidth / newCount),
+      width: equalW,
       shelvesCount: 3,
       drawersCount: 0,
       hasHanger: false
@@ -1124,11 +1223,7 @@ Polkalar: ${calculations.totalShelves} ta | Tortmalar: ${calculations.totalDrawe
                   <input
                     type="number"
                     value={width}
-                    onChange={(e) => {
-                      const newW = Number(e.target.value);
-                      setWidth(newW);
-                      balanceSectionWidths();
-                    }}
+                    onChange={(e) => handleWidthChange(Number(e.target.value))}
                     step={10}
                     min={400}
                     max={4000}
@@ -1180,10 +1275,7 @@ Polkalar: ${calculations.totalShelves} ta | Tortmalar: ${calculations.totalDrawe
                   max={3000} 
                   step={50} 
                   value={width} 
-                  onChange={(e) => {
-                    setWidth(Number(e.target.value));
-                    balanceSectionWidths();
-                  }} 
+                  onChange={(e) => handleWidthChange(Number(e.target.value))} 
                   className="flex-1 accent-blue-500 h-1.5 bg-slate-700 rounded-lg cursor-pointer"
                 />
                 <span className="w-12 text-right font-mono text-[11px]">{width}</span>
@@ -1222,7 +1314,7 @@ Polkalar: ${calculations.totalShelves} ta | Tortmalar: ${calculations.totalDrawe
                 </button>
                 <button
                   onClick={handleAddSection}
-                  disabled={sectionsData.length >= 4}
+                  disabled={sectionsData.length >= 6}
                   className="px-2 py-0.5 text-[10px] bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white rounded-lg flex items-center gap-0.5 font-bold"
                   title="Yangi sektsiya qo'shish"
                 >
@@ -1244,15 +1336,35 @@ Polkalar: ${calculations.totalShelves} ta | Tortmalar: ${calculations.totalDrawe
                       {idx + 1}-Bo'lim ({sec.width} mm)
                     </span>
 
-                    {sectionsData.length > 1 && (
+                    <div className="flex items-center gap-1">
+                      {/* Reorder Buttons */}
                       <button
-                        onClick={() => handleRemoveSection(idx)}
-                        className="text-slate-500 hover:text-rose-400 p-1"
-                        title="Ushbu bo'limni o'chirish"
+                        onClick={() => handleMoveSection(idx, 'left')}
+                        disabled={idx === 0}
+                        className="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 disabled:opacity-20 text-slate-300 text-[10px] font-bold"
+                        title="Chapga surish"
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
+                        ←
                       </button>
-                    )}
+                      <button
+                        onClick={() => handleMoveSection(idx, 'right')}
+                        disabled={idx === sectionsData.length - 1}
+                        className="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 disabled:opacity-20 text-slate-300 text-[10px] font-bold"
+                        title="O'ngga surish"
+                      >
+                        →
+                      </button>
+
+                      {sectionsData.length > 1 && (
+                        <button
+                          onClick={() => handleRemoveSection(idx)}
+                          className="text-slate-500 hover:text-rose-400 p-1 ml-1"
+                          title="Ushbu bo'limni o'chirish"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   {/* Width slider for this section */}
@@ -1309,7 +1421,7 @@ Polkalar: ${calculations.totalShelves} ta | Tortmalar: ${calculations.totalDrawe
                           -
                         </button>
                         <button
-                          onClick={() => updateSectionProp(idx, 'drawersCount', Math.min(4, sec.drawersCount + 1))}
+                          onClick={() => updateSectionProp(idx, 'drawersCount', Math.min(6, sec.drawersCount + 1))}
                           className="w-5 h-5 rounded bg-slate-800 hover:bg-slate-700 text-xs flex items-center justify-center"
                         >
                           +
@@ -1317,16 +1429,36 @@ Polkalar: ${calculations.totalShelves} ta | Tortmalar: ${calculations.totalDrawe
                       </div>
                     </div>
 
-                    {/* Hanger */}
+                    {/* Hanger with Single/Double Switch */}
                     <div className="bg-slate-950 p-2 rounded-lg border border-slate-800 flex flex-col justify-between">
-                      <span className="text-[10px] text-slate-400 block">Kiyim Ilgich</span>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] text-slate-400">Kiyim Ilgich</span>
+                        {sec.hasHanger && (
+                          <button
+                            onClick={() => updateSectionProp(idx, 'hangerType', sec.hangerType === 'double' ? 'single' : 'double')}
+                            className="text-[9px] px-1 rounded bg-blue-900/60 text-blue-300 font-mono hover:bg-blue-800"
+                            title="Yakka yoki Qo'shaloq"
+                          >
+                            {sec.hangerType === 'double' ? '2-qavat' : '1-qavat'}
+                          </button>
+                        )}
+                      </div>
                       <button
-                        onClick={() => updateSectionProp(idx, 'hasHanger', !sec.hasHanger)}
+                        onClick={() => {
+                          const nextHanger = !sec.hasHanger;
+                          const updated = [...sectionsData];
+                          updated[idx] = { 
+                            ...updated[idx], 
+                            hasHanger: nextHanger,
+                            hangerType: nextHanger ? (sec.hangerType || 'single') : undefined
+                          };
+                          setSectionsData(updated);
+                        }}
                         className={`py-0.5 rounded text-[10px] font-bold mt-1 transition-colors ${
                           sec.hasHanger ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400'
                         }`}
                       >
-                        {sec.hasHanger ? 'Bor (Truba)' : 'Yo‘q'}
+                        {sec.hasHanger ? (sec.hangerType === 'double' ? 'Qo‘shaloq' : 'Yakka') : 'Yo‘q'}
                       </button>
                     </div>
                   </div>
@@ -1812,34 +1944,61 @@ Polkalar: ${calculations.totalShelves} ta | Tortmalar: ${calculations.totalDrawe
 
                       {/* Dimensions */}
                       <g>
-                        <line x1="0" y1={height + 25} x2={width} y2={height + 25} stroke="#38bdf8" strokeWidth="2" />
-                        <polygon points={`0,${height + 25} 12,${height + 21} 12,${height + 29}`} fill="#38bdf8" />
-                        <polygon points={`${width},${height + 25} ${width - 12},${height + 21} ${width - 12},${height + 29}`} fill="#38bdf8" />
-                        <text x={width / 2} y={height + 30} textAnchor="middle" fill="#38bdf8" fontSize="18" fontWeight="bold" fontFamily="monospace">
+                        {/* Horizontal Width Dimension */}
+                        <line x1="0" y1={height + 30} x2={width} y2={height + 30} stroke="#38bdf8" strokeWidth="2" />
+                        <polygon points={`0,${height + 30} 12,${height + 26} 12,${height + 34}`} fill="#38bdf8" />
+                        <polygon points={`${width},${height + 30} ${width - 12},${height + 26} ${width - 12},${height + 34}`} fill="#38bdf8" />
+                        <text x={width / 2} y={height + 52} textAnchor="middle" fill="#38bdf8" fontSize="16" fontWeight="bold" fontFamily="monospace">
                           W: {width} mm
                         </text>
 
-                        <line x1="-35" y1="0" x2="-35" y2={height} stroke="#38bdf8" strokeWidth="2" />
-                        <polygon points={`-35,0 -39,12 -31,12`} fill="#38bdf8" />
-                        <polygon points={`-35,${height} -39,${height - 12} -31,${height - 12}`} fill="#38bdf8" />
-                        <text x="-35" y={height / 2 + 5} textAnchor="middle" fill="#38bdf8" fontSize="18" fontWeight="bold" fontFamily="monospace">
+                        {/* Vertical Height Dimension */}
+                        <line x1="-40" y1="0" x2="-40" y2={height} stroke="#38bdf8" strokeWidth="2" />
+                        <polygon points={`-40,0 -44,12 -36,12`} fill="#38bdf8" />
+                        <polygon points={`-40,${height} -44,${height - 12} -36,${height - 12}`} fill="#38bdf8" />
+                        <text 
+                          x="-50" 
+                          y={height / 2} 
+                          textAnchor="middle" 
+                          transform={`rotate(-90, -50, ${height / 2})`} 
+                          fill="#38bdf8" 
+                          fontSize="16" 
+                          fontWeight="bold" 
+                          fontFamily="monospace"
+                        >
                           H: {height} mm
                         </text>
                       </g>
                     </svg>
                   ) : (
-                    <svg viewBox={`-80 -60 ${depth + 160} ${height + 130}`} className="max-h-[500px] w-auto drop-shadow-xl">
+                    <svg viewBox={`-90 -60 ${depth + 170} ${height + 140}`} className="max-h-[500px] w-auto drop-shadow-xl">
                       <rect x="0" y="0" width={depth} height={height - socleHeight} fill={blueprintStyle === 'dark_cad' ? "#1e293b" : "#e2e8f0"} stroke="#3b82f6" strokeWidth="2" />
                       {socleHeight > 0 && (
                         <rect x="25" y={height - socleHeight} width={depth - 50} height={socleHeight} fill="#0f172a" stroke="#64748b" strokeWidth="2" />
                       )}
                       <rect x="3" y="0" width="4" height={height - socleHeight} fill="#38bdf8" />
-                      <line x1="0" y1={height + 25} x2={depth} y2={height + 25} stroke="#38bdf8" strokeWidth="2" />
-                      <text x={depth / 2} y={height + 30} textAnchor="middle" fill="#38bdf8" fontSize="18" fontWeight="bold" fontFamily="monospace">
+                      
+                      {/* Side View Dimensions */}
+                      <line x1="0" y1={height + 30} x2={depth} y2={height + 30} stroke="#38bdf8" strokeWidth="2" />
+                      <polygon points={`0,${height + 30} 12,${height + 26} 12,${height + 34}`} fill="#38bdf8" />
+                      <polygon points={`${depth},${height + 30} ${depth - 12},${height + 26} ${depth - 12},${height + 34}`} fill="#38bdf8" />
+                      <text x={depth / 2} y={height + 52} textAnchor="middle" fill="#38bdf8" fontSize="16" fontWeight="bold" fontFamily="monospace">
                         D: {depth} mm
                       </text>
-                      <line x1="-35" y1="0" x2="-35" y2={height} stroke="#38bdf8" strokeWidth="2" />
-                      <text x="-35" y={height / 2 + 5} textAnchor="middle" fill="#38bdf8" fontSize="18" fontWeight="bold" fontFamily="monospace">
+
+                      <line x1="-40" y1="0" x2="-40" y2={height} stroke="#38bdf8" strokeWidth="2" />
+                      <polygon points={`-40,0 -44,12 -36,12`} fill="#38bdf8" />
+                      <polygon points={`-40,${height} -44,${height - 12} -36,${height - 12}`} fill="#38bdf8" />
+                      <text 
+                        x="-50" 
+                        y={height / 2} 
+                        textAnchor="middle" 
+                        transform={`rotate(-90, -50, ${height / 2})`} 
+                        fill="#38bdf8" 
+                        fontSize="16" 
+                        fontWeight="bold" 
+                        fontFamily="monospace"
+                      >
                         H: {height} mm
                       </text>
                     </svg>

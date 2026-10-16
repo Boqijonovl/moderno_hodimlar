@@ -91,6 +91,10 @@ export default function Furniture3DViewer({
   const controlsRef = useRef<OrbitControls | null>(null);
   const cabinetGroupRef = useRef<THREE.Group | null>(null);
 
+  // Sync doorsOpenPercent via ref for animation frame loop
+  const doorsOpenPercentRef = useRef<number>(doorsOpenPercent);
+  doorsOpenPercentRef.current = doorsOpenPercent;
+
   // Interactive Click Raycasting & Animation items
   const interactableMeshesRef = useRef<THREE.Object3D[]>([]);
   const animatedPartsRef = useRef<{
@@ -101,13 +105,13 @@ export default function Furniture3DViewer({
       isSliding?: boolean; 
       targetX?: number; 
       origX?: number;
-      isOpenIndividual: boolean;
+      targetFraction: number;
     }[];
     drawers: { 
       id: string;
       mesh: THREE.Group; 
       openZ: number;
-      isOpenIndividual: boolean;
+      targetFraction: number;
     }[];
   }>({ doors: [], drawers: [] });
 
@@ -115,6 +119,15 @@ export default function Furniture3DViewer({
   const [showGrid, setShowGrid] = useState<boolean>(true);
   const [interactHint, setInteractHint] = useState<boolean>(true);
   const gridHelperRef = useRef<THREE.GridHelper | null>(null);
+
+  // Sync open state when doorsOpenPercent prop changes
+  useEffect(() => {
+    const fraction = doorsOpenPercent / 100;
+    if (animatedPartsRef.current) {
+      animatedPartsRef.current.doors.forEach(d => { d.targetFraction = fraction; });
+      animatedPartsRef.current.drawers.forEach(dr => { dr.targetFraction = fraction; });
+    }
+  }, [doorsOpenPercent]);
 
   // Setup Three.js Scene
   useEffect(() => {
@@ -208,11 +221,21 @@ export default function Furniture3DViewer({
     scene.add(cabinetGroup);
     cabinetGroupRef.current = cabinetGroup;
 
-    // 8. Raycasting for Click-To-Open Doors and Drawers
+    // 8. Raycasting for Click-To-Open Doors and Drawers with Drag Differentiation
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
+    let downX = 0;
+    let downY = 0;
 
-    const handlePointerDown = (event: MouseEvent) => {
+    const handlePointerDown = (event: PointerEvent) => {
+      downX = event.clientX;
+      downY = event.clientY;
+    };
+
+    const handlePointerUp = (event: PointerEvent) => {
+      const dist = Math.hypot(event.clientX - downX, event.clientY - downY);
+      if (dist > 8) return; // User dragged the camera, do not toggle door
+
       const rect = renderer.domElement.getBoundingClientRect();
       mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
       mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
@@ -233,19 +256,34 @@ export default function Furniture3DViewer({
           if (type === 'door') {
             const doorObj = animatedPartsRef.current.doors.find(d => d.id === id);
             if (doorObj) {
-              doorObj.isOpenIndividual = !doorObj.isOpenIndividual;
+              doorObj.targetFraction = doorObj.targetFraction > 0.3 ? 0 : 1;
             }
           } else if (type === 'drawer') {
             const drawerObj = animatedPartsRef.current.drawers.find(dr => dr.id === id);
             if (drawerObj) {
-              drawerObj.isOpenIndividual = !drawerObj.isOpenIndividual;
+              drawerObj.targetFraction = drawerObj.targetFraction > 0.3 ? 0 : 1;
             }
           }
         }
       }
     };
 
+    const handlePointerMove = (event: PointerEvent) => {
+      const rect = renderer.domElement.getBoundingClientRect();
+      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObjects(interactableMeshesRef.current, true);
+      if (intersects.length > 0) {
+        renderer.domElement.style.cursor = 'pointer';
+      } else {
+        renderer.domElement.style.cursor = 'grab';
+      }
+    };
+
     renderer.domElement.addEventListener('pointerdown', handlePointerDown);
+    renderer.domElement.addEventListener('pointerup', handlePointerUp);
+    renderer.domElement.addEventListener('pointermove', handlePointerMove);
 
     // 9. Animation Loop
     let animationFrameId: number;
@@ -253,32 +291,28 @@ export default function Furniture3DViewer({
       animationFrameId = requestAnimationFrame(animate);
       controls.update();
 
-      // Animate doors and drawers based on doorsOpenPercent + individual clicks
+      // Smoothly interpolate doors and drawers to targetFraction
       if (animatedPartsRef.current) {
         const { doors, drawers } = animatedPartsRef.current;
-        const globalOpenFraction = doorsOpenPercent / 100;
 
         // Doors
         doors.forEach((d) => {
-          const targetFraction = d.isOpenIndividual ? 1 : globalOpenFraction;
-          
           if (d.isSliding) {
             const currentX = d.mesh.position.x;
-            const targetX = (d.origX ?? 0) + ((d.targetX ?? 0) - (d.origX ?? 0)) * targetFraction;
-            d.mesh.position.x += (targetX - currentX) * 0.12;
+            const targetX = (d.origX ?? 0) + ((d.targetX ?? 0) - (d.origX ?? 0)) * d.targetFraction;
+            d.mesh.position.x += (targetX - currentX) * 0.15;
           } else {
             const currentRot = d.mesh.rotation.y;
-            const targetRot = d.openAngle * targetFraction;
-            d.mesh.rotation.y += (targetRot - currentRot) * 0.12;
+            const targetRot = d.openAngle * d.targetFraction;
+            d.mesh.rotation.y += (targetRot - currentRot) * 0.15;
           }
         });
 
         // Drawers
         drawers.forEach((drw) => {
-          const targetFraction = drw.isOpenIndividual ? 1 : globalOpenFraction;
-          const targetZ = drw.openZ * targetFraction;
+          const targetZ = drw.openZ * drw.targetFraction;
           const currentZ = drw.mesh.position.z;
-          drw.mesh.position.z += (targetZ - currentZ) * 0.12;
+          drw.mesh.position.z += (targetZ - currentZ) * 0.15;
         });
       }
 
@@ -299,6 +333,8 @@ export default function Furniture3DViewer({
     return () => {
       window.removeEventListener('resize', handleResize);
       renderer.domElement.removeEventListener('pointerdown', handlePointerDown);
+      renderer.domElement.removeEventListener('pointerup', handlePointerUp);
+      renderer.domElement.removeEventListener('pointermove', handlePointerMove);
       cancelAnimationFrame(animationFrameId);
       controls.dispose();
       renderer.dispose();
@@ -505,7 +541,7 @@ export default function Furniture3DViewer({
             id: drawerId,
             mesh: drawerGroup,
             openZ: Math.min(250, depth * 0.45),
-            isOpenIndividual: false
+            targetFraction: doorsOpenPercentRef.current / 100
           });
         }
       }
@@ -632,7 +668,7 @@ export default function Furniture3DViewer({
             id: doorId,
             mesh: doorPivot,
             openAngle,
-            isOpenIndividual: false
+            targetFraction: doorsOpenPercentRef.current / 100
           });
         }
       } else if (doorType === 'sliding') {
@@ -672,7 +708,7 @@ export default function Furniture3DViewer({
             isSliding: true,
             origX,
             targetX: origX + slideShift,
-            isOpenIndividual: false
+            targetFraction: doorsOpenPercentRef.current / 100
           });
         }
       }
@@ -766,10 +802,10 @@ export default function Furniture3DViewer({
 
         {/* Master Door Opening Slider */}
         {doorType !== 'none' && onDoorsOpenPercentChange && (
-          <div className="bg-slate-900/90 backdrop-blur-md border border-slate-700/80 rounded-xl px-3 py-1 flex items-center gap-2 shadow-lg">
+          <div className="bg-slate-900/90 backdrop-blur-md border border-slate-700/80 rounded-xl px-2.5 py-1 flex items-center gap-2 shadow-lg">
             <span className="text-[10px] text-slate-300 font-semibold flex items-center gap-1">
               {doorsOpenPercent > 0 ? <Eye className="w-3 h-3 text-blue-400" /> : <EyeOff className="w-3 h-3 text-slate-400" />}
-              Eshik: {doorsOpenPercent}%
+              {doorsOpenPercent}%
             </span>
             <input
               type="range"
@@ -777,8 +813,14 @@ export default function Furniture3DViewer({
               max="100"
               value={doorsOpenPercent}
               onChange={(e) => onDoorsOpenPercentChange(Number(e.target.value))}
-              className="w-20 accent-blue-500 h-1 bg-slate-700 rounded-lg cursor-pointer"
+              className="w-16 sm:w-20 accent-blue-500 h-1 bg-slate-700 rounded-lg cursor-pointer"
             />
+            <button
+              onClick={() => onDoorsOpenPercentChange(doorsOpenPercent > 0 ? 0 : 100)}
+              className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-600/30 hover:bg-blue-600 text-blue-300 hover:text-white transition-colors"
+            >
+              {doorsOpenPercent > 0 ? 'Yopish' : 'Ochish'}
+            </button>
           </div>
         )}
       </div>
