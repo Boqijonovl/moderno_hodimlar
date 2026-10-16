@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Clock, Package, Wallet, Settings as SettingsIcon, PackageSearch } from 'lucide-react';
+import { Clock, Package, Wallet, Settings as SettingsIcon, PackageSearch, Ruler } from 'lucide-react';
 import AttendanceTab from '@/components/tabs/AttendanceTab';
 import SalesTab from '@/components/tabs/SalesTab';
 import ExpensesTab from '@/components/tabs/ExpensesTab';
@@ -71,6 +71,17 @@ export default function MainApp() {
   const handleUserUpdate = () => {
     if (user?.telegramId) {
       fetchUser(user.telegramId, user.name);
+    }
+  };
+
+  // Open Furniture Constructor in External Browser (Chrome / Safari / etc.)
+  const handleOpenConstructor = () => {
+    const appOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://moderno-hodimlar.vercel.app';
+    const constructorUrl = `${appOrigin}/constructor`;
+    if (WebApp && typeof WebApp.openLink === 'function') {
+      WebApp.openLink(constructorUrl);
+    } else {
+      window.open(constructorUrl, '_blank');
     }
   };
 
@@ -209,6 +220,20 @@ export default function MainApp() {
             <span className="text-[10px] font-bold">Buyurtmalar</span>
           </button>
         )}
+
+        <button 
+          onClick={handleOpenConstructor}
+          className="flex flex-col items-center transition-all duration-300 w-16 sm:w-20 text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 group relative"
+          title="Mebel Konstruktor (Brauzerda ochish)"
+        >
+          <div className="relative">
+            <Ruler className="w-6 h-6 mb-1 text-slate-400 dark:text-slate-500 group-hover:text-blue-600 dark:group-hover:text-blue-400 group-hover:scale-110 transition-all" />
+            <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+          </div>
+          <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+            {t('menu_constructor')}
+          </span>
+        </button>
 
         <button 
           onClick={() => setActiveTab('settings')}

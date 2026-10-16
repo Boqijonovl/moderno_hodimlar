@@ -22,7 +22,7 @@ export async function GET(req: Request) {
 
     if (type === 'attendance') {
       const users = await prisma.user.findMany({
-        where: { role: { not: 'ADMIN' }, isActive: true }
+        where: { role: { not: 'ADMIN' }, active: true }
       });
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -52,7 +52,7 @@ export async function GET(req: Request) {
         where: { status: { not: 'COMPLETED' } },
         include: {
           assignedTo: true,
-          createdBy: true
+          creator: true
         }
       });
 
@@ -68,11 +68,11 @@ export async function GET(req: Request) {
         }
 
         // Creator (if different from assignee)
-        if (order.createdBy && order.createdBy.telegramId && order.createdBy.telegramId !== order.assignedTo?.telegramId) {
-          if (!userOrdersMap.has(order.createdBy.telegramId)) {
-            userOrdersMap.set(order.createdBy.telegramId, []);
+        if (order.creator && order.creator.telegramId && order.creator.telegramId !== order.assignedTo?.telegramId) {
+          if (!userOrdersMap.has(order.creator.telegramId)) {
+            userOrdersMap.set(order.creator.telegramId, []);
           }
-          userOrdersMap.get(order.createdBy.telegramId).push({ ...order, role: 'creator' });
+          userOrdersMap.get(order.creator.telegramId).push({ ...order, role: 'creator' });
         }
       });
 

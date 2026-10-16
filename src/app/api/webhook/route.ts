@@ -148,7 +148,7 @@ bot.hears('📊 Bugungi Davomat', async (ctx) => {
 
     let text = `📊 <b>Bugungi Davomat (${uzNow.toLocaleDateString('uz-UZ')})</b>\n\n`;
     attendances.forEach((a, i) => {
-      const checkIn = new Date(a.checkInTime).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Tashkent' });
+      const checkIn = a.checkInTime ? new Date(a.checkInTime).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Tashkent' }) : '--:--';
       const checkOut = a.checkOutTime ? new Date(a.checkOutTime).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Tashkent' }) : 'Ishda';
       const late = a.lateMinutes > 0 ? ` (Kechikdi: ${a.lateMinutes} daq)` : '';
       text += `${i + 1}. <b>${a.user.name}</b>: ${checkIn} - ${checkOut}${late}\n`;
