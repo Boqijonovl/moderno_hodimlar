@@ -7,12 +7,11 @@ import {
   RotateCw, 
   Eye, 
   EyeOff, 
-  Maximize2, 
   Camera, 
-  Sun, 
   Grid, 
+  Layers,
   Sparkles,
-  Layers
+  SunMedium
 } from 'lucide-react';
 
 export interface Furniture3DProps {
@@ -25,27 +24,38 @@ export interface Furniture3DProps {
   shelvesPerSection: number[];
   drawers: number;
   hasHanger: boolean;
+  hasLedLighting: boolean;
   doorType: 'hinged' | 'sliding' | 'none';
   doorsCount: number;
-  materialColor: string; // hex color code
-  handleColor: string; // hex color code
+  bodyColor: string;
+  facadeColor: string;
+  facadeType: 'standard' | 'mirror' | 'glass' | 'mdf_frame';
+  handleColor: string;
   doorsOpen: boolean;
   onToggleDoors?: () => void;
 }
 
 export const WOOD_COLORS = [
-  { id: 'white', name: 'Oq Matoviy', hex: '#f8fafc', roughness: 0.4 },
+  { id: 'white', name: 'Oq Matoviy', hex: '#f8fafc', roughness: 0.35 },
   { id: 'sonoma', name: 'Dub Sonoma', hex: '#d4b38a', roughness: 0.6 },
-  { id: 'anthracite', name: 'Antratsit (Kulrang)', hex: '#27272a', roughness: 0.5 },
-  { id: 'wenge', name: 'Venge (To‘q)', hex: '#3e2723', roughness: 0.7 },
+  { id: 'anthracite', name: 'Antratsit (To‘q)', hex: '#27272a', roughness: 0.45 },
+  { id: 'wenge', name: 'Venge (Klassik)', hex: '#3e2723', roughness: 0.65 },
   { id: 'walnut', name: 'Oltin Yong‘oq', hex: '#85512b', roughness: 0.55 },
-  { id: 'sand', name: 'Krem / Qum', hex: '#e2d5c3', roughness: 0.45 },
+  { id: 'sand', name: 'Krem / Qum', hex: '#e2d5c3', roughness: 0.4 },
+  { id: 'oak_smoke', name: 'Tutunli Eman', hex: '#78716c', roughness: 0.5 },
+];
+
+export const FACADE_TYPES = [
+  { id: 'standard', name: 'Standart Yog‘och (DSP)', icon: '🚪' },
+  { id: 'mirror', name: 'Oyna (Zerkalo)', icon: '🪞' },
+  { id: 'glass', name: 'Qoraytirilgan Shisha (Loft)', icon: '💎' },
+  { id: 'mdf_frame', name: 'MDF Frezerovka (Klassika)', icon: '🖼️' },
 ];
 
 export const HANDLE_COLORS = [
-  { id: 'silver', name: 'Xrom / Kumush', hex: '#cbd5e1', metalness: 0.9 },
-  { id: 'black', name: 'Qora Mat', hex: '#18181b', metalness: 0.2 },
-  { id: 'gold', name: 'Oltin / Brass', hex: '#eab308', metalness: 0.8 },
+  { id: 'silver', name: 'Xrom / Kumush', hex: '#cbd5e1' },
+  { id: 'black', name: 'Qora Mat', hex: '#18181b' },
+  { id: 'gold', name: 'Oltin / Brass', hex: '#eab308' },
 ];
 
 export default function Furniture3DViewer({
@@ -58,9 +68,12 @@ export default function Furniture3DViewer({
   shelvesPerSection,
   drawers,
   hasHanger,
+  hasLedLighting,
   doorType,
   doorsCount,
-  materialColor,
+  bodyColor,
+  facadeColor,
+  facadeType,
   handleColor,
   doorsOpen,
   onToggleDoors
@@ -85,19 +98,18 @@ export default function Furniture3DViewer({
     if (!mountRef.current) return;
     const container = mountRef.current;
     const w = container.clientWidth || 600;
-    const h = container.clientHeight || 500;
+    const h = container.clientHeight || 520;
 
     // 1. Scene
     const scene = new THREE.Scene();
     sceneRef.current = scene;
-    scene.background = new THREE.Color(0x0f172a); // Slate-900 studio background
+    scene.background = new THREE.Color(0x090d16); // Deep space slate CAD studio
 
     // 2. Camera
-    const camera = new THREE.PerspectiveCamera(40, w / h, 50, 20000);
+    const camera = new THREE.PerspectiveCamera(40, w / h, 50, 25000);
     cameraRef.current = camera;
-    // Initial camera position relative to wardrobe size
     const maxDim = Math.max(width, height, depth);
-    camera.position.set(maxDim * 1.3, maxDim * 1.0, maxDim * 2.1);
+    camera.position.set(maxDim * 1.35, maxDim * 1.05, maxDim * 2.2);
     camera.lookAt(0, height / 2, 0);
 
     // 3. Renderer with antialiasing
@@ -108,7 +120,7 @@ export default function Furniture3DViewer({
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.1;
+    renderer.toneMappingExposure = 1.15;
 
     container.innerHTML = '';
     container.appendChild(renderer.domElement);
@@ -118,47 +130,50 @@ export default function Furniture3DViewer({
     controlsRef.current = controls;
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
-    controls.maxPolarAngle = Math.PI / 2 + 0.02; // Don't go below floor
-    controls.minDistance = 200;
-    controls.maxDistance = 8000;
+    controls.maxPolarAngle = Math.PI / 2 + 0.02;
+    controls.minDistance = 300;
+    controls.maxDistance = 9000;
     controls.target.set(0, height / 2, 0);
 
-    // 5. Lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+    // 5. Studio Lighting
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.75);
     scene.add(ambientLight);
 
-    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x1e293b, 0.6);
-    hemiLight.position.set(0, 3000, 0);
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x1e293b, 0.65);
+    hemiLight.position.set(0, 4000, 0);
     scene.add(hemiLight);
 
-    const keyLight = new THREE.DirectionalLight(0xffffff, 1.2);
-    keyLight.position.set(1500, 3500, 2500);
+    const keyLight = new THREE.DirectionalLight(0xffffff, 1.3);
+    keyLight.position.set(1800, 4000, 2800);
     keyLight.castShadow = true;
     keyLight.shadow.mapSize.width = 2048;
     keyLight.shadow.mapSize.height = 2048;
     keyLight.shadow.camera.near = 100;
-    keyLight.shadow.camera.far = 10000;
-    const d = 2500;
+    keyLight.shadow.camera.far = 12000;
+    const d = 3000;
     keyLight.shadow.camera.left = -d;
     keyLight.shadow.camera.right = d;
     keyLight.shadow.camera.top = d;
     keyLight.shadow.camera.bottom = -d;
-    keyLight.shadow.bias = -0.0005;
+    keyLight.shadow.bias = -0.0004;
     scene.add(keyLight);
 
-    const fillLight = new THREE.DirectionalLight(0x93c5fd, 0.5);
-    fillLight.position.set(-2000, 2000, -1500);
+    const fillLight = new THREE.DirectionalLight(0x93c5fd, 0.55);
+    fillLight.position.set(-2500, 2500, -1800);
     scene.add(fillLight);
 
-    // 6. Floor grid
-    const grid = new THREE.GridHelper(5000, 50, 0x334155, 0x1e293b);
+    const backRimLight = new THREE.DirectionalLight(0xffedd5, 0.4);
+    backRimLight.position.set(0, 1500, -2500);
+    scene.add(backRimLight);
+
+    // 6. Floor Grid & Shadow receiver
+    const grid = new THREE.GridHelper(6000, 60, 0x334155, 0x1e293b);
     grid.position.y = 0;
     scene.add(grid);
     gridHelperRef.current = grid;
 
-    // Floor shadow receiver plane
-    const floorGeo = new THREE.PlaneGeometry(8000, 8000);
-    const floorMat = new THREE.ShadowMaterial({ opacity: 0.35 });
+    const floorGeo = new THREE.PlaneGeometry(10000, 10000);
+    const floorMat = new THREE.ShadowMaterial({ opacity: 0.4 });
     const floor = new THREE.Mesh(floorGeo, floorMat);
     floor.rotation.x = -Math.PI / 2;
     floor.position.y = -0.5;
@@ -176,11 +191,9 @@ export default function Furniture3DViewer({
       animationFrameId = requestAnimationFrame(animate);
       controls.update();
 
-      // Smoothly animate opening / closing of doors and drawers
       if (animatedPartsRef.current) {
-        const { doors, drawers } = animatedPartsRef.current;
+        const { doors, drawers: animatedDrawers } = animatedPartsRef.current;
         
-        // Doors animation
         doors.forEach((d) => {
           if (d.isSliding) {
             const currentX = d.mesh.position.x;
@@ -193,9 +206,8 @@ export default function Furniture3DViewer({
           }
         });
 
-        // Drawers animation (slide forward slightly when doors open)
-        drawers.forEach((drw, idx) => {
-          const targetZ = doorsOpen ? Math.min(220, depth * 0.4) : 0;
+        animatedDrawers.forEach((drw) => {
+          const targetZ = doorsOpen ? Math.min(230, depth * 0.45) : 0;
           const currentZ = drw.mesh.position.z;
           drw.mesh.position.z += (targetZ - currentZ) * 0.1;
         });
@@ -205,7 +217,6 @@ export default function Furniture3DViewer({
     };
     animate();
 
-    // Resize handler
     const handleResize = () => {
       if (!container || !camera || !renderer) return;
       const nw = container.clientWidth;
@@ -232,7 +243,7 @@ export default function Furniture3DViewer({
     const cabinetGroup = cabinetGroupRef.current;
     if (!cabinetGroup) return;
 
-    // Clear previous meshes
+    // Clear previous objects
     while (cabinetGroup.children.length > 0) {
       const obj = cabinetGroup.children[0];
       cabinetGroup.remove(obj);
@@ -247,26 +258,53 @@ export default function Furniture3DViewer({
     const sectionWidth = innerTotalWidth / sections;
 
     // Materials
-    const woodMat = new THREE.MeshStandardMaterial({
-      color: new THREE.Color(materialColor),
-      roughness: 0.5,
+    const bodyMat = new THREE.MeshStandardMaterial({
+      color: new THREE.Color(bodyColor),
+      roughness: 0.55,
       metalness: 0.05,
       wireframe: wireframe
     });
 
     const edgeMat = new THREE.MeshStandardMaterial({
-      color: new THREE.Color(materialColor).offsetHSL(0, 0, -0.05),
-      roughness: 0.4,
+      color: new THREE.Color(bodyColor).offsetHSL(0, 0, -0.06),
+      roughness: 0.45,
       wireframe: wireframe
     });
 
     const backPanelMat = new THREE.MeshStandardMaterial({
-      color: new THREE.Color(materialColor).offsetHSL(0, -0.1, -0.15),
+      color: new THREE.Color(bodyColor).offsetHSL(0, -0.1, -0.18),
       roughness: 0.8,
       wireframe: wireframe
     });
 
-    const metalMat = new THREE.MeshStandardMaterial({
+    // Facade Material according to facadeType
+    let facadeMat: THREE.Material;
+    if (facadeType === 'mirror') {
+      facadeMat = new THREE.MeshStandardMaterial({
+        color: 0xecf0f1,
+        metalness: 0.95,
+        roughness: 0.05,
+        wireframe: wireframe
+      });
+    } else if (facadeType === 'glass') {
+      facadeMat = new THREE.MeshStandardMaterial({
+        color: 0x1e293b,
+        metalness: 0.4,
+        roughness: 0.1,
+        transparent: true,
+        opacity: 0.65,
+        wireframe: wireframe
+      });
+    } else {
+      facadeMat = new THREE.MeshStandardMaterial({
+        color: new THREE.Color(facadeColor),
+        roughness: 0.5,
+        metalness: 0.05,
+        wireframe: wireframe
+      });
+    }
+
+    const metalHandleMat = new THREE.MeshStandardMaterial({
       color: new THREE.Color(handleColor),
       metalness: 0.85,
       roughness: 0.2,
@@ -279,8 +317,8 @@ export default function Furniture3DViewer({
       roughness: 0.15
     });
 
-    // Helper: Create Panel with Shadow
-    const createPanel = (w: number, h: number, d: number, mat: THREE.Material = woodMat) => {
+    // Helper: Create Panel with shadow
+    const createPanel = (w: number, h: number, d: number, mat: THREE.Material = bodyMat) => {
       const geo = new THREE.BoxGeometry(w, h, d);
       const mesh = new THREE.Mesh(geo, mat);
       mesh.castShadow = true;
@@ -288,8 +326,6 @@ export default function Furniture3DViewer({
       return mesh;
     };
 
-    // Center offset coordinates
-    // Bottom of cabinet is at Y = socleHeight. Cabinet stands on ground Y = 0.
     const halfW = width / 2;
     const halfD = depth / 2;
 
@@ -313,7 +349,7 @@ export default function Furniture3DViewer({
     bottomPanel.position.set(0, socleHeight + T / 2, 0);
     cabinetGroup.add(bottomPanel);
 
-    // 5. Socle (Tsokol front & back)
+    // 5. Socle (Tsokol)
     if (socleHeight > 0) {
       const frontSocle = createPanel(width - 2 * T, socleHeight, T, edgeMat);
       frontSocle.position.set(0, socleHeight / 2, halfD - 30);
@@ -323,8 +359,8 @@ export default function Furniture3DViewer({
       backSocle.position.set(0, socleHeight / 2, -halfD + 30);
       cabinetGroup.add(backSocle);
 
-      // Feet / Podpyatnik
-      const footGeo = new THREE.CylinderGeometry(15, 18, 12, 16);
+      // Feet (Podpyatnik)
+      const footGeo = new THREE.CylinderGeometry(16, 18, 12, 16);
       const footMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.9 });
       const footPositions = [
         [-halfW + 50, halfD - 40],
@@ -356,7 +392,7 @@ export default function Furniture3DViewer({
       cabinetGroup.add(divider);
     }
 
-    // 8. Sections Content: Shelves, Drawers, Hangers
+    // 8. Sections Content: Shelves, Drawers, Hangers, LED strips
     for (let secIdx = 0; secIdx < sections; secIdx++) {
       const secCenterX = -halfW + T + secIdx * (sectionWidth + T) + sectionWidth / 2;
       const shelvesCount = shelvesPerSection[secIdx] || 0;
@@ -368,6 +404,20 @@ export default function Furniture3DViewer({
         const shelf = createPanel(sectionWidth - 2, T, depth - 15);
         shelf.position.set(secCenterX, shelfY, 5);
         cabinetGroup.add(shelf);
+
+        // LED Strip under shelf (if enabled)
+        if (hasLedLighting) {
+          const ledGeo = new THREE.BoxGeometry(sectionWidth - 10, 3, 8);
+          const ledMat = new THREE.MeshBasicMaterial({ color: 0xfef08a });
+          const ledMesh = new THREE.Mesh(ledGeo, ledMat);
+          ledMesh.position.set(secCenterX, shelfY - T / 2 - 1.5, 30);
+          cabinetGroup.add(ledMesh);
+
+          // Soft light emission
+          const pointLight = new THREE.PointLight(0xffedd5, 0.4, 450);
+          pointLight.position.set(secCenterX, shelfY - T / 2 - 15, 30);
+          cabinetGroup.add(pointLight);
+        }
       }
 
       // Hanger Rod (in section 1 or custom)
@@ -399,26 +449,25 @@ export default function Furniture3DViewer({
         for (let dIdx = 0; dIdx < drawers; dIdx++) {
           const drawerY = socleHeight + T + (dIdx * (drawerHeight + 4)) + drawerHeight / 2 + 6;
           
-          // Drawer group for slide animation
           const drawerGroup = new THREE.Group();
           drawerGroup.position.set(secCenterX, drawerY, 0);
 
-          // Drawer Facade
-          const facade = createPanel(sectionWidth - 6, drawerHeight - 4, T, woodMat);
+          // Drawer Facade (using facadeMat)
+          const facade = createPanel(sectionWidth - 6, drawerHeight - 4, T, facadeMat);
           facade.position.set(0, 0, halfD - T / 2);
           drawerGroup.add(facade);
 
           // Handle
           const handleGeo = new THREE.BoxGeometry(100, 10, 16);
-          const handle = new THREE.Mesh(handleGeo, metalMat);
+          const handle = new THREE.Mesh(handleGeo, metalHandleMat);
           handle.position.set(0, 0, halfD + 8);
           handle.castShadow = true;
           drawerGroup.add(handle);
 
-          // Drawer Box (internal box visible when pulled out)
+          // Drawer Box (internal white box)
           const runnerL = depth - 80;
           const boxSidesGeo = new THREE.BoxGeometry(sectionWidth - 30, 120, runnerL);
-          const boxMat = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, roughness: 0.7 });
+          const boxMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.6 });
           const box = new THREE.Mesh(boxSidesGeo, boxMat);
           box.position.set(0, 0, halfD - T - runnerL / 2);
           drawerGroup.add(box);
@@ -432,7 +481,7 @@ export default function Furniture3DViewer({
       }
     }
 
-    // 9. Doors (Fasad) with Open/Close Pivot Rigging
+    // 9. Doors (Fasad) with Open/Close Pivot Rigging & Styles
     if (doorType !== 'none' && doorsCount > 0) {
       if (doorType === 'hinged') {
         const doorW = (width - 4) / doorsCount;
@@ -440,8 +489,6 @@ export default function Furniture3DViewer({
 
         for (let dIdx = 0; dIdx < doorsCount; dIdx++) {
           const isLeftHinged = dIdx % 2 === 0;
-          
-          // Pivot group placed at the hinge location
           const doorPivot = new THREE.Group();
           const hingeX = isLeftHinged 
             ? -halfW + 2 + dIdx * doorW 
@@ -450,16 +497,37 @@ export default function Furniture3DViewer({
 
           doorPivot.position.set(hingeX, doorCenterY, halfD + T / 2);
 
-          // Door panel
-          const doorMesh = createPanel(doorW - 2, doorH, T, woodMat);
-          // Offset inside pivot so rotation happens about hinge
+          // Door Panel
+          const doorMesh = createPanel(doorW - 2, doorH, T, facadeMat);
           const meshOffsetX = isLeftHinged ? (doorW - 2) / 2 : -(doorW - 2) / 2;
           doorMesh.position.set(meshOffsetX, 0, 0);
           doorPivot.add(doorMesh);
 
+          // Classical MDF Frame styling (if mdf_frame)
+          if (facadeType === 'mdf_frame') {
+            const frameThickness = 50;
+            const grooveGeo = new THREE.BoxGeometry(doorW - 2 - frameThickness * 2, doorH - frameThickness * 2, 4);
+            const grooveMat = new THREE.MeshStandardMaterial({
+              color: new THREE.Color(facadeColor).offsetHSL(0, 0, -0.07),
+              roughness: 0.6
+            });
+            const grooveMesh = new THREE.Mesh(grooveGeo, grooveMat);
+            grooveMesh.position.set(meshOffsetX, 0, T / 2 + 1);
+            doorPivot.add(grooveMesh);
+          }
+
+          // Glass frame border (if glass)
+          if (facadeType === 'glass') {
+            const frameGeo = new THREE.BoxGeometry(doorW - 2, doorH, 4);
+            const frameMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.8, roughness: 0.3 });
+            const glassBorder = new THREE.Mesh(frameGeo, frameMat);
+            glassBorder.position.set(meshOffsetX, 0, 0);
+            doorPivot.add(glassBorder);
+          }
+
           // Door Handle
           const handleGeo = new THREE.CylinderGeometry(6, 6, 120, 16);
-          const handleMesh = new THREE.Mesh(handleGeo, metalMat);
+          const handleMesh = new THREE.Mesh(handleGeo, metalHandleMat);
           const handleX = isLeftHinged ? (doorW - 2) - 25 : -(doorW - 2) + 25;
           handleMesh.position.set(handleX, 0, T / 2 + 10);
           handleMesh.castShadow = true;
@@ -467,7 +535,6 @@ export default function Furniture3DViewer({
 
           cabinetGroup.add(doorPivot);
 
-          // Max open angle in radians (~105 degrees)
           const openAngle = isLeftHinged ? -Math.PI * 0.6 : Math.PI * 0.6;
           animatedPartsRef.current.doors.push({
             mesh: doorPivot,
@@ -486,22 +553,21 @@ export default function Furniture3DViewer({
           const origX = -halfW + doorW / 2 + dIdx * (doorW - 25);
           doorGroup.position.set(origX, socleHeight + bodyHeight / 2 - 5, trackZ);
 
-          const doorMesh = createPanel(doorW, doorH, T, woodMat);
+          const doorMesh = createPanel(doorW, doorH, T, facadeMat);
           doorGroup.add(doorMesh);
 
-          // Aluminum frame styling
+          // Aluminum Frame Profile
           const frameGeo = new THREE.BoxGeometry(10, doorH, T + 2);
-          const fLeft = new THREE.Mesh(frameGeo, metalMat);
+          const fLeft = new THREE.Mesh(frameGeo, metalHandleMat);
           fLeft.position.set(-doorW / 2 + 5, 0, 0);
           doorGroup.add(fLeft);
 
-          const fRight = new THREE.Mesh(frameGeo, metalMat);
+          const fRight = new THREE.Mesh(frameGeo, metalHandleMat);
           fRight.position.set(doorW / 2 - 5, 0, 0);
           doorGroup.add(fRight);
 
           cabinetGroup.add(doorGroup);
 
-          // Sliding target offset
           const slideShift = dIdx === 0 ? (doorW * 0.7) : -(doorW * 0.7);
           animatedPartsRef.current.doors.push({
             mesh: doorGroup,
@@ -514,14 +580,13 @@ export default function Furniture3DViewer({
       }
     }
 
-    // Update controls target center
     if (controlsRef.current) {
       controlsRef.current.target.set(0, height / 2, 0);
     }
   }, [
     height, width, depth, thickness, socleHeight, sections,
-    shelvesPerSection, drawers, hasHanger, doorType, doorsCount,
-    materialColor, handleColor, wireframe
+    shelvesPerSection, drawers, hasHanger, hasLedLighting, doorType, doorsCount,
+    bodyColor, facadeColor, facadeType, handleColor, wireframe
   ]);
 
   // Camera Presets
@@ -536,23 +601,22 @@ export default function Furniture3DViewer({
 
     switch (view) {
       case 'iso':
-        camera.position.set(maxDim * 1.3, maxDim * 1.0, maxDim * 2.1);
+        camera.position.set(maxDim * 1.35, maxDim * 1.05, maxDim * 2.2);
         break;
       case 'front':
-        camera.position.set(0, height / 2, maxDim * 2.5);
+        camera.position.set(0, height / 2, maxDim * 2.6);
         break;
       case 'side':
-        camera.position.set(maxDim * 2.5, height / 2, 0);
+        camera.position.set(maxDim * 2.6, height / 2, 0);
         break;
       case 'top':
-        camera.position.set(0, maxDim * 3.0, 50);
+        camera.position.set(0, maxDim * 3.2, 50);
         break;
     }
     camera.lookAt(target);
     controls.update();
   };
 
-  // Toggle Grid
   const toggleGrid = () => {
     if (gridHelperRef.current) {
       gridHelperRef.current.visible = !showGrid;
@@ -560,7 +624,6 @@ export default function Furniture3DViewer({
     }
   };
 
-  // Capture Screenshot of 3D Canvas
   const captureScreenshot = () => {
     const renderer = rendererRef.current;
     if (!renderer) return;
@@ -573,10 +636,9 @@ export default function Furniture3DViewer({
 
   return (
     <div className="relative w-full h-[540px] bg-slate-950 rounded-2xl overflow-hidden border border-slate-800 shadow-2xl flex flex-col">
-      {/* 3D WebGL Canvas Container */}
       <div ref={mountRef} className="w-full flex-1 cursor-grab active:cursor-grabbing" />
 
-      {/* Floating 3D Controls Overlay */}
+      {/* Camera Views & Door Action Bar */}
       <div className="absolute top-3 left-3 flex flex-wrap items-center gap-1.5 z-10">
         <div className="bg-slate-900/90 backdrop-blur-md border border-slate-700/80 rounded-xl p-1 flex items-center gap-1 shadow-lg">
           <button
@@ -609,7 +671,6 @@ export default function Furniture3DViewer({
           </button>
         </div>
 
-        {/* Doors Open / Close Toggle */}
         {doorType !== 'none' && (
           <button
             onClick={onToggleDoors}
@@ -625,9 +686,8 @@ export default function Furniture3DViewer({
         )}
       </div>
 
-      {/* Right Top Quick Tools */}
+      {/* Quick Tools on Right */}
       <div className="absolute top-3 right-3 flex items-center gap-1.5 z-10">
-        {/* Wireframe toggle */}
         <button
           onClick={() => setWireframe(!wireframe)}
           className={`p-2 rounded-xl text-xs font-medium border backdrop-blur-md transition-all ${
@@ -640,7 +700,6 @@ export default function Furniture3DViewer({
           <Layers className="w-4 h-4" />
         </button>
 
-        {/* Grid toggle */}
         <button
           onClick={toggleGrid}
           className={`p-2 rounded-xl text-xs font-medium border backdrop-blur-md transition-all ${
@@ -653,7 +712,6 @@ export default function Furniture3DViewer({
           <Grid className="w-4 h-4" />
         </button>
 
-        {/* Screenshot 3D button */}
         <button
           onClick={captureScreenshot}
           className="p-2 rounded-xl bg-slate-900/90 border border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800 transition-colors shadow-lg backdrop-blur-md"
@@ -663,11 +721,11 @@ export default function Furniture3DViewer({
         </button>
       </div>
 
-      {/* Bottom Hint Banner */}
-      <div className="bg-slate-900/80 backdrop-blur-md border-t border-slate-800/80 px-4 py-2 flex items-center justify-between text-[11px] text-slate-400">
+      {/* Bottom Hint */}
+      <div className="bg-slate-900/90 backdrop-blur-md border-t border-slate-800/80 px-4 py-2 flex items-center justify-between text-[11px] text-slate-400">
         <span className="flex items-center gap-1.5 font-mono">
           <RotateCw className="w-3.5 h-3.5 text-blue-400 animate-spin-slow" />
-          Sichqoncha / barmog'ingiz bilan 360° aylantiring va masshtablang
+          Sichqoncha yoki barmog'ingiz bilan 360° erkin aylantiring va masshtablang
         </span>
         <span className="font-mono text-slate-500 hidden sm:inline">
           Three.js Studio Engine • WebGL
