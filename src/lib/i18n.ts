@@ -4,6 +4,7 @@ export const translations = {
     menu_home: "Asosiy",
     menu_attendance: "Davomat",
     menu_sales: "Savdolar",
+    menu_raskroy: "Kroy & Raskroy",
     menu_constructor: "Konstruktor",
     menu_settings: "Sozlamalar",
     
@@ -80,6 +81,7 @@ export const translations = {
     menu_home: "Главная",
     menu_attendance: "Посещаемость",
     menu_sales: "Продажи",
+    menu_raskroy: "Крой и Раскрой",
     menu_constructor: "Конструктор",
     menu_settings: "Настройки",
     

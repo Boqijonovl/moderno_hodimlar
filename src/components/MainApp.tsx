@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Clock, Package, Wallet, Settings as SettingsIcon, PackageSearch, Ruler } from 'lucide-react';
+import Link from 'next/link';
+import { Clock, Package, Wallet, Settings as SettingsIcon, PackageSearch, Ruler, Scissors } from 'lucide-react';
 import AttendanceTab from '@/components/tabs/AttendanceTab';
 import SalesTab from '@/components/tabs/SalesTab';
 import ExpensesTab from '@/components/tabs/ExpensesTab';
@@ -171,11 +172,20 @@ export default function MainApp() {
 
   return (
     <main className="min-h-screen bg-slate-50/50 dark:bg-slate-950 flex flex-col pb-[80px] font-sans">
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-800 dark:to-indigo-900 text-white p-6 shadow-lg rounded-b-3xl shrink-0 z-10 relative">
-        <h1 className="text-2xl font-bold tracking-tight">Moderno Mebel</h1>
-        <p className="text-blue-100 dark:text-blue-200 mt-1 font-medium">
-          {currentTab === 'attendance' ? t('menu_attendance') : currentTab === 'sales' ? t('menu_sales') : currentTab === 'expenses' ? t('menu_expenses') : currentTab === 'orders' ? 'Buyurtmalar' : t('menu_settings')}
-        </p>
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-800 dark:to-indigo-900 text-white p-6 shadow-lg rounded-b-3xl shrink-0 z-10 relative flex justify-between items-center gap-3">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Moderno Mebel</h1>
+          <p className="text-blue-100 dark:text-blue-200 mt-1 font-medium">
+            {currentTab === 'attendance' ? t('menu_attendance') : currentTab === 'sales' ? t('menu_sales') : currentTab === 'expenses' ? t('menu_expenses') : currentTab === 'orders' ? 'Buyurtmalar' : t('menu_settings')}
+          </p>
+        </div>
+        <Link
+          href="/raskroy"
+          className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-white/20 hover:bg-white/30 text-white backdrop-blur-md text-xs font-bold transition-all shadow-md hover:scale-105 active:scale-95 shrink-0 border border-white/20"
+        >
+          <Scissors className="w-4 h-4 text-blue-200" />
+          <span>Kroy & Raskroy</span>
+        </Link>
       </div>
 
       <div className="flex-1 overflow-x-hidden overflow-y-auto p-4 relative z-0 mt-[-20px] pt-[40px]">

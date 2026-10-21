@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { User, Settings, Globe, Palette, ShieldAlert } from 'lucide-react';
+import { User, Settings, Globe, Palette, ShieldAlert, Scissors } from 'lucide-react';
 import Link from 'next/link';
 import { useTranslation, Language } from '@/lib/i18n';
 
@@ -70,6 +70,25 @@ export default function SettingsTab({ user, onUserUpdate }: { user: any, onUserU
           </Link>
         </div>
       )}
+
+      {/* Kroy & Raskroy Tool */}
+      <div className="bg-gradient-to-r from-slate-900 to-slate-800 rounded-3xl p-6 shadow-md text-white border border-slate-700/60">
+        <div className="flex items-center gap-3 mb-2">
+          <div className="p-2.5 rounded-2xl bg-blue-600/30 text-blue-400 border border-blue-500/30">
+            <Scissors className="w-6 h-6" />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold">Kroy & 2D Raskroy</h2>
+            <p className="text-slate-400 text-xs">Arra va kroy kalkulyatori</p>
+          </div>
+        </div>
+        <p className="text-slate-300 text-xs mb-4">
+          Mebel o'lchamlarini kiritib tayyor kroy jadvali va 2750×1830 listlarga optimal 2D arra xaritasini oling.
+        </p>
+        <Link href="/raskroy" className="inline-flex items-center justify-center w-full bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl p-3 text-xs transition-colors shadow-lg shadow-blue-500/20">
+          📐 Kroy & Raskroy Dasturini Ochish
+        </Link>
+      </div>
 
       {/* Profile Settings */}
       <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-sm border border-slate-100 dark:border-slate-800">
