@@ -1,5 +1,5 @@
 // src/lib/raskroyEngine.ts
-// Algoritmik Mebel Kroyi va 2D Guillotine Raskroy Dvigateli
+// Algoritmik Mebel Kroyi va 2D Guillotine Raskroy Dvigateli (Mosla.app formatida)
 
 export interface PartItem {
   id: string;
@@ -12,6 +12,7 @@ export interface PartItem {
   edgeU2?: string; // Uzun tomon 2 kromka
   edgeK1?: string; // Kalta tomon 1 kromka
   edgeK2?: string; // Kalta tomon 2 kromka
+  allowRotation?: boolean; // Detalni 90° aylantirish mumkinmi (Tekstura/yog'och yo'nalishi)
   drillingNote?: string; // Priadka / teshiklar
   area: number;    // m²
 }
@@ -31,11 +32,11 @@ export interface MebelKroyInput {
 }
 
 export interface RaskroySettings {
-  sheetWidth: number;   // Standart: 2750 mm
-  sheetHeight: number;  // Standart: 1830 mm
+  sheetWidth: number;   // Standart: 2750 mm (yoki 2800 mm)
+  sheetHeight: number;  // Standart: 1830 mm (yoki 2070 mm)
   kerf: number;         // Pilyan arralash qalinligi (standart: 4 mm)
   trim: number;         // List chetidan tozalash (standart: 10 mm)
-  allowRotation: boolean; // Detallarni 90 gradusga aylantirishga ruxsat
+  allowRotation: boolean; // Umumiy detallarni 90 gradusga aylantirishga ruxsat
 }
 
 export interface PlacedItem {
@@ -58,6 +59,14 @@ export interface PlacedItem {
   };
 }
 
+export interface UsefulOffcut {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  area: number; // m²
+}
+
 export interface SheetLayout {
   sheetIndex: number;
   sheetWidth: number;
@@ -66,6 +75,8 @@ export interface SheetLayout {
   usedArea: number; // m²
   wastePercent: number; // %
   wasteArea: number; // m²
+  cutLengthMeters: number; // Pogon metr kesish uzunligi
+  usefulOffcuts: UsefulOffcut[]; // Foydali qoldiqlar (>= 250x250 mm)
 }
 
 export interface RaskroyResult {
@@ -77,6 +88,9 @@ export interface RaskroyResult {
   totalEdge04mmMeters: number;
   totalPartsCount: number;
   averageWastePercent: number;
+  totalCutLengthMeters: number;
+  totalUsefulOffcutsCount: number;
+  totalUsefulOffcutArea: number;
   unplacedParts: PartItem[];
 }
 
@@ -715,10 +729,11 @@ export function calculateRaskroy(
     uid: string;
     partId: string;
     name: string;
-    w: number; // Uzun tomoni
-    h: number; // Qisqa tomoni
+    w: number; // Uzun tomoni yoki o'zgarmas uzunlik
+    h: number; // Qisqa tomoni yoki o'zgarmas eni
     originalW: number;
     originalH: number;
+    allowRotation: boolean;
     color: string;
     edgeInfo: {
       top?: string;
@@ -735,15 +750,18 @@ export function calculateRaskroy(
     const color = COLOR_PALETTE[colorIdx % COLOR_PALETTE.length];
     colorIdx++;
 
+    const canRotate = part.allowRotation !== false && allowRotation;
+
     for (let i = 0; i < part.qty; i++) {
       pieces.push({
         uid: `${part.id}_${i}`,
         partId: part.id,
         name: `${part.name} #${i + 1}`,
-        w: Math.max(part.length, part.width),
-        h: Math.min(part.length, part.width),
+        w: canRotate ? Math.max(part.length, part.width) : part.length,
+        h: canRotate ? Math.min(part.length, part.width) : part.width,
         originalW: part.length,
         originalH: part.width,
+        allowRotation: canRotate,
         color,
         edgeInfo: {
           top: part.edgeU1,
@@ -775,12 +793,24 @@ export function calculateRaskroy(
   let currentSheetItems: PlacedItem[] = [];
   let currentSheetIndex = 1;
 
-  function startNewSheet() {
+  function finalizeSheet() {
     if (currentSheetItems.length > 0) {
       const usedArea = currentSheetItems.reduce((sum, it) => sum + (it.w * it.h), 0) / 1000000;
       const totalArea = (sheetWidth * sheetHeight) / 1000000;
       const wasteArea = Math.max(0, totalArea - usedArea);
       const wastePercent = Math.round((wasteArea / totalArea) * 100);
+
+      const usefulOffcuts: UsefulOffcut[] = currentFreeRects
+        .filter(r => r.w >= 250 && r.h >= 250)
+        .map(r => ({
+          x: r.x,
+          y: r.y,
+          w: r.w,
+          h: r.h,
+          area: Number(((r.w * r.h) / 1000000).toFixed(2))
+        }));
+
+      const cutLengthMeters = Number(currentSheetItems.reduce((acc, it) => acc + (it.w + it.h) / 1000, 0).toFixed(1));
 
       sheets.push({
         sheetIndex: currentSheetIndex,
@@ -789,11 +819,16 @@ export function calculateRaskroy(
         items: [...currentSheetItems],
         usedArea: Number(usedArea.toFixed(2)),
         wasteArea: Number(wasteArea.toFixed(2)),
-        wastePercent
+        wastePercent,
+        cutLengthMeters,
+        usefulOffcuts
       });
       currentSheetIndex++;
     }
+  }
 
+  function startNewSheet() {
+    finalizeSheet();
     currentSheetItems = [];
     currentFreeRects = [
       {
@@ -829,7 +864,7 @@ export function calculateRaskroy(
       }
 
       // 2. Agar aylantirishga ruxsat berilgan bo'lsa
-      if (allowRotation && rect.w >= piece.h && rect.h >= piece.w) {
+      if (piece.allowRotation && rect.w >= piece.h && rect.h >= piece.w) {
         const leftoverArea = (rect.w * rect.h) - (piece.w * piece.h);
         if (leftoverArea < bestScore) {
           bestScore = leftoverArea;
@@ -852,7 +887,7 @@ export function calculateRaskroy(
           bestRotated = false;
           break;
         }
-        if (allowRotation && rect.w >= piece.h && rect.h >= piece.w) {
+        if (piece.allowRotation && rect.w >= piece.h && rect.h >= piece.w) {
           bestScore = (rect.w * rect.h) - (piece.w * piece.h);
           bestRectIdx = rIdx;
           bestRotated = true;
@@ -882,7 +917,6 @@ export function calculateRaskroy(
       });
 
       // Guillotine Split: Arra kesimi (kerf) ni hisobga olib qolgan joyni 2 ga ajratamiz
-      // Shorter Axis Split qoidasi
       const remW = rect.w - pw - kerf;
       const remH = rect.h - ph - kerf;
 
@@ -926,10 +960,8 @@ export function calculateRaskroy(
         }
       }
 
-      // Ishlatilgan to'rtburchakni o'chirib, yangilarini qo'shamiz
       currentFreeRects.splice(bestRectIdx, 1);
       newRects.forEach(nr => {
-        // 50 mm dan kichik qoldiqlarni erkin bloklar ro'yxatiga kiritmaymiz (keraksiz mayda qoldiq)
         if (nr.w >= 50 && nr.h >= 50) {
           currentFreeRects.push(nr);
         }
@@ -957,22 +989,7 @@ export function calculateRaskroy(
   });
 
   // Oxirgi listni yakunlash
-  if (currentSheetItems.length > 0) {
-    const usedArea = currentSheetItems.reduce((sum, it) => sum + (it.w * it.h), 0) / 1000000;
-    const totalArea = (sheetWidth * sheetHeight) / 1000000;
-    const wasteArea = Math.max(0, totalArea - usedArea);
-    const wastePercent = Math.round((wasteArea / totalArea) * 100);
-
-    sheets.push({
-      sheetIndex: currentSheetIndex,
-      sheetWidth,
-      sheetHeight,
-      items: [...currentSheetItems],
-      usedArea: Number(usedArea.toFixed(2)),
-      wasteArea: Number(wasteArea.toFixed(2)),
-      wastePercent
-    });
-  }
+  finalizeSheet();
 
   const totalDspArea = dspParts.reduce((s, p) => s + p.area, 0);
   const totalDvpArea = parts.filter(p => p.material === 'DVP').reduce((s, p) => s + p.area, 0);
@@ -994,6 +1011,10 @@ export function calculateRaskroy(
     ? Math.round(sheets.reduce((sum, s) => sum + s.wastePercent, 0) / sheets.length)
     : 0;
 
+  const totalCutLengthMeters = Number(sheets.reduce((sum, s) => sum + (s.cutLengthMeters || 0), 0).toFixed(1));
+  const totalUsefulOffcutsCount = sheets.reduce((sum, s) => sum + (s.usefulOffcuts?.length || 0), 0);
+  const totalUsefulOffcutArea = Number(sheets.reduce((sum, s) => sum + (s.usefulOffcuts?.reduce((a, o) => a + o.area, 0) || 0), 0).toFixed(2));
+
   return {
     sheets,
     totalSheets: sheets.length,
@@ -1003,16 +1024,15 @@ export function calculateRaskroy(
     totalEdge04mmMeters: Math.ceil(edge04mm * 1.08),
     totalPartsCount: pieces.length,
     averageWastePercent,
+    totalCutLengthMeters,
+    totalUsefulOffcutsCount,
+    totalUsefulOffcutArea,
     unplacedParts
   };
 }
 
 /**
- * Matnli kiritishdan (Quick Paste) detallar ro'yxatini ajratib olish
- * Masalan:
- * 2000x500 2 Yon devor
- * 768 500 2 Qopqoq
- * 768*480 3 Polka
+ * Matnli kiritishdan yoki Excel jadvaldan nusxalanganda (Quick Paste) detallar ro'yxatini ajratib olish
  */
 export function parsePartsFromText(text: string): PartItem[] {
   const lines = text.split('\n');
@@ -1021,6 +1041,61 @@ export function parsePartsFromText(text: string): PartItem[] {
   lines.forEach((line, idx) => {
     const trimmed = line.trim();
     if (!trimmed || trimmed.startsWith('#') || trimmed.startsWith('//')) return;
+
+    // Excel TSV (Tab separated): Name \t Length \t Width \t Qty
+    if (trimmed.includes('\t')) {
+      const cols = trimmed.split('\t').map(c => c.trim());
+      // Check if first col is number or name
+      if (cols.length >= 3) {
+        if (!isNaN(Number(cols[0])) && !isNaN(Number(cols[1]))) {
+          // Format: Length \t Width \t Qty \t Name
+          const len = parseInt(cols[0], 10);
+          const wid = parseInt(cols[1], 10);
+          const qty = parseInt(cols[2], 10) || 1;
+          const name = cols[3] || `Detal #${idx + 1}`;
+          if (len > 0 && wid > 0) {
+            result.push({
+              id: `manual_${Date.now()}_${idx}`,
+              name,
+              length: len,
+              width: wid,
+              qty,
+              material: 'DSP',
+              edgeU1: '—',
+              edgeU2: '—',
+              edgeK1: '—',
+              edgeK2: '—',
+              allowRotation: true,
+              area: (len * wid * qty) / 1000000
+            });
+            return;
+          }
+        } else if (!isNaN(Number(cols[1])) && !isNaN(Number(cols[2]))) {
+          // Format: Name \t Length \t Width \t Qty
+          const name = cols[0];
+          const len = parseInt(cols[1], 10);
+          const wid = parseInt(cols[2], 10);
+          const qty = parseInt(cols[3], 10) || 1;
+          if (len > 0 && wid > 0) {
+            result.push({
+              id: `manual_${Date.now()}_${idx}`,
+              name,
+              length: len,
+              width: wid,
+              qty,
+              material: 'DSP',
+              edgeU1: '—',
+              edgeU2: '—',
+              edgeK1: '—',
+              edgeK2: '—',
+              allowRotation: true,
+              area: (len * wid * qty) / 1000000
+            });
+            return;
+          }
+        }
+      }
+    }
 
     // Pattern: 2000x500 2 [Nomi] yoki 2000 500 2 [Nomi] yoki 2000*500 2
     const match = trimmed.match(/^(\d+)[xX*,\s]+(\d+)(?:[xX*,\s]+(\d+))?\s*(.*)$/);
@@ -1042,6 +1117,7 @@ export function parsePartsFromText(text: string): PartItem[] {
           edgeU2: '—',
           edgeK1: '—',
           edgeK2: '—',
+          allowRotation: true,
           area: (len * wid * qty) / 1000000
         });
       }
@@ -1049,4 +1125,50 @@ export function parsePartsFromText(text: string): PartItem[] {
   });
 
   return result;
+}
+
+/**
+ * CNC va AutoCAD stanoklari uchun DXF (Drawing Exchange Format) fayli generatsiya qilish (Mosla standarti)
+ */
+export function generateDxfForSheet(sheet: SheetLayout): string {
+  let dxf = `0\nSECTION\n2\nHEADER\n9\n$ACADVER\n1\nAC1009\n0\nENDSEC\n`;
+  dxf += `0\nSECTION\n2\nTABLES\n0\nTABLE\n2\nLAYER\n70\n2\n`;
+  dxf += `0\nLAYER\n2\nSHEET\n70\n0\n62\n7\n6\nCONTINUOUS\n0\n`;
+  dxf += `0\nLAYER\n2\nPARTS\n70\n0\n62\n3\n6\nCONTINUOUS\n0\n`;
+  dxf += `0\nLAYER\n2\nLABELS\n70\n0\n62\n2\n6\nCONTINUOUS\n0\n`;
+  dxf += `0\nENDTAB\n0\nENDSEC\n`;
+  dxf += `0\nSECTION\n2\nENTITIES\n`;
+
+  // Draw sheet boundary
+  const sw = sheet.sheetWidth;
+  const sh = sheet.sheetHeight;
+  dxf += `0\nPOLYLINE\n8\nSHEET\n66\n1\n70\n1\n`;
+  dxf += `0\nVERTEX\n8\nSHEET\n10\n0\n20\n0\n30\n0\n`;
+  dxf += `0\nVERTEX\n8\nSHEET\n10\n${sw}\n20\n0\n30\n0\n`;
+  dxf += `0\nVERTEX\n8\nSHEET\n10\n${sw}\n20\n${sh}\n30\n0\n`;
+  dxf += `0\nVERTEX\n8\nSHEET\n10\n0\n20\n${sh}\n30\n0\n`;
+  dxf += `0\nSEQEND\n`;
+
+  // Draw parts
+  sheet.items.forEach(item => {
+    const x1 = item.x;
+    const y1 = item.y;
+    const x2 = item.x + item.w;
+    const y2 = item.y + item.h;
+
+    dxf += `0\nPOLYLINE\n8\nPARTS\n66\n1\n70\n1\n`;
+    dxf += `0\nVERTEX\n8\nPARTS\n10\n${x1}\n20\n${y1}\n30\n0\n`;
+    dxf += `0\nVERTEX\n8\nPARTS\n10\n${x2}\n20\n${y1}\n30\n0\n`;
+    dxf += `0\nVERTEX\n8\nPARTS\n10\n${x2}\n20\n${y2}\n30\n0\n`;
+    dxf += `0\nVERTEX\n8\nPARTS\n10\n${x1}\n20\n${y2}\n30\n0\n`;
+    dxf += `0\nSEQEND\n`;
+
+    // Part Label Text
+    const cx = x1 + item.w / 2;
+    const cy = y1 + item.h / 2;
+    dxf += `0\nTEXT\n8\nLABELS\n10\n${cx - 50}\n20\n${cy}\n30\n0\n40\n30\n1\n${item.name} (${item.w}x${item.h})\n`;
+  });
+
+  dxf += `0\nENDSEC\n0\nEOF\n`;
+  return dxf;
 }
