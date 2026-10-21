@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { DollarSign, ShoppingCart, UserCheck, Activity } from 'lucide-react';
 import Link from 'next/link';
 import DashboardCharts from '@/components/admin/DashboardCharts';
+import { normalizePaymentMethod } from '@/lib/formatters';
 
 export default function AdminDashboard() {
   const [data, setData] = useState<any>(null);
@@ -44,10 +45,18 @@ export default function AdminDashboard() {
            <div className="flex justify-between items-center">
              <div>
                <p className="text-amber-100 text-xs font-medium mb-1">To'lov Turlari</p>
-               <div className="flex gap-4 text-sm font-semibold">
-                 <span>Naqd: {(data.breakdown.cash/1000000).toFixed(1)}M</span>
-                 <span>Karparativ: {(data.breakdown.card/1000000).toFixed(1)}M</span>
-                 <span>Avans: {(data.breakdown.installment/1000000).toFixed(1)}M</span>
+               <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm font-semibold">
+                 <span>Naqd: {data.breakdown?.cash ? (data.breakdown.cash / 1000000).toFixed(1) + 'M' : '0'}</span>
+                 <span>Karta: {data.breakdown?.card ? (data.breakdown.card / 1000000).toFixed(1) + 'M' : '0'}</span>
+                 {data.breakdown?.terminal > 0 && (
+                   <span>Terminal: {(data.breakdown.terminal / 1000000).toFixed(1)}M</span>
+                 )}
+                 {data.breakdown?.corporate > 0 && (
+                   <span>Karparativ: {(data.breakdown.corporate / 1000000).toFixed(1)}M</span>
+                 )}
+                 {data.totalDebt > 0 && (
+                   <span className="text-amber-200">Qarz: {(data.totalDebt / 1000000).toFixed(1)}M</span>
+                 )}
                </div>
              </div>
              <div className="p-2 bg-white/20 rounded-lg"><Activity className="w-6 h-6" /></div>
@@ -99,7 +108,7 @@ export default function AdminDashboard() {
                   </p>
                 )}
                 <p className="text-[10px] text-slate-400">
-                  {new Date(sale.createdAt).toLocaleTimeString('uz-UZ', {hour:'2-digit', minute:'2-digit'})} • {sale.paymentMethod === 'CASH' ? 'Naqd' : sale.paymentMethod === 'CARD' ? 'Karparativ' : 'Avans'}
+                  {new Date(sale.createdAt).toLocaleTimeString('uz-UZ', {hour:'2-digit', minute:'2-digit'})} • {normalizePaymentMethod(sale.paymentMethod)}
                 </p>
               </div>
             </div>

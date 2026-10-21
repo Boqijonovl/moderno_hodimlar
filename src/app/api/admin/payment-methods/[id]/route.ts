@@ -7,9 +7,13 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
     const body = await req.json();
     const { name, isActive } = body;
 
+    const updateData: any = {};
+    if (name !== undefined) updateData.name = String(name).trim();
+    if (isActive !== undefined) updateData.isActive = isActive;
+
     const method = await prisma.paymentMethod.update({
       where: { id: params.id },
-      data: { name, isActive }
+      data: updateData
     });
 
     return NextResponse.json(method);

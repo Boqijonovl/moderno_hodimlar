@@ -17,10 +17,11 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { name } = body;
 
-    if (!name) return NextResponse.json({ error: 'Name is required' }, { status: 400 });
+    const trimmedName = String(name || '').trim();
+    if (!trimmedName) return NextResponse.json({ error: 'Name is required' }, { status: 400 });
 
     const method = await prisma.paymentMethod.create({
-      data: { name }
+      data: { name: trimmedName }
     });
 
     return NextResponse.json(method);

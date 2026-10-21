@@ -21,6 +21,7 @@ export async function POST(req: Request, props: { params: Promise<{ id: string }
 
     const payAmount = parseFloat(amount);
     if (payAmount <= 0) return NextResponse.json({ error: 'Invalid amount' }, { status: 400 });
+    const cleanMethod = typeof method === 'string' ? method.trim() : 'Naqd';
 
     const newAdvance = sale.advance + payAmount;
     const newBalance = Math.max(0, sale.totalPrice - newAdvance);
@@ -34,7 +35,7 @@ export async function POST(req: Request, props: { params: Promise<{ id: string }
         status: newStatus,
         payments: {
           create: {
-            method,
+            method: cleanMethod,
             amount: payAmount
           }
         }

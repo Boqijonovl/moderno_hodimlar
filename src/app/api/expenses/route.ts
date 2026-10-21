@@ -31,8 +31,8 @@ export async function POST(req: Request) {
       data: {
         userId: user.id,
         amount: parsedAmount,
-        reason,
-        paymentMethod
+        reason: String(reason).trim(),
+        paymentMethod: paymentMethod ? String(paymentMethod).trim() : 'Naqd'
       }
     });
 

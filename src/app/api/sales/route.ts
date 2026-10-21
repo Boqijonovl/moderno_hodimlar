@@ -35,10 +35,13 @@ export async function POST(req: Request) {
     
     // Determine the main payment method string for backward compatibility
     let paymentMethod = 'Aralash';
-    if (paymentDetails.length === 1) {
-      paymentMethod = paymentDetails[0].method;
-    } else if (paymentDetails.length === 0) {
+    const activePayments = paymentDetails.filter((p: any) => parseFloat(p.amount) > 0);
+    if (activePayments.length === 1) {
+      paymentMethod = String(activePayments[0].method).trim();
+    } else if (activePayments.length === 0) {
       paymentMethod = 'Nasiya';
+    } else {
+      paymentMethod = 'Aralash';
     }
 
     const saleItems = items.filter((item: any) => !item.isOrder);
@@ -61,8 +64,8 @@ export async function POST(req: Request) {
           }))
         },
         payments: {
-          create: paymentDetails.filter((p: any) => parseFloat(p.amount) > 0).map((p: any) => ({
-            method: p.method,
+          create: activePayments.map((p: any) => ({
+            method: String(p.method).trim(),
             amount: parseFloat(p.amount)
           }))
         },
@@ -167,7 +170,7 @@ export async function GET(req: Request) {
 
     const sales = await prisma.sale.findMany({
       where: whereClause,
-      include: { user: true, items: true, orders: true },
+      include: { user: true, items: true, orders: true, payments: true },
       orderBy: { createdAt: 'desc' }
     });
     return NextResponse.json(sales);

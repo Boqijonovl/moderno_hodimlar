@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { BarChart2, Trash2, Wallet, Package, Printer } from 'lucide-react';
+import { normalizePaymentMethod, getPaymentMethodColor } from '@/lib/formatters';
 
 export default function SalesAnalytics() {
   const [sales, setSales] = useState<any[]>([]);
@@ -155,7 +156,7 @@ export default function SalesAnalytics() {
                             <div className="flex flex-col items-end">
                               <p className="font-black text-emerald-600 text-sm sm:text-base">{(sale.totalPrice || 0).toLocaleString()} so'm</p>
                               
-                              {(sale.status === 'INCOMPLETE' || (sale.paymentMethod === 'INSTALLMENT' && sale.balance > 0)) && (
+                              {sale.balance > 0 && (
                                 <div className="text-[10px] font-bold text-rose-500 bg-rose-50 px-2 py-1 rounded-md mt-1 shadow-sm border border-rose-100 whitespace-nowrap">
                                   ⚠️ Qarz: {sale.balance?.toLocaleString()} so'm
                                 </div>
@@ -165,9 +166,26 @@ export default function SalesAnalytics() {
                                 <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 font-medium whitespace-nowrap">
                                   {new Date(sale.createdAt).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' })}
                                 </span>
-                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 font-medium uppercase whitespace-nowrap">
-                                  {sale.paymentMethod === 'CASH' ? 'Naqd' : sale.paymentMethod === 'CARD' ? 'Karta' : 'Karparativ'}
-                                </span>
+                                {sale.payments && sale.payments.length > 0 ? (
+                                  sale.payments.map((p: any, pIdx: number) => {
+                                    const color = getPaymentMethodColor(p.method);
+                                    return (
+                                      <span
+                                        key={pIdx}
+                                        className={`text-[10px] px-1.5 py-0.5 rounded border font-bold uppercase whitespace-nowrap ${color.bg} ${color.text} ${color.border}`}
+                                      >
+                                        {normalizePaymentMethod(p.method)}
+                                        {sale.payments.length > 1 ? ` (${p.amount.toLocaleString()})` : ''}
+                                      </span>
+                                    );
+                                  })
+                                ) : (
+                                  <span
+                                    className={`text-[10px] px-1.5 py-0.5 rounded border font-bold uppercase whitespace-nowrap ${getPaymentMethodColor(sale.paymentMethod).bg} ${getPaymentMethodColor(sale.paymentMethod).text} ${getPaymentMethodColor(sale.paymentMethod).border}`}
+                                  >
+                                    {normalizePaymentMethod(sale.paymentMethod)}
+                                  </span>
+                                )}
                               </div>
                             </div>
                             <button 
@@ -205,10 +223,12 @@ export default function SalesAnalytics() {
 
                       <div className="flex gap-1 mt-1 flex-wrap justify-end">
                         <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 font-medium whitespace-nowrap">
-                          {new Date(expense.createdAt).toLocaleDateString()}
+                          {new Date(expense.createdAt).toLocaleDateString('uz-UZ')}
                         </span>
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-rose-50 text-rose-700 font-medium uppercase whitespace-nowrap">
-                          {expense.paymentMethod === 'CASH' ? 'Naqd' : expense.paymentMethod === 'CARD' ? 'Karta' : 'Karparativ'}
+                        <span
+                          className={`text-[10px] px-1.5 py-0.5 rounded border font-bold uppercase whitespace-nowrap ${getPaymentMethodColor(expense.paymentMethod).bg} ${getPaymentMethodColor(expense.paymentMethod).text} ${getPaymentMethodColor(expense.paymentMethod).border}`}
+                        >
+                          {normalizePaymentMethod(expense.paymentMethod)}
                         </span>
                       </div>
                     </div>

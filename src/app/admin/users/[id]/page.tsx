@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { use } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Clock, Package, User, Settings, Trash2 } from 'lucide-react';
+import { normalizePaymentMethod, getPaymentMethodColor } from '@/lib/formatters';
 
 export default function UserDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
@@ -431,13 +432,13 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
                   <div className="text-right flex items-center gap-4">
                     <div>
                       <div className="font-bold text-emerald-600 text-sm">{(sale.totalPrice || 0).toLocaleString()} so'm</div>
-                      {(sale.status === 'INCOMPLETE' || (sale.paymentMethod === 'INSTALLMENT' && sale.balance > 0)) && (
+                      {sale.balance > 0 && (
                         <div className="text-[10px] font-bold text-rose-500 bg-rose-50 px-2 py-1 rounded-md mt-1 text-right shadow-sm border border-rose-100">
                           ⚠️ Qarz: {sale.balance?.toLocaleString()} so'm
                         </div>
                       )}
-                      <span className="text-[10px] bg-white border border-slate-200 px-2 py-0.5 rounded text-slate-500 uppercase mt-1 inline-block">
-                        {sale.paymentMethod === 'CASH' ? 'Naqd' : sale.paymentMethod === 'CARD' ? 'Karparativ' : 'Avans'}
+                      <span className={`text-[10px] border px-2 py-0.5 rounded uppercase mt-1 inline-block font-semibold ${getPaymentMethodColor(sale.paymentMethod).bg} ${getPaymentMethodColor(sale.paymentMethod).text} ${getPaymentMethodColor(sale.paymentMethod).border}`}>
+                        {normalizePaymentMethod(sale.paymentMethod)}
                       </span>
                     </div>
                     <button onClick={() => deleteSale(sale.id)} className="p-1.5 bg-rose-50 text-rose-500 rounded-lg hover:bg-rose-100 transition-colors shadow-sm active:scale-95">

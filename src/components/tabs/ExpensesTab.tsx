@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Send, List, Wallet } from 'lucide-react';
 import { useTranslation, Language } from '@/lib/i18n';
+import { normalizePaymentMethod, getPaymentMethodColor } from '@/lib/formatters';
 
 export default function ExpensesTab({ user, WebApp }: { user: any, WebApp: any }) {
   const [reason, setReason] = useState('');
@@ -193,8 +194,8 @@ export default function ExpensesTab({ user, WebApp }: { user: any, WebApp: any }
                     {expense.reason}
                   </div>
                   <div className="flex items-center gap-2 mt-1 text-xs flex-wrap">
-                    <span className="text-blue-600 font-medium bg-blue-100 dark:bg-blue-900/30 px-2 py-0.5 rounded-full">
-                      {expense.paymentMethod}
+                    <span className={`font-medium px-2 py-0.5 rounded-full border text-[11px] ${getPaymentMethodColor(expense.paymentMethod).bg} ${getPaymentMethodColor(expense.paymentMethod).text} ${getPaymentMethodColor(expense.paymentMethod).border}`}>
+                      {normalizePaymentMethod(expense.paymentMethod)}
                     </span>
                     <span className="text-slate-400">{new Date(expense.createdAt).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' })}</span>
                   </div>

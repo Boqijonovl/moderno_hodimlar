@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Printer } from 'lucide-react';
+import { formatPaymentMethod } from '@/lib/formatters';
 
 function PrintSalesContent() {
   const [data, setData] = useState<any[]>([]);
@@ -76,9 +77,7 @@ function PrintSalesContent() {
             </thead>
             <tbody>
               {data.map((sale: any, index: number) => {
-                let paymentType = 'Naqd';
-                if (sale.paymentMethod === 'CARD') paymentType = 'Karta / Karparativ';
-                if (sale.paymentMethod === 'INSTALLMENT') paymentType = 'Nasiya / Avansli';
+                const paymentType = formatPaymentMethod(sale.paymentMethod, sale.payments);
 
                 return (
                   <tr key={sale.id} className="hover:bg-gray-50 print:break-inside-avoid">

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Send, CheckCircle2, Package, Plus, Trash2, FileText, List, Phone, User as UserIcon } from 'lucide-react';
 import { useTranslation, Language } from '@/lib/i18n';
+import { normalizePaymentMethod, getPaymentMethodColor } from '@/lib/formatters';
 
 export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
   const [items, setItems] = useState<{name: string, price: string, isOrder: boolean, description: string, deadline: string, assignedToId: string}[]>([{ name: '', price: '', isOrder: false, description: '', deadline: '', assignedToId: '' }]);
@@ -587,16 +588,16 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
                           )}
 
                           <div className="flex items-center gap-2 text-xs flex-wrap">
-                            <span className="text-blue-600 font-medium bg-blue-100 dark:bg-blue-900/30 px-2 py-0.5 rounded-full">
-                              {sale.paymentMethod === 'CASH' ? t('cash') : sale.paymentMethod === 'CARD' ? 'Karparativ' : sale.paymentMethod === 'INSTALLMENT' ? 'Avans' : sale.paymentMethod}
+                            <span className={`font-semibold px-2.5 py-0.5 rounded-full border ${getPaymentMethodColor(sale.paymentMethod).bg} ${getPaymentMethodColor(sale.paymentMethod).text} ${getPaymentMethodColor(sale.paymentMethod).border}`}>
+                              {normalizePaymentMethod(sale.paymentMethod)}
                             </span>
                             <span className="text-slate-400">{new Date(sale.createdAt).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' })}</span>
                           </div>
                           
                           {sale.payments && sale.payments.length > 0 && (
-                            <div className="text-[10px] text-slate-400 mt-1 flex flex-col">
+                            <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 flex flex-col gap-0.5">
                               {sale.payments.map((p: any) => (
-                                <span key={p.id}>{p.method}: {p.amount.toLocaleString()} so'm</span>
+                                <span key={p.id}>• {normalizePaymentMethod(p.method)}: {p.amount.toLocaleString()} so'm</span>
                               ))}
                             </div>
                           )}

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Printer } from 'lucide-react';
+import { normalizePaymentMethod } from '@/lib/formatters';
 
 export default function PrintExpensesPage() {
   const [data, setData] = useState<any[]>([]);
@@ -62,9 +63,7 @@ export default function PrintExpensesPage() {
             </thead>
             <tbody>
               {data.map((expense: any, index: number) => {
-                let paymentType = 'Naqd';
-                if (expense.paymentMethod === 'CARD') paymentType = 'Karta';
-                if (expense.paymentMethod === 'CORPORATE') paymentType = 'Karparativ';
+                const paymentType = normalizePaymentMethod(expense.paymentMethod);
 
                 return (
                   <tr key={expense.id} className="hover:bg-gray-50 print:break-inside-avoid">

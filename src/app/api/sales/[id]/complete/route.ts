@@ -20,6 +20,16 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
       return NextResponse.json({ error: 'Bu savdo allaqachon yakunlangan' }, { status: 400 });
     }
 
+    let method = sale.paymentMethod ? sale.paymentMethod.trim() : 'Naqd';
+    try {
+      const body = await req.json();
+      if (body?.method && typeof body.method === 'string') {
+        method = body.method.trim();
+      }
+    } catch (e) {
+      // Body is optional (e.g. simple PUT without payload)
+    }
+
     const paidBalance = sale.balance;
 
     const updatedSale = await prisma.sale.update({
@@ -27,7 +37,15 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
       data: {
         status: 'COMPLETED',
         advance: sale.totalPrice,
-        balance: 0
+        balance: 0,
+        ...(paidBalance > 0 ? {
+          payments: {
+            create: {
+              method: method || 'Naqd',
+              amount: paidBalance
+            }
+          }
+        } : {})
       }
     });
 

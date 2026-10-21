@@ -1,14 +1,13 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
+import { formatPaymentMethod } from '@/lib/formatters';
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id: saleId } = await params;
     const sale = await prisma.sale.findUnique({
       where: { id: saleId },
-      include: { user: true, items: true }
+      include: { user: true, items: true, payments: true }
     });
 
     if (!sale) {
@@ -16,7 +15,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     }
 
     const PDFDocument = require('pdfkit');
-    const doc = new PDFDocument({ size: [350, 450 + ((sale.items?.length || 0) * 20)], margin: 30 });
+    const doc = new PDFDocument({ size: [350, 480 + ((sale.items?.length || 0) * 20)], margin: 30 });
     const buffers: Buffer[] = [];
     
     doc.on('data', buffers.push.bind(buffers));
@@ -45,7 +44,10 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     
     doc.moveDown(0.5);
     const startY3 = doc.y;
-    doc.font('Helvetica').text("To'lov turi:", 30, startY3).font('Helvetica-Bold').text(sale.paymentMethod === 'CASH' ? 'Naqd' : sale.paymentMethod === 'CARD' ? 'Karta' : 'Muddatli', 150, startY3, { align: 'right', width: 170 });
+    const paymentText = sale.payments && sale.payments.length > 0
+      ? sale.payments.map((p: any) => `${formatPaymentMethod(p.method)} (${Number(p.amount).toLocaleString()})`).join(', ')
+      : formatPaymentMethod(sale.paymentMethod);
+    doc.font('Helvetica').text("To'lov turi:", 30, startY3).font('Helvetica-Bold').text(paymentText, 110, startY3, { align: 'right', width: 210 });
     
     if (sale.customerPhone || sale.customerName) {
       doc.moveDown(0.5);
@@ -68,7 +70,13 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     });
     
     doc.moveDown(1);
-    doc.fontSize(18).font('Helvetica-Bold').fillColor('black').text(`Jami: ${(sale.totalPrice).toLocaleString()} so'm`, { align: 'right' });
+    doc.fontSize(16).font('Helvetica-Bold').fillColor('black').text(`Jami: ${(sale.totalPrice).toLocaleString()} so'm`, { align: 'right' });
+    if (sale.balance > 0) {
+      doc.moveDown(0.3);
+      doc.fontSize(11).font('Helvetica').fillColor('#16a34a').text(`To'landi: ${(sale.advance).toLocaleString()} so'm`, { align: 'right' });
+      doc.moveDown(0.3);
+      doc.fontSize(12).font('Helvetica-Bold').fillColor('#dc2626').text(`Qarz: ${(sale.balance).toLocaleString()} so'm`, { align: 'right' });
+    }
     
     doc.moveDown(2);
     doc.moveTo(30, doc.y).lineTo(320, doc.y).strokeColor('#cccccc').stroke();
