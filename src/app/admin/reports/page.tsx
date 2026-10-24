@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Calendar, FileText, Printer } from 'lucide-react';
+import { Calendar, FileText, Printer, Send } from 'lucide-react';
 
 export default function ReportsPage() {
   const [data, setData] = useState<any>(null);
   const [selectedMonth, setSelectedMonth] = useState<string>('');
   const [loading, setLoading] = useState(true);
+  const [sendingSummary, setSendingSummary] = useState(false);
 
   useEffect(() => {
     fetchData(selectedMonth);
@@ -28,6 +29,24 @@ export default function ReportsPage() {
       console.error(e);
     }
     setLoading(false);
+  };
+
+  const sendTelegramDailySummary = async () => {
+    if (!confirm("Bugungi kassa hisobotini barcha adminlarga Telegram orqali yuborasizmi?")) return;
+    setSendingSummary(true);
+    try {
+      const res = await fetch('/api/cron/daily-report', { method: 'POST' });
+      if (res.ok) {
+        const resData = await res.json();
+        alert(`✅ Bugungi hisobot ${resData.sentToAdminsCount || 'barcha'} ta adminga Telegram orqali muvaffaqiyatli yuborildi!`);
+      } else {
+        alert("Hisobot yuborishda xatolik yuz berdi");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Tarmoq xatosi");
+    }
+    setSendingSummary(false);
   };
 
   const printReport = () => {
@@ -61,6 +80,15 @@ export default function ReportsPage() {
               ))}
             </select>
           )}
+          <button 
+            onClick={sendTelegramDailySummary}
+            disabled={sendingSummary}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white p-2 rounded-xl flex items-center gap-1.5 transition-colors shadow-sm active:scale-95 text-sm font-medium disabled:opacity-50"
+            title="Bugungi kassa xulosasini Telegram bot orqali barcha adminlarga yuborish"
+          >
+            <Send className="w-4 h-4" />
+            <span className="hidden sm:inline">{sendingSummary ? 'Yuborilmoqda...' : 'Telegramga Hisobot'}</span>
+          </button>
           <button 
             onClick={printReport}
             className="bg-blue-600 text-white p-2 rounded-xl flex items-center gap-2 hover:bg-blue-700 transition-colors shadow-sm active:scale-95"

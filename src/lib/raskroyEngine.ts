@@ -71,12 +71,23 @@ export interface SheetLayout {
   sheetIndex: number;
   sheetWidth: number;
   sheetHeight: number;
+  sheetName?: string;
+  isOffcut?: boolean;
+  offcutId?: string;
   items: PlacedItem[];
   usedArea: number; // m²
   wastePercent: number; // %
   wasteArea: number; // m²
   cutLengthMeters: number; // Pogon metr kesish uzunligi
   usefulOffcuts: UsefulOffcut[]; // Foydali qoldiqlar (>= 250x250 mm)
+}
+
+export interface CustomSheetInput {
+  id?: string;
+  width: number;
+  height: number;
+  material?: string;
+  name?: string;
 }
 
 export interface RaskroyResult {
@@ -717,7 +728,8 @@ export function calculateRaskroy(
     kerf: 4,
     trim: 10,
     allowRotation: true
-  }
+  },
+  offcutSheets?: CustomSheetInput[]
 ): RaskroyResult {
   const { sheetWidth, sheetHeight, kerf, trim, allowRotation } = settings;
 
@@ -786,8 +798,12 @@ export function calculateRaskroy(
   const sheets: SheetLayout[] = [];
   const unplacedParts: PartItem[] = [];
 
-  const usableW = sheetWidth - 2 * trim;
-  const usableH = sheetHeight - 2 * trim;
+  const offcutQueue: CustomSheetInput[] = offcutSheets ? [...offcutSheets] : [];
+  let currentSheetWidth = sheetWidth;
+  let currentSheetHeight = sheetHeight;
+  let currentIsOffcut = false;
+  let currentSheetName = '';
+  let currentOffcutId: string | undefined = undefined;
 
   let currentFreeRects: FreeRect[] = [];
   let currentSheetItems: PlacedItem[] = [];
@@ -796,12 +812,12 @@ export function calculateRaskroy(
   function finalizeSheet() {
     if (currentSheetItems.length > 0) {
       const usedArea = currentSheetItems.reduce((sum, it) => sum + (it.w * it.h), 0) / 1000000;
-      const totalArea = (sheetWidth * sheetHeight) / 1000000;
+      const totalArea = (currentSheetWidth * currentSheetHeight) / 1000000;
       const wasteArea = Math.max(0, totalArea - usedArea);
       const wastePercent = Math.round((wasteArea / totalArea) * 100);
 
       const usefulOffcuts: UsefulOffcut[] = currentFreeRects
-        .filter(r => r.w >= 250 && r.h >= 250)
+        .filter(r => r.w >= 200 && r.h >= 200)
         .map(r => ({
           x: r.x,
           y: r.y,
@@ -814,8 +830,11 @@ export function calculateRaskroy(
 
       sheets.push({
         sheetIndex: currentSheetIndex,
-        sheetWidth,
-        sheetHeight,
+        sheetWidth: currentSheetWidth,
+        sheetHeight: currentSheetHeight,
+        sheetName: currentSheetName || (currentIsOffcut ? `Qiyqim #${currentSheetIndex}` : `List #${currentSheetIndex}`),
+        isOffcut: currentIsOffcut,
+        offcutId: currentOffcutId,
         items: [...currentSheetItems],
         usedArea: Number(usedArea.toFixed(2)),
         wasteArea: Number(wasteArea.toFixed(2)),
@@ -830,12 +849,32 @@ export function calculateRaskroy(
   function startNewSheet() {
     finalizeSheet();
     currentSheetItems = [];
+
+    if (offcutQueue.length > 0) {
+      const offcut = offcutQueue.shift()!;
+      currentSheetWidth = offcut.width;
+      currentSheetHeight = offcut.height;
+      currentIsOffcut = true;
+      currentSheetName = offcut.name || `Qiyqim (${Math.round(offcut.width)}×${Math.round(offcut.height)})`;
+      currentOffcutId = offcut.id;
+    } else {
+      currentSheetWidth = sheetWidth;
+      currentSheetHeight = sheetHeight;
+      currentIsOffcut = false;
+      currentSheetName = `List #${currentSheetIndex}`;
+      currentOffcutId = undefined;
+    }
+
+    const curTrim = currentIsOffcut ? Math.min(trim, 5) : trim;
+    const curUsableW = Math.max(10, currentSheetWidth - 2 * curTrim);
+    const curUsableH = Math.max(10, currentSheetHeight - 2 * curTrim);
+
     currentFreeRects = [
       {
-        x: trim,
-        y: trim,
-        w: usableW,
-        h: usableH
+        x: curTrim,
+        y: curTrim,
+        w: curUsableW,
+        h: curUsableH
       }
     ];
   }
@@ -844,7 +883,6 @@ export function calculateRaskroy(
 
   pieces.forEach((piece) => {
     let placed = false;
-
     // Eng yaxshi joyni qidirish (Best-Area-Fit / Best-Short-Side-Fit)
     let bestRectIdx = -1;
     let bestRotated = false;
@@ -874,11 +912,11 @@ export function calculateRaskroy(
       }
     }
 
-    // Agar hozirgi listga sig'masa, yangi list ochamiz
-    if (bestRectIdx === -1) {
+    // Agar hozirgi listga sig'masa, navbatdagi list yoki to'liq list ochamiz
+    while (bestRectIdx === -1) {
+      const hadMoreOffcuts = offcutQueue.length > 0;
       startNewSheet();
 
-      // Yangi listning erkin maydonida tekshiramiz
       for (let rIdx = 0; rIdx < currentFreeRects.length; rIdx++) {
         const rect = currentFreeRects[rIdx];
         if (rect.w >= piece.w && rect.h >= piece.h) {
@@ -893,6 +931,20 @@ export function calculateRaskroy(
           bestRotated = true;
           break;
         }
+      }
+
+      if (bestRectIdx === -1 && !hadMoreOffcuts) {
+        // Detal hatto yangi to'liq listga ham sig'maydi
+        unplacedParts.push({
+          id: piece.partId,
+          name: piece.name,
+          length: piece.originalW,
+          width: piece.originalH,
+          qty: 1,
+          material: 'DSP',
+          area: (piece.originalW * piece.originalH) / 1000000
+        });
+        break;
       }
     }
 

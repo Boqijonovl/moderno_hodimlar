@@ -131,3 +131,45 @@ model SalePayment {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  action    String   // DELETE_SALE, DELETE_EXPENSE, CLOSE_SHIFT, OPEN_SHIFT, PAY_DEBT
+  entity    String   // Sale, Expense, CashShift
+  entityId  String?
+  details   String
+  user      String?  // Who performed the action
+  createdAt DateTime @default(now())
+}
+
+model CashShift {
+  id           String    @id @default(uuid())
+  openedBy     String    // User name or ID
+  closedBy     String?
+  openedAt     DateTime  @default(now())
+  closedAt     DateTime?
+  startAmount  Float     @default(0) // Ertalabki boshlang'ich kassa qoldig'i
+  cashIn       Float     @default(0) // Naqd savdo tushumlari
+  cashOut      Float     @default(0) // Naqd xarajatlar
+  expectedCash Float     @default(0) // startAmount + cashIn - cashOut
+  actualCash   Float?    // Kechqurun sanab topshirilgan haqiqiy naqd pul
+  difference   Float?    // actualCash - expectedCash (kamomad yoki ortiqcha)
+  note         String?
+  status       String    @default("OPEN") // OPEN, CLOSED
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model Offcut {
+  id        String   @id @default(uuid())
+  material  String   @default("DSP 18mm")
+  width     Float    // mm
+  length    Float    // mm
+  thickness Float?   @default(18)
+  quantity  Int      @default(1)
+  note      String?
+  source    String?  // Raskroy nomi yoki izoh
+  isUsed    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

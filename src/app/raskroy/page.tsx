@@ -44,6 +44,7 @@ import {
   SheetLayout,
   PlacedItem
 } from '@/lib/raskroyEngine';
+import LabelsModal from '@/components/raskroy/LabelsModal';
 
 const PRESET_SHEET_SIZES = [
   { name: 'Standart (2750 × 1830 mm)', w: 2750, h: 1830 },
@@ -70,6 +71,13 @@ function RaskroyContent() {
   const [selectedSheetIdx, setSelectedSheetIdx] = useState<number>(0); // 0 = all sheets, 1,2.. for specific sheet
   const [zoomLevel, setZoomLevel] = useState<number>(1);
   const [selectedPlacedItem, setSelectedPlacedItem] = useState<PlacedItem | null>(null);
+
+  // Qiyqimlar (Offcuts) & Labels State
+  const [availableOffcuts, setAvailableOffcuts] = useState<any[]>([]);
+  const [selectedOffcutIds, setSelectedOffcutIds] = useState<string[]>([]);
+  const [savingOffcuts, setSavingOffcuts] = useState<boolean>(false);
+  const [savedSuccessMsg, setSavedSuccessMsg] = useState<string>('');
+  const [showLabelsModal, setShowLabelsModal] = useState<boolean>(false);
 
   // Project Info
   const [projectName, setProjectName] = useState('Oshxona Mebeli #101');
@@ -313,7 +321,17 @@ function RaskroyContent() {
     alert(`Mebel spetsifikatsiyasidan ${mebelKroyResult.parts.length} ta detal jadvalga o'tkazildi! Endi ularni tahrirlashingiz mumkin.`);
   };
 
-  // 2D Guillotine Raskroy hisoblash
+  // Qiyqimlarni yuklab olish
+  useEffect(() => {
+    fetch('/api/admin/offcuts')
+      .then(res => res.json())
+      .then(data => {
+        if (data.offcuts) setAvailableOffcuts(data.offcuts);
+      })
+      .catch(() => {});
+  }, []);
+
+  // 2D Guillotine Raskroy hisoblash (Foydali qiyqimlar bilan)
   const raskroyResult: RaskroyResult = useMemo(() => {
     const settings: RaskroySettings = {
       sheetWidth: sheetW,
@@ -322,8 +340,80 @@ function RaskroyContent() {
       trim,
       allowRotation
     };
-    return calculateRaskroy(manualParts, settings);
-  }, [manualParts, sheetW, sheetH, kerf, trim, allowRotation]);
+
+    const activeOffcuts = availableOffcuts
+      .filter(o => selectedOffcutIds.includes(o.id))
+      .map(o => ({
+        id: o.id,
+        width: o.width,
+        height: o.length,
+        material: o.material,
+        name: `Qiyqim: ${Math.round(o.width)}×${Math.round(o.length)}mm`
+      }));
+
+    return calculateRaskroy(manualParts, settings, activeOffcuts);
+  }, [manualParts, sheetW, sheetH, kerf, trim, allowRotation, availableOffcuts, selectedOffcutIds]);
+
+  // Foydali qiyqimlarni omborga saqlash
+  const handleSaveOffcuts = async (sheetIndex?: number) => {
+    let toSave: any[] = [];
+    if (sheetIndex !== undefined) {
+      const targetSheet = raskroyResult.sheets.find(s => s.sheetIndex === sheetIndex);
+      if (targetSheet && targetSheet.usefulOffcuts) {
+        toSave = targetSheet.usefulOffcuts.map(o => ({
+          material: materialName,
+          width: o.w,
+          length: o.h,
+          thickness: thickness || 18,
+          source: `${projectName} (Plita #${sheetIndex})`,
+          note: `Foydali qoldiq (${o.area} m²)`
+        }));
+      }
+    } else {
+      raskroyResult.sheets.forEach(s => {
+        if (s.usefulOffcuts) {
+          s.usefulOffcuts.forEach(o => {
+            toSave.push({
+              material: materialName,
+              width: o.w,
+              length: o.h,
+              thickness: thickness || 18,
+              source: `${projectName} (Plita #${s.sheetIndex})`,
+              note: `Foydali qoldiq (${o.area} m²)`
+            });
+          });
+        }
+      });
+    }
+
+    if (toSave.length === 0) {
+      alert("Saqlash uchun foydali qiyqimlar (>= 200×200 mm) topilmadi.");
+      return;
+    }
+
+    setSavingOffcuts(true);
+    try {
+      const res = await fetch('/api/admin/offcuts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(toSave)
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setSavedSuccessMsg(`✅ ${data.count} ta foydali qiyqim omborga muvaffaqiyatli saqlandi!`);
+        setTimeout(() => setSavedSuccessMsg(''), 4000);
+        const offRes = await fetch('/api/admin/offcuts');
+        const offData = await offRes.json();
+        if (offData.offcuts) setAvailableOffcuts(offData.offcuts);
+      } else {
+        alert("Qiyqimlarni saqlashda xatolik yuz berdi");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Tarmoq xatosi");
+    }
+    setSavingOffcuts(false);
+  };
 
   // Detal qo'shish
   const handleAddPart = () => {
@@ -905,47 +995,116 @@ function RaskroyContent() {
               </div>
             </div>
 
-            {/* Sheets List */}
-            <div className="space-y-6">
-              {displayedSheets.map(sheet => (
-                <div
-                  key={sheet.sheetIndex}
-                  className="bg-slate-950/70 border border-slate-800/80 rounded-2xl p-4 sm:p-5 space-y-4 shadow-xl"
-                >
-                  {/* Sheet Header */}
-                  <div className="flex flex-wrap items-center justify-between gap-3 text-xs border-b border-slate-800/80 pb-3">
-                    <div className="flex items-center gap-2.5">
-                      <span className="w-7 h-7 rounded-lg bg-indigo-600 text-white font-mono font-black flex items-center justify-center text-sm shadow">
-                        {sheet.sheetIndex}
-                      </span>
-                      <div>
-                        <span className="font-bold text-white text-sm block">
-                          Plita #{sheet.sheetIndex} — {sheet.sheetWidth} × {sheet.sheetHeight} mm
-                        </span>
-                        <span className="text-[11px] text-slate-400">
-                          {materialName} • {sheet.items.length} ta detal joylashdi
-                        </span>
-                      </div>
-                    </div>
+              {/* Notification Banner */}
+              {savedSuccessMsg && (
+                <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-2xl text-xs font-bold flex items-center justify-between animate-in fade-in">
+                  <span>{savedSuccessMsg}</span>
+                  <button onClick={() => setSavedSuccessMsg('')} className="p-1 hover:text-white">✕</button>
+                </div>
+              )}
 
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center gap-3 font-mono text-xs hidden sm:flex">
-                        <span className="text-emerald-400 font-bold">Foydali: {sheet.usedArea} m² ({100 - sheet.wastePercent}%)</span>
-                        <span className="text-amber-400">Qiyqim: ~{sheet.wastePercent}%</span>
-                        <span className="text-cyan-400">Kesim: {sheet.cutLengthMeters}m</span>
-                      </div>
-
-                      {/* Download DXF for this sheet */}
-                      <button
-                        onClick={() => handleDownloadDxf(sheet)}
-                        className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-indigo-300 hover:text-white border border-indigo-500/30 text-xs font-bold flex items-center gap-1.5 transition-colors shadow-sm"
-                        title="Ushbu listni CNC va AutoCAD uchun DXF formatida yuklab olish"
-                      >
-                        <Download className="w-3.5 h-3.5 text-indigo-400" />
-                        <span>DXF (CNC)</span>
-                      </button>
-                    </div>
+              {/* Offcut Inventory Integration Bar */}
+              {availableOffcuts.length > 0 && (
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                      <span>🧩</span>
+                      <span>Ombordagi Foydali Qiyqimlar ({availableOffcuts.length} ta mavjud):</span>
+                    </span>
+                    <span className="text-[11px] text-slate-500">
+                      Tanlangan: {selectedOffcutIds.length} ta
+                    </span>
                   </div>
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {availableOffcuts.map(off => {
+                      const isSelected = selectedOffcutIds.includes(off.id);
+                      return (
+                        <button
+                          key={off.id}
+                          type="button"
+                          onClick={() => {
+                            if (isSelected) {
+                              setSelectedOffcutIds(selectedOffcutIds.filter(id => id !== off.id));
+                            } else {
+                              setSelectedOffcutIds([...selectedOffcutIds, off.id]);
+                            }
+                          }}
+                          className={`text-xs px-2.5 py-1.5 rounded-xl border font-mono font-bold transition-all flex items-center gap-1.5 ${
+                            isSelected
+                              ? 'bg-amber-500/20 text-amber-300 border-amber-500/50 shadow-sm'
+                              : 'bg-slate-950 text-slate-400 border-slate-800 hover:border-slate-700'
+                          }`}
+                        >
+                          <span>{isSelected ? '✓' : '+'}</span>
+                          <span>{Math.round(off.width)}×{Math.round(off.length)} mm</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Sheets List */}
+              <div className="space-y-6">
+                {displayedSheets.map(sheet => (
+                  <div
+                    key={sheet.sheetIndex}
+                    className="bg-slate-950/70 border border-slate-800/80 rounded-2xl p-4 sm:p-5 space-y-4 shadow-xl"
+                  >
+                    {/* Sheet Header */}
+                    <div className="flex flex-wrap items-center justify-between gap-3 text-xs border-b border-slate-800/80 pb-3">
+                      <div className="flex items-center gap-2.5">
+                        <span className={`w-7 h-7 rounded-lg font-mono font-black flex items-center justify-center text-sm shadow ${sheet.isOffcut ? 'bg-amber-600 text-white' : 'bg-indigo-600 text-white'}`}>
+                          {sheet.sheetIndex}
+                        </span>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-white text-sm">
+                              {sheet.sheetName || `Plita #${sheet.sheetIndex}`} — {sheet.sheetWidth} × {sheet.sheetHeight} mm
+                            </span>
+                            {sheet.isOffcut && (
+                              <span className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30 text-[10px] font-bold">
+                                🧩 Qiyqim list
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-[11px] text-slate-400">
+                            {materialName} • {sheet.items.length} ta detal joylashdi
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-3 font-mono text-xs hidden sm:flex">
+                          <span className="text-emerald-400 font-bold">Foydali: {sheet.usedArea} m² ({100 - sheet.wastePercent}%)</span>
+                          <span className="text-amber-400">Qiyqim: ~{sheet.wastePercent}%</span>
+                          <span className="text-cyan-400">Kesim: {sheet.cutLengthMeters}m</span>
+                        </div>
+
+                        {/* Save useful offcuts to inventory button */}
+                        {sheet.usefulOffcuts && sheet.usefulOffcuts.length > 0 && (
+                          <button
+                            onClick={() => handleSaveOffcuts(sheet.sheetIndex)}
+                            disabled={savingOffcuts}
+                            className="px-2.5 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-bold flex items-center gap-1.5 transition-colors shadow-sm active:scale-95 disabled:opacity-50"
+                            title="Ushbu listdagi qolgan foydali qiyqimlarni omborga saqlash"
+                          >
+                            <Bookmark className="w-3.5 h-3.5" />
+                            <span>Qiyqimni saqlash ({sheet.usefulOffcuts.length})</span>
+                          </button>
+                        )}
+
+                        {/* Download DXF for this sheet */}
+                        <button
+                          onClick={() => handleDownloadDxf(sheet)}
+                          className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-indigo-300 hover:text-white border border-indigo-500/30 text-xs font-bold flex items-center gap-1.5 transition-colors shadow-sm"
+                          title="Ushbu listni CNC va AutoCAD uchun DXF formatida yuklab olish"
+                        >
+                          <Download className="w-3.5 h-3.5 text-indigo-400" />
+                          <span>DXF (CNC)</span>
+                        </button>
+                      </div>
+                    </div>
 
                   {/* SVG 2D Interactive Canvas */}
                   <div
@@ -1561,13 +1720,22 @@ function RaskroyContent() {
                 </p>
               </div>
 
-              <button
-                onClick={() => window.print()}
-                className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-lg shadow-indigo-600/30 flex items-center gap-1.5"
-              >
-                <Printer className="w-4 h-4" />
-                <span>Etiketkalarni chop etish</span>
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShowLabelsModal(true)}
+                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-bold shadow-lg shadow-indigo-600/30 flex items-center gap-1.5 active:scale-95"
+                >
+                  <Tag className="w-4 h-4" />
+                  <span>Termoprinter & Shtrix-kodli Oyna</span>
+                </button>
+                <button
+                  onClick={() => window.print()}
+                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-700 flex items-center gap-1.5"
+                >
+                  <Printer className="w-4 h-4" />
+                  <span>Tezkor Chop Etish</span>
+                </button>
+              </div>
             </div>
 
             {/* Labels Grid */}
@@ -1901,6 +2069,14 @@ function RaskroyContent() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Printable Labels / Sticker Modal */}
+      {showLabelsModal && (
+        <LabelsModal
+          sheets={raskroyResult.sheets}
+          onClose={() => setShowLabelsModal(false)}
+        />
       )}
     </div>
   );
