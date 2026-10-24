@@ -28,9 +28,15 @@ export async function GET(req: Request) {
     const attendances = await prisma.attendance.findMany({
       where: {
         user: { telegramId },
-        date: { gte: startOfMonth, lte: endOfMonth }
+        OR: [
+          { date: { gte: startOfMonth, lte: endOfMonth } },
+          { checkOutTime: null }
+        ]
       },
-      orderBy: { date: 'desc' },
+      orderBy: [
+        { date: 'desc' },
+        { createdAt: 'desc' }
+      ],
       take: 100
     });
 

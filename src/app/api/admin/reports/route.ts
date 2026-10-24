@@ -1,70 +1,87 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { normalizePaymentMethod } from '@/lib/formatters';
 
 export const dynamic = 'force-dynamic';
+
+function toTashkentDate(d: Date | string): string {
+  const dateObj = typeof d === 'string' ? new Date(d) : d;
+  return dateObj.toLocaleDateString('sv-SE', { timeZone: 'Asia/Tashkent' });
+}
 
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const monthParam = searchParams.get('month'); // Format: YYYY-MM
     
+    let targetMonth: string;
     let startDate: Date;
     let endDate: Date;
 
     if (monthParam) {
+      targetMonth = monthParam;
       const [year, month] = monthParam.split('-').map(Number);
-      startDate = new Date(year, month - 1, 1);
-      endDate = new Date(year, month, 0, 23, 59, 59, 999);
+      // Include time padding so edge hours in Tashkent (+5 UTC) are fully captured
+      startDate = new Date(Date.UTC(year, month - 1, 1, -6, 0, 0));
+      endDate = new Date(Date.UTC(year, month, 1, 6, 0, 0));
     } else {
       const now = new Date();
-      startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-      endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+      targetMonth = toTashkentDate(now).slice(0, 7);
+      const [year, month] = targetMonth.split('-').map(Number);
+      startDate = new Date(Date.UTC(year, month - 1, 1, -6, 0, 0));
+      endDate = new Date(Date.UTC(year, month, 1, 6, 0, 0));
     }
 
     const users = await prisma.user.findMany({
       where: { active: true } 
     });
 
-    const attendances = await prisma.attendance.findMany({
-      where: { date: { gte: startDate, lte: endDate } },
-      include: { user: true }
-    });
+    const [rawAttendances, rawSales, rawSalePayments, rawExpenses] = await Promise.all([
+      prisma.attendance.findMany({
+        where: { date: { gte: startDate, lte: endDate } },
+        include: { user: true }
+      }),
+      prisma.sale.findMany({
+        where: { date: { gte: startDate, lte: endDate } },
+        include: { user: true }
+      }),
+      prisma.salePayment.findMany({
+        where: { createdAt: { gte: startDate, lte: endDate } },
+        include: { sale: true }
+      }),
+      prisma.expense.findMany({
+        where: { createdAt: { gte: startDate, lte: endDate } },
+        include: { user: true }
+      })
+    ]);
 
-    const sales = await prisma.sale.findMany({
-      where: { date: { gte: startDate, lte: endDate } },
-      include: { user: true }
-    });
-    
-    const salePayments = await prisma.salePayment.findMany({
-      where: { createdAt: { gte: startDate, lte: endDate } },
-      include: { sale: true }
-    });
+    // Filter strictly to the targeted month in Tashkent time
+    const attendances = rawAttendances.filter(a => toTashkentDate(a.date).startsWith(targetMonth));
+    const sales = rawSales.filter(s => toTashkentDate(s.date).startsWith(targetMonth));
+    const salePayments = rawSalePayments.filter(p => toTashkentDate(p.createdAt).startsWith(targetMonth));
+    const expenses = rawExpenses.filter(e => toTashkentDate(e.createdAt).startsWith(targetMonth));
 
-    const expenses = await prisma.expense.findMany({
-      where: { createdAt: { gte: startDate, lte: endDate } },
-      include: { user: true }
-    });
-
-    // Process daily reports
+    // Process daily reports grouped by Tashkent calendar date
     const dailyMap: Record<string, any[]> = {};
     const dates = new Set([
-      ...attendances.map(a => a.date.toISOString().split('T')[0]),
-      ...sales.map(s => s.date.toISOString().split('T')[0]),
-      ...salePayments.map(p => p.createdAt.toISOString().split('T')[0]),
-      ...expenses.map(e => e.createdAt.toISOString().split('T')[0])
+      ...attendances.map(a => toTashkentDate(a.date)),
+      ...sales.map(s => toTashkentDate(s.date)),
+      ...salePayments.map(p => toTashkentDate(p.createdAt)),
+      ...expenses.map(e => toTashkentDate(e.createdAt))
     ]);
 
     Array.from(dates).sort((a, b) => b.localeCompare(a)).forEach(dateStr => {
       const dayUsers = users.map(user => {
-        const userAtt = attendances.find(a => a.userId === user.id && a.date.toISOString().split('T')[0] === dateStr);
-        const userSales = sales.filter(s => s.userId === user.id && s.date.toISOString().split('T')[0] === dateStr);
-        const userPayments = salePayments.filter(p => p.sale.userId === user.id && p.createdAt.toISOString().split('T')[0] === dateStr);
-        const userExpenses = expenses.filter(e => e.userId === user.id && e.createdAt.toISOString().split('T')[0] === dateStr);
+        const userAtt = attendances.find(a => a.userId === user.id && toTashkentDate(a.date) === dateStr);
+        const userSales = sales.filter(s => s.userId === user.id && toTashkentDate(s.date) === dateStr);
+        const userPayments = salePayments.filter(p => p.sale.userId === user.id && toTashkentDate(p.createdAt) === dateStr);
+        const userExpenses = expenses.filter(e => e.userId === user.id && toTashkentDate(e.createdAt) === dateStr);
         
-        // Calculate payment breakdown for this day
+        // Calculate normalized payment breakdown for this day
         const paymentBreakdown: Record<string, number> = {};
         userPayments.forEach(p => {
-          paymentBreakdown[p.method] = (paymentBreakdown[p.method] || 0) + p.amount;
+          const normMethod = normalizePaymentMethod(p.method);
+          paymentBreakdown[normMethod] = (paymentBreakdown[normMethod] || 0) + p.amount;
         });
         
         return {
@@ -89,11 +106,12 @@ export async function GET(req: Request) {
       const userPayments = salePayments.filter(p => p.sale.userId === user.id);
       const userExpenses = expenses.filter(e => e.userId === user.id);
       
-      let totalLateMinutes = userAtts.reduce((sum, a) => sum + a.lateMinutes, 0);
+      const totalLateMinutes = userAtts.reduce((sum, a) => sum + a.lateMinutes, 0);
       
       const paymentBreakdown: Record<string, number> = {};
       userPayments.forEach(p => {
-        paymentBreakdown[p.method] = (paymentBreakdown[p.method] || 0) + p.amount;
+        const normMethod = normalizePaymentMethod(p.method);
+        paymentBreakdown[normMethod] = (paymentBreakdown[normMethod] || 0) + p.amount;
       });
       
       return {
@@ -110,20 +128,17 @@ export async function GET(req: Request) {
     }).filter(u => u.totalDaysPresent > 0 || u.totalSalesCount > 0 || u.totalExpensesCount > 0 || u.totalReceived > 0);
 
     // Available months based on all events
-    const allAtts = await prisma.attendance.findMany({ select: { date: true } });
-    const allSales = await prisma.sale.findMany({ select: { date: true } });
-    const allExps = await prisma.expense.findMany({ select: { createdAt: true } });
+    const [allAtts, allSales, allExps] = await Promise.all([
+      prisma.attendance.findMany({ select: { date: true } }),
+      prisma.sale.findMany({ select: { date: true } }),
+      prisma.expense.findMany({ select: { createdAt: true } })
+    ]);
     const allDates = [...allAtts.map(a => a.date), ...allSales.map(s => s.date), ...allExps.map(e => e.createdAt)];
-    const monthsSet = new Set(allDates.map(d => {
-      const year = d.getFullYear();
-      const month = String(d.getMonth() + 1).padStart(2, '0');
-      return `${year}-${month}`;
-    }));
+    const monthsSet = new Set(allDates.map(d => toTashkentDate(d).slice(0, 7)));
     
     const availableMonths = Array.from(monthsSet).sort((a, b) => b.localeCompare(a));
     if (availableMonths.length === 0) {
-      const now = new Date();
-      availableMonths.push(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`);
+      availableMonths.push(targetMonth);
     }
 
     return NextResponse.json({
@@ -133,6 +148,7 @@ export async function GET(req: Request) {
     });
 
   } catch (error) {
+    console.error('Reports error:', error);
     return NextResponse.json({ error: 'Failed to fetch reports' }, { status: 500 });
   }
 }

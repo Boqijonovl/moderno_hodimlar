@@ -6,7 +6,7 @@ import { useTranslation, Language } from '@/lib/i18n';
 import { normalizePaymentMethod, getPaymentMethodColor } from '@/lib/formatters';
 
 export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
-  const [items, setItems] = useState<{name: string, price: string, isOrder: boolean, description: string, deadline: string, assignedToId: string}[]>([{ name: '', price: '', isOrder: false, description: '', deadline: '', assignedToId: '' }]);
+  const [items, setItems] = useState<{name: string, price: string}[]>([{ name: '', price: '' }]);
   const [paymentAmounts, setPaymentAmounts] = useState<Record<string, string>>({});
   const [selectedMethods, setSelectedMethods] = useState<string[]>([]);
   const [isPartial, setIsPartial] = useState(false);
@@ -14,7 +14,6 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
   const [success, setSuccess] = useState(false);
   const [lastSale, setLastSale] = useState<any>(null);
   const [history, setHistory] = useState<any[]>([]);
-  const [employees, setEmployees] = useState<{id: string, name: string}[]>([]);
   const [selectedMonth, setSelectedMonth] = useState('');
   const [paymentMethods, setPaymentMethods] = useState<{id: string, name: string}[]>([]);
   const [customerPhone, setCustomerPhone] = useState('');
@@ -30,7 +29,6 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
 
   useEffect(() => {
     fetchHistory();
-    fetch('/api/employees').then(res => res.json()).then(data => setEmployees(data)).catch(() => {});
     fetch('/api/payment-methods').then(res => res.json()).then(data => {
       setPaymentMethods(data);
       if (data.length > 0) {
@@ -55,7 +53,7 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
   };
 
   const handleAddItem = () => {
-    setItems(prev => [...prev, { name: '', price: '', isOrder: false, description: '', deadline: '', assignedToId: '' }]);
+    setItems(prev => [...prev, { name: '', price: '' }]);
   };
 
   const formatNumber = (val: string) => {
@@ -174,7 +172,7 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
         setLastSale(newSale);
         setSuccess(true);
         if (WebApp?.HapticFeedback) WebApp.HapticFeedback.notificationOccurred('success');
-        setItems([{ name: '', price: '', isOrder: false, description: '', deadline: '', assignedToId: '' }]);
+        setItems([{ name: '', price: '' }]);
         setPaymentAmounts({});
         setCustomerPhone('');
         setCustomerName('');
@@ -329,57 +327,6 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
                       </button>
                     )}
                   </div>
-                  
-                  <div className="w-full mt-2">
-                    <label className="flex items-center gap-2 text-sm font-bold text-slate-700 dark:text-slate-300 cursor-pointer">
-                      <input 
-                        type="checkbox" 
-                        checked={item.isOrder} 
-                        onChange={(e) => handleItemChange(index, 'isOrder', e.target.checked)}
-                        className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                      />
-                      📦 Buyurtmaga berish
-                    </label>
-                  </div>
-                  
-                  {item.isOrder && (
-                    <div className="w-full space-y-3 mt-3 animate-in slide-in-from-top-2 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-2xl border border-blue-100 dark:border-blue-900/30">
-                      <div>
-                        <label className="block text-xs font-bold text-blue-700 dark:text-blue-300 mb-1">Izoh (Rang, o'lcham, mato)</label>
-                        <textarea
-                          value={item.description}
-                          onChange={(e) => handleItemChange(index, 'description', e.target.value)}
-                          className="w-full p-3 bg-white dark:bg-slate-800 border-none rounded-xl focus:ring-2 focus:ring-blue-500 text-sm dark:text-white"
-                          placeholder="Mebel bo'yicha maxsus talablar..."
-                          rows={2}
-                        />
-                      </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="block text-xs font-bold text-blue-700 dark:text-blue-300 mb-1">Muddat</label>
-                          <input
-                            type="date"
-                            value={item.deadline}
-                            onChange={(e) => handleItemChange(index, 'deadline', e.target.value)}
-                            className="w-full p-3 bg-white dark:bg-slate-800 border-none rounded-xl focus:ring-2 focus:ring-blue-500 text-sm dark:text-white"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-bold text-blue-700 dark:text-blue-300 mb-1">Usta biriktirish</label>
-                          <select
-                            value={item.assignedToId}
-                            onChange={(e) => handleItemChange(index, 'assignedToId', e.target.value)}
-                            className="w-full p-3 bg-white dark:bg-slate-800 border-none rounded-xl focus:ring-2 focus:ring-blue-500 text-sm dark:text-white"
-                          >
-                            <option value="">- Tanlang -</option>
-                            {employees.map(emp => (
-                              <option key={emp.id} value={emp.id}>{emp.name}</option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-                    </div>
-                  )}
                 </div>
               ))}
               

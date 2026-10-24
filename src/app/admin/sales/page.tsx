@@ -64,7 +64,7 @@ export default function SalesAnalytics() {
   };
 
   const groupedSales = sales.reduce((acc: any, sale: any) => {
-    const date = new Date(sale.createdAt).toLocaleDateString('uz-UZ', { day: 'numeric', month: 'long', year: 'numeric' });
+    const date = new Date(sale.createdAt).toLocaleDateString('uz-UZ', { timeZone: 'Asia/Tashkent', day: 'numeric', month: 'long', year: 'numeric' });
     if (!acc[date]) acc[date] = [];
     acc[date].push(sale);
     return acc;
@@ -128,16 +128,16 @@ export default function SalesAnalytics() {
                   </div>
                   <div className="divide-y divide-slate-50">
                     {dateSales.map((sale: any) => {
-                      const allItems = [...(sale.items || []), ...(sale.orders || [])];
+                      const allItems = sale.items || [];
                       return (
                         <div key={sale.id} className="p-4 flex justify-between items-start hover:bg-slate-50 transition-colors gap-3">
                           <div className="min-w-0 flex-1">
                             <p className="font-bold text-slate-800 bg-slate-100 px-2 py-0.5 rounded inline-block text-xs mb-2">{allItems.length} ta mebel</p>
                             <div className="space-y-1.5 mb-2 bg-white border border-slate-100 rounded-lg p-2 shadow-sm">
-                              {allItems.map((item, idx) => (
+                              {allItems.map((item: any, idx: number) => (
                                 <div key={idx} className="flex justify-between items-center text-xs">
                                   <span className="text-slate-700 font-medium">
-                                    • {item.name} {item.deadline ? <span className="text-blue-500">(📦 Buyurtma)</span> : ''}
+                                    • {item.name}
                                   </span>
                                   <span className="text-slate-900 font-bold">{item.price?.toLocaleString()} so'm</span>
                                 </div>

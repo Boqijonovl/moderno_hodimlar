@@ -3,6 +3,20 @@ import { prisma } from '@/lib/prisma';
 import { getDistance } from 'geolib';
 import { Telegraf } from 'telegraf';
 
+function getTashkentTime(date: Date = new Date()) {
+  // Uzbekistan is UTC+5 strictly (no DST)
+  const tzDate = new Date(date.getTime() + 5 * 60 * 60 * 1000);
+  const year = tzDate.getUTCFullYear();
+  const month = tzDate.getUTCMonth();
+  const day = tzDate.getUTCDate();
+  const hours = tzDate.getUTCHours();
+  const minutes = tzDate.getUTCMinutes();
+  const currentMinuteOfDay = hours * 60 + minutes;
+  const todayDate = new Date(Date.UTC(year, month, day, 0, 0, 0, 0));
+  const timeString = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+  return { year, month, day, hours, minutes, currentMinuteOfDay, todayDate, timeString };
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -20,8 +34,8 @@ export async function POST(req: Request) {
     
     if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const serverTime = new Date();
+    const { currentMinuteOfDay, todayDate, timeString } = getTashkentTime(serverTime);
 
     if (action === 'check-in') {
       if (!lat || !lng) return NextResponse.json({ error: 'GPS coordinates missing' }, { status: 400 });
@@ -52,24 +66,17 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: 'Siz allaqachon ishga kelgansiz. Oldin yakunlang!' }, { status: 400 });
       }
 
-      const serverTime = new Date();
-      // Tashkent time object (this creates a Date object that is shifted to represent Tashkent time locally)
-      const tashkentTimeStr = serverTime.toLocaleString("en-US", {timeZone: "Asia/Tashkent"});
-      const tashkentTime = new Date(tashkentTimeStr);
-      
-      const onTimeLimit = new Date(tashkentTime);
       const [startHour, startMinute] = (user.workStartTime || "09:00").split(':').map(Number);
-      onTimeLimit.setHours(startHour, startMinute, 0, 0);
+      const startMinuteOfDay = startHour * 60 + startMinute;
 
-      const endTimeLimit = new Date(tashkentTime);
       const [endHour, endMinute] = (user.workEndTime || "18:00").split(':').map(Number);
-      endTimeLimit.setHours(endHour, endMinute, 0, 0);
+      const endMinuteOfDay = endHour * 60 + endMinute;
 
-      // Check if they already have a closed attendance for TODAY
+      // Check if they already have a closed attendance for TODAY (for reopening)
       const closedAttendance = await prisma.attendance.findFirst({
         where: { 
           userId: user.id, 
-          date: today,
+          date: todayDate,
           checkOutTime: { not: null }
         },
         orderBy: { createdAt: 'desc' }
@@ -84,12 +91,11 @@ export async function POST(req: Request) {
         isReopening = true;
         let penaltyToReverse = 0;
         
-        if (tashkentTime < endTimeLimit) {
-           penaltyToReverse = Math.floor((endTimeLimit.getTime() - tashkentTime.getTime()) / 60000);
+        if (currentMinuteOfDay < endMinuteOfDay) {
+           penaltyToReverse = endMinuteOfDay - currentMinuteOfDay;
         }
 
         lateMinutes = (closedAttendance.lateMinutes || 0) - penaltyToReverse;
-        // Allow negative lateMinutes to accumulate extra time
         
         await prisma.attendance.update({
           where: { id: closedAttendance.id },
@@ -100,20 +106,20 @@ export async function POST(req: Request) {
           }
         });
         
-        status = closedAttendance.status; // Keep original status
+        status = closedAttendance.status;
       } else {
-        const isLate = tashkentTime > onTimeLimit;
+        const isLate = currentMinuteOfDay > startMinuteOfDay;
         status = isLate ? 'LATE' : 'ON_TIME';
 
         if (isLate) {
-          lateMinutes = Math.floor((tashkentTime.getTime() - onTimeLimit.getTime()) / 60000);
+          lateMinutes = currentMinuteOfDay - startMinuteOfDay;
         }
 
         await prisma.attendance.create({
           data: {
             userId: user.id,
-            date: today,
-            checkInTime: serverTime, // Save actual server UTC time in DB for consistency
+            date: todayDate,
+            checkInTime: serverTime,
             gpsLat: lat,
             gpsLng: lng,
             status,
@@ -130,30 +136,14 @@ export async function POST(req: Request) {
           let message = ``;
           
           if (isReopening) {
-            message = `🔄 <b>Ishga qaytdi!</b>\n\n👤 Xodim: ${user.name}\n🕒 Vaqt: ${tashkentTime.toLocaleTimeString('uz-UZ', {hour:'2-digit', minute:'2-digit'})}${body.reason ? `\n📝 Izoh: ${body.reason}` : ''}`;
+            message = `🔄 <b>Ishga qaytdi!</b>\n\n👤 Xodim: ${user.name}\n🕒 Vaqt: ${timeString}${body.reason ? `\n📝 Izoh: ${body.reason}` : ''}`;
           } else {
-            message = `🟢 <b>Ishga keldi!</b>\n\n👤 Xodim: ${user.name}\n🕒 Vaqt: ${tashkentTime.toLocaleTimeString('uz-UZ', {hour:'2-digit', minute:'2-digit'})}\n📊 Holat: ${status === 'ON_TIME' ? 'Vaqtida' : 'Kechikkan'}${lateMinutes > 0 ? ` (${lateMinutes} daqiqa)` : ''}${body.reason ? `\n📝 Izoh: ${body.reason}` : ''}`;
+            message = `🟢 <b>Ishga keldi!</b>\n\n👤 Xodim: ${user.name}\n🕒 Vaqt: ${timeString}\n📊 Holat: ${status === 'ON_TIME' ? 'Vaqtida' : 'Kechikkan'}${lateMinutes > 0 ? ` (${lateMinutes} daqiqa)` : ''}${body.reason ? `\n📝 Izoh: ${body.reason}` : ''}`;
           }
           
           for (const admin of admins) {
             if (admin.telegramId) {
               await bot.telegram.sendMessage(admin.telegramId, message, { parse_mode: 'HTML' }).catch(() => {});
-            }
-          }
-
-          // Worker notification for pending orders
-          if (user.telegramId) {
-            const pendingOrders = await prisma.order.findMany({
-              where: { assignedToId: user.id, status: { not: 'COMPLETED' } }
-            });
-
-            if (pendingOrders.length > 0) {
-              let ordersText = `📦 <b>Sizning buyurtmalaringiz:</b>\n\n`;
-              pendingOrders.forEach((o: any, i: number) => {
-                const dStr = o.deadline ? new Date(o.deadline).toLocaleDateString('uz-UZ') : 'Noma\'lum';
-                ordersText += `${i+1}. <b>${o.name}</b> (Muddat: ${dStr})\n   Holati: ${o.status === 'PENDING' ? 'Kutilmoqda' : 'Jarayonda'}\n`;
-              });
-              await bot.telegram.sendMessage(user.telegramId, ordersText, { parse_mode: 'HTML' }).catch(() => {});
             }
           }
         }
@@ -188,26 +178,19 @@ export async function POST(req: Request) {
         }
       }
 
-      const serverTime = new Date();
-      const tashkentTimeStr = serverTime.toLocaleString("en-US", {timeZone: "Asia/Tashkent"});
-      const tashkentTime = new Date(tashkentTimeStr);
-
-      const attDate = new Date(attendance.date);
-      const endTimeLimit = new Date(attDate);
       const [endHour, endMinute] = (user.workEndTime || "18:00").split(':').map(Number);
-      endTimeLimit.setUTCHours(endHour - 5, endMinute, 0, 0);
+      const endMinuteOfDay = endHour * 60 + endMinute;
 
       let newLateMinutes = attendance.lateMinutes || 0;
 
-      if (tashkentTime < endTimeLimit) {
+      if (currentMinuteOfDay < endMinuteOfDay) {
         // Vohli ketdi (Left early): qolgan vaqtni kechikishga qo'shish
-        const earlyMinutes = Math.floor((endTimeLimit.getTime() - tashkentTime.getTime()) / 60000);
+        const earlyMinutes = endMinuteOfDay - currentMinuteOfDay;
         newLateMinutes += earlyMinutes;
-      } else if (tashkentTime > endTimeLimit) {
+      } else if (currentMinuteOfDay > endMinuteOfDay) {
         // Kech ketdi (Left late): ishlagan ortiqcha vaqtni kechikishdan ayirish
-        const extraMinutes = Math.floor((tashkentTime.getTime() - endTimeLimit.getTime()) / 60000);
+        const extraMinutes = currentMinuteOfDay - endMinuteOfDay;
         newLateMinutes -= extraMinutes;
-        // Allow negative balance to carry over
       }
 
       await prisma.attendance.update({
@@ -223,7 +206,7 @@ export async function POST(req: Request) {
         if (process.env.BOT_TOKEN) {
           const bot = new Telegraf(process.env.BOT_TOKEN);
           const admins = await prisma.user.findMany({ where: { role: 'ADMIN' } });
-          const message = `🔴 <b>Ishdan ketdi!</b>\n\n👤 Xodim: ${user.name}\n🕒 Vaqt: ${tashkentTime.toLocaleTimeString('uz-UZ', {hour:'2-digit', minute:'2-digit'})}${body.reason ? `\n📝 Izoh: ${body.reason}` : ''}`;
+          const message = `🔴 <b>Ishdan ketdi!</b>\n\n👤 Xodim: ${user.name}\n🕒 Vaqt: ${timeString}${body.reason ? `\n📝 Izoh: ${body.reason}` : ''}`;
           
           for (const admin of admins) {
             if (admin.telegramId) {

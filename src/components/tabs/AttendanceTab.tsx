@@ -27,9 +27,7 @@ export default function AttendanceTab({ user, WebApp }: { user: any, WebApp: any
         const records = data.attendances || [];
         setHistory(records);
         
-        const today = new Date().toDateString();
-        const openRecord = records.find((r: any) => !r.checkOutTime && new Date(r.date).toDateString() === today);
-        
+        const openRecord = records.find((r: any) => !r.checkOutTime);
         if (openRecord) {
           setStatus('checked-in');
         } else {
