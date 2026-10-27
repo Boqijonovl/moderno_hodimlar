@@ -40,6 +40,54 @@ export default function SalesAnalytics() {
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [loadingAudit, setLoadingAudit] = useState(false);
 
+  // Pay debt modal state
+  const [payDebtSale, setPayDebtSale] = useState<any>(null);
+  const [debtPayAmount, setDebtPayAmount] = useState('');
+  const [debtPayMethod, setDebtPayMethod] = useState<'Naqd' | 'Karta' | 'Terminal' | 'Karparativ'>('Naqd');
+  const [payDebtLoading, setPayDebtLoading] = useState(false);
+
+  const handleOpenPayDebtModal = (sale: any) => {
+    setPayDebtSale(sale);
+    setDebtPayAmount(sale.balance?.toString() || '');
+    setDebtPayMethod('Naqd');
+  };
+
+  const handleConfirmPayDebt = async () => {
+    if (!payDebtSale || !debtPayAmount) return;
+    const amount = parseFloat(debtPayAmount);
+    if (isNaN(amount) || amount <= 0 || amount > payDebtSale.balance) {
+      alert(`Iltimos, 1 dan ${payDebtSale.balance.toLocaleString()} so'mgacha bo'lgan to'g'ri summa kiriting!`);
+      return;
+    }
+
+    setPayDebtLoading(true);
+    try {
+      const res = await fetch(`/api/sales/${payDebtSale.id}/pay`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount,
+          method: debtPayMethod,
+          user: 'Admin'
+        })
+      });
+      if (res.ok) {
+        setPayDebtSale(null);
+        setDebtPayAmount('');
+        const updated = await fetch('/api/sales').then(r => r.json());
+        setSales(updated);
+        fetchShifts();
+        alert("✅ Qarz to'lovi muvaffaqiyatli qabul qilindi!");
+      } else {
+        const err = await res.json();
+        alert(`Xatolik: ${err.error || 'Qarzni to\'lashda xatolik'}`);
+      }
+    } catch (e: any) {
+      alert("Tarmoq xatosi: " + e.message);
+    }
+    setPayDebtLoading(false);
+  };
+
   useEffect(() => {
     fetch('/api/sales')
       .then(res => res.json())
@@ -360,8 +408,16 @@ export default function SalesAnalytics() {
                               <p className="font-black text-emerald-600 text-sm sm:text-base">{(sale.totalPrice || 0).toLocaleString()} so'm</p>
                               
                               {sale.balance > 0 && (
-                                <div className="text-[10px] font-bold text-rose-500 bg-rose-50 px-2 py-1 rounded-md mt-1 shadow-sm border border-rose-100 whitespace-nowrap">
-                                  ⚠️ Qarz: {sale.balance?.toLocaleString()} so'm
+                                <div className="flex items-center gap-1.5 mt-1 flex-wrap justify-end">
+                                  <div className="text-[10px] font-bold text-rose-500 bg-rose-50 px-2 py-0.5 rounded-md shadow-sm border border-rose-100 whitespace-nowrap">
+                                    ⚠️ Qarz: {sale.balance?.toLocaleString()} so'm
+                                  </div>
+                                  <button
+                                    onClick={() => handleOpenPayDebtModal(sale)}
+                                    className="text-[10px] font-bold bg-blue-600 hover:bg-blue-700 text-white px-2 py-0.5 rounded-md shadow-sm active:scale-95 transition-all whitespace-nowrap"
+                                  >
+                                    Qarzni to'lash
+                                  </button>
                                 </div>
                               )}
 
@@ -810,6 +866,108 @@ export default function SalesAnalytics() {
                 className="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-md active:scale-95 disabled:opacity-50"
               >
                 {shiftLoading ? "Yopilmoqda..." : "Z-Otchyotni Tasdiqlash"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Pay Debt Modal */}
+      {payDebtSale && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-xl border border-slate-100 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+              <div>
+                <h3 className="font-bold text-slate-800 text-base">Qarzni To'lash</h3>
+                <p className="text-xs text-slate-500">
+                  {payDebtSale.customerName ? `Mijoz: ${payDebtSale.customerName}` : `Savdo #${payDebtSale.id.slice(0, 8)}`}
+                </p>
+              </div>
+              <button 
+                onClick={() => setPayDebtSale(null)}
+                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="bg-slate-50 p-3 rounded-xl space-y-1 text-xs">
+              <div className="flex justify-between">
+                <span className="text-slate-500">Umumiy savdo summasi:</span>
+                <span className="font-bold text-slate-800 font-mono">{(payDebtSale.totalPrice || 0).toLocaleString()} so'm</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">To'langan (avans):</span>
+                <span className="font-bold text-emerald-600 font-mono">{(payDebtSale.advance || 0).toLocaleString()} so'm</span>
+              </div>
+              <div className="flex justify-between border-t border-slate-200 pt-1 font-bold">
+                <span className="text-rose-600">Qolgan qarz miqdori:</span>
+                <span className="text-rose-600 font-mono">{(payDebtSale.balance || 0).toLocaleString()} so'm</span>
+              </div>
+            </div>
+
+            <div>
+              <label className="text-xs font-bold text-slate-700 block mb-1">To'lov Summasi (so'm)</label>
+              <input
+                type="number"
+                value={debtPayAmount}
+                onChange={e => setDebtPayAmount(e.target.value)}
+                placeholder="Summani kiriting..."
+                className="w-full p-3 rounded-xl border border-slate-200 text-sm font-mono font-bold focus:ring-2 focus:ring-blue-500 outline-none"
+              />
+              <div className="flex gap-2 mt-2">
+                <button
+                  type="button"
+                  onClick={() => setDebtPayAmount(payDebtSale.balance?.toString() || '')}
+                  className="flex-1 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 text-[11px] font-bold transition-colors"
+                >
+                  To'liq (100%)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDebtPayAmount(Math.round((payDebtSale.balance || 0) / 2).toString())}
+                  className="flex-1 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold transition-colors"
+                >
+                  Yarmi (50%)
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label className="text-xs font-bold text-slate-700 block mb-1.5">To'lov Usuli</label>
+              <div className="grid grid-cols-2 gap-2">
+                {(['Naqd', 'Karta', 'Terminal', 'Karparativ'] as const).map(method => (
+                  <button
+                    key={method}
+                    type="button"
+                    onClick={() => setDebtPayMethod(method)}
+                    className={`py-2 px-3 rounded-xl text-xs font-bold transition-all border ${
+                      debtPayMethod === method
+                        ? 'bg-blue-600 text-white border-blue-600 shadow-sm shadow-blue-200'
+                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                    }`}
+                  >
+                    {method}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setPayDebtSale(null)}
+                className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold"
+              >
+                Bekor qilish
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmPayDebt}
+                disabled={payDebtLoading || !debtPayAmount}
+                className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md shadow-blue-200 active:scale-95 disabled:opacity-50"
+              >
+                {payDebtLoading ? "Saqlanmoqda..." : "To'lovni Qabul Qilish"}
               </button>
             </div>
           </div>

@@ -1,35 +1,46 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { normalizePaymentMethod } from '@/lib/formatters';
 
 export const dynamic = 'force-dynamic';
 
-function getUzDayRange() {
-  const d = new Date();
-  d.setUTCHours(d.getUTCHours() + 5);
-  const start = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), -5, 0, 0, 0));
-  const end = new Date(start);
-  end.setUTCDate(end.getUTCDate() + 1);
-  end.setUTCMilliseconds(-1);
-  return { start, end };
+function getTashkentTodayRange() {
+  const todayStr = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Tashkent' });
+  const [y, m, d] = todayStr.split('-').map(Number);
+  // Midnight in Tashkent (00:00:00 UTC+5) is 19:00:00 UTC of previous day
+  const start = new Date(Date.UTC(y, m - 1, d - 1, 19, 0, 0, 0));
+  // 23:59:59.999 in Tashkent (18:59:59.999 UTC)
+  const end = new Date(Date.UTC(y, m - 1, d, 18, 59, 59, 999));
+  const todayDateMidnight = new Date(Date.UTC(y, m - 1, d, 0, 0, 0, 0));
+  return { start, end, todayDateMidnight };
 }
 
 export async function GET() {
   try {
-    const { start: todayStart, end: todayEnd } = getUzDayRange();
+    const { start: todayStart, end: todayEnd, todayDateMidnight } = getTashkentTodayRange();
 
-    const sales = await prisma.sale.findMany({
-      where: { createdAt: { gte: todayStart, lte: todayEnd } },
-      include: { user: true, items: true, payments: true }
-    });
-
-    const todayPayments = await prisma.salePayment.findMany({
-      where: { createdAt: { gte: todayStart, lte: todayEnd } }
-    });
-
-    const attendance = await prisma.attendance.findMany({
-      where: { createdAt: { gte: todayStart, lte: todayEnd } },
-      include: { user: true }
-    });
+    const [sales, todayPayments, attendance, totalStoreDebtAggregate] = await Promise.all([
+      prisma.sale.findMany({
+        where: { createdAt: { gte: todayStart, lte: todayEnd } },
+        include: { user: true, items: true, payments: true }
+      }),
+      prisma.salePayment.findMany({
+        where: { createdAt: { gte: todayStart, lte: todayEnd } }
+      }),
+      prisma.attendance.findMany({
+        where: {
+          OR: [
+            { date: todayDateMidnight },
+            { createdAt: { gte: todayStart, lte: todayEnd } }
+          ]
+        },
+        include: { user: true }
+      }),
+      prisma.sale.aggregate({
+        where: { balance: { gt: 0 } },
+        _sum: { balance: true }
+      })
+    ]);
 
     let cashTotal = 0;
     let cardTotal = 0;
@@ -37,29 +48,23 @@ export async function GET() {
     let corporateTotal = 0;
 
     todayPayments.forEach(p => {
-      const m = (p.method || '').trim().toLowerCase();
-      if (m.includes('naqd') || m === 'cash') {
-        cashTotal += p.amount;
-      } else if (m.includes('term')) {
-        terminalTotal += p.amount;
-      } else if (m.includes('kart') || m === 'card') {
-        cardTotal += p.amount;
-      } else if (m.includes('karp') || m.includes('korp') || m === 'corporate') {
-        corporateTotal += p.amount;
-      } else {
-        cashTotal += p.amount;
-      }
+      const norm = normalizePaymentMethod(p.method);
+      if (norm === 'Naqd') cashTotal += p.amount;
+      else if (norm === 'Karta') cardTotal += p.amount;
+      else if (norm === 'Terminal') terminalTotal += p.amount;
+      else if (norm === 'Karparativ') corporateTotal += p.amount;
+      else cashTotal += p.amount;
     });
 
     // Fallback if payments were not recorded in SalePayment
     if (todayPayments.length === 0 && sales.length > 0) {
       sales.forEach(s => {
-        const m = (s.paymentMethod || '').trim().toLowerCase();
+        const norm = normalizePaymentMethod(s.paymentMethod);
         const paid = s.advance > 0 ? s.advance : (s.balance === 0 ? s.totalPrice : 0);
-        if (m.includes('naqd') || m === 'cash') cashTotal += paid;
-        else if (m.includes('term')) terminalTotal += paid;
-        else if (m.includes('kart') || m === 'card') cardTotal += paid;
-        else if (m.includes('karp') || m.includes('korp') || m === 'corporate') corporateTotal += paid;
+        if (norm === 'Naqd') cashTotal += paid;
+        else if (norm === 'Karta') cardTotal += paid;
+        else if (norm === 'Terminal') terminalTotal += paid;
+        else if (norm === 'Karparativ') corporateTotal += paid;
         else cashTotal += paid;
       });
     }
@@ -68,14 +73,14 @@ export async function GET() {
       ? todayPayments.reduce((sum, p) => sum + p.amount, 0)
       : sales.reduce((sum, s) => sum + s.totalPrice, 0);
 
-    const totalDebt = sales.reduce((sum, s) => sum + (s.balance || 0), 0);
+    const todayDebt = sales.reduce((sum, s) => sum + (s.balance || 0), 0);
+    const totalStoreDebt = totalStoreDebtAggregate._sum.balance || 0;
     
     const onTime = attendance.filter(a => a.status === 'ON_TIME').length;
     const late = attendance.filter(a => a.status === 'LATE').length;
     
     // Generate 7-day chart data
-    const sevenDaysAgo = new Date(todayStart);
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+    const sevenDaysAgo = new Date(todayStart.getTime() - 6 * 24 * 60 * 60 * 1000);
     
     const weekSales = await prisma.sale.findMany({
       where: { createdAt: { gte: sevenDaysAgo } }
@@ -83,13 +88,9 @@ export async function GET() {
     
     const chartData = [];
     for (let i = 6; i >= 0; i--) {
-      const d = new Date(todayStart);
-      d.setDate(d.getDate() - i);
-      const dayName = d.toLocaleDateString('uz-UZ', { weekday: 'short' });
-      const dayStart = new Date(d);
-      const dayEnd = new Date(d);
-      dayEnd.setDate(dayEnd.getDate() + 1);
-      dayEnd.setMilliseconds(-1);
+      const dayStart = new Date(todayStart.getTime() - i * 24 * 60 * 60 * 1000);
+      const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000 - 1);
+      const dayName = new Date(dayStart.getTime() + 5 * 60 * 60 * 1000).toLocaleDateString('uz-UZ', { weekday: 'short' });
       
       const dayTotal = weekSales
         .filter(s => s.createdAt >= dayStart && s.createdAt <= dayEnd)
@@ -100,13 +101,15 @@ export async function GET() {
     
     return NextResponse.json({
       totalRevenue,
-      totalDebt,
+      totalDebt: totalStoreDebt,
+      todayDebt,
       breakdown: { 
         cash: cashTotal, 
         card: cardTotal, 
         terminal: terminalTotal, 
         corporate: corporateTotal,
-        installment: totalDebt 
+        installment: todayDebt,
+        totalOutstandingDebt: totalStoreDebt
       },
       salesCount: sales.length,
       attendance: { total: attendance.length, onTime, late },
@@ -118,6 +121,7 @@ export async function GET() {
       })
     });
   } catch (error) {
+    console.error('Failed to fetch dashboard data:', error);
     return NextResponse.json({ error: 'Failed to fetch dashboard data' }, { status: 500 });
   }
 }

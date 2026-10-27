@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { Telegraf } from 'telegraf';
+import { normalizePaymentMethod } from '@/lib/formatters';
 
 export async function POST(req: Request) {
   try {
@@ -30,6 +31,11 @@ export async function POST(req: Request) {
 
     const totalPrice = items.reduce((acc: number, item: any) => acc + parseFloat(item.price || 0), 0);
     const advance = paymentDetails.reduce((acc: number, p: any) => acc + parseFloat(p.amount || 0), 0);
+    
+    if (advance > totalPrice) {
+      return NextResponse.json({ error: "To'langan summa umumiy savdo summasidan ko'p bo'lishi mumkin emas!" }, { status: 400 });
+    }
+
     const balance = Math.max(0, totalPrice - advance);
     const status = balance > 0 ? 'INCOMPLETE' : 'COMPLETED';
     
@@ -37,7 +43,7 @@ export async function POST(req: Request) {
     let paymentMethod = 'Aralash';
     const activePayments = paymentDetails.filter((p: any) => parseFloat(p.amount) > 0);
     if (activePayments.length === 1) {
-      paymentMethod = String(activePayments[0].method).trim();
+      paymentMethod = normalizePaymentMethod(activePayments[0].method);
     } else if (activePayments.length === 0) {
       paymentMethod = 'Nasiya';
     } else {
@@ -62,7 +68,7 @@ export async function POST(req: Request) {
         },
         payments: {
           create: activePayments.map((p: any) => ({
-            method: String(p.method).trim(),
+            method: normalizePaymentMethod(p.method),
             amount: parseFloat(p.amount)
           }))
         }
@@ -131,12 +137,11 @@ export async function GET(req: Request) {
     let whereClause = {};
 
     if (monthParam) {
-      const year = parseInt(monthParam.split('-')[0]);
-      const month = parseInt(monthParam.split('-')[1]);
-      const start = new Date(year, month - 1, 1);
-      const end = new Date(year, month, 1);
+      const [year, month] = monthParam.split('-').map(Number);
+      const start = new Date(Date.UTC(year, month - 1, 0, 19, 0, 0, 0));
+      const end = new Date(Date.UTC(year, month, 0, 18, 59, 59, 999));
       whereClause = {
-        createdAt: { gte: start, lt: end }
+        createdAt: { gte: start, lte: end }
       };
     }
 

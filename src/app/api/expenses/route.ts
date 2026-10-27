@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { Telegraf } from 'telegraf';
+import { normalizePaymentMethod } from '@/lib/formatters';
 
 export async function POST(req: Request) {
   try {
@@ -26,13 +27,18 @@ export async function POST(req: Request) {
     }
 
     const parsedAmount = parseFloat(amount);
+    if (isNaN(parsedAmount) || parsedAmount <= 0) {
+      return NextResponse.json({ error: 'Noto\'g\'ri summa kiritildi' }, { status: 400 });
+    }
+
+    const cleanMethod = normalizePaymentMethod(paymentMethod);
 
     const expense = await prisma.expense.create({
       data: {
         userId: user.id,
         amount: parsedAmount,
         reason: String(reason).trim(),
-        paymentMethod: paymentMethod ? String(paymentMethod).trim() : 'Naqd'
+        paymentMethod: cleanMethod
       }
     });
 
@@ -42,8 +48,7 @@ export async function POST(req: Request) {
         const bot = new Telegraf(process.env.BOT_TOKEN);
         const admins = await prisma.user.findMany({ where: { role: 'ADMIN' } });
         
-        let paymentName = paymentMethod;
-        const message = `💸 <b>Yangi Xarajat!</b>\n\n👤 Xodim: ${user.name}\n📝 Izoh: ${reason}\n💰 Summa: <b>${parsedAmount.toLocaleString()} so'm</b>\n💳 To'lov turi: ${paymentName}`;
+        const message = `💸 <b>Yangi Xarajat!</b>\n\n👤 Xodim: ${user.name}\n📝 Izoh: ${reason}\n💰 Summa: <b>${parsedAmount.toLocaleString()} so'm</b>\n💳 To'lov turi: ${cleanMethod}`;
 
         for (const admin of admins) {
           if (admin.telegramId) {

@@ -95,14 +95,20 @@ bot.action(/^still_working_(yes|no)_([a-zA-Z0-9-]+)$/, async (ctx) => {
     } else {
       const user = attendance.user;
       
-      const serverTime = new Date();
-      const tashkentTimeStr = serverTime.toLocaleString("en-US", {timeZone: "Asia/Tashkent"});
-      const tashkentTime = new Date(tashkentTimeStr);
-      
-      const attDate = new Date(attendance.date);
-      const endTimeLimit = new Date(attDate);
+      const attDate = attendance.date ? new Date(attendance.date) : new Date();
       const [endHour, endMinute] = (user.workEndTime || "18:00").split(':').map(Number);
-      endTimeLimit.setUTCHours(endHour - 5, endMinute, 0, 0);
+      const safeEndHour = isNaN(endHour) ? 18 : endHour;
+      const safeEndMinute = isNaN(endMinute) ? 0 : endMinute;
+
+      const endTimeLimit = new Date(Date.UTC(
+        attDate.getUTCFullYear(),
+        attDate.getUTCMonth(),
+        attDate.getUTCDate(),
+        safeEndHour - 5,
+        safeEndMinute,
+        0,
+        0
+      ));
       
       const newLateMinutes = attendance.lateMinutes || 0;
 
@@ -122,22 +128,21 @@ bot.action(/^still_working_(yes|no)_([a-zA-Z0-9-]+)$/, async (ctx) => {
 });
 
 function getUzDayRange() {
-  const d = new Date();
-  d.setUTCHours(d.getUTCHours() + 5);
-  const start = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), -5, 0, 0, 0));
-  const end = new Date(start);
-  end.setUTCDate(end.getUTCDate() + 1);
-  end.setUTCMilliseconds(-1);
-  return { start, end, uzNow: d };
+  const todayStr = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Tashkent' });
+  const [y, m, d] = todayStr.split('-').map(Number);
+  const start = new Date(Date.UTC(y, m - 1, d - 1, 19, 0, 0, 0));
+  const end = new Date(Date.UTC(y, m - 1, d, 18, 59, 59, 999));
+  const uzNow = new Date(Date.now() + 5 * 60 * 60 * 1000);
+  return { start, end, uzNow };
 }
 
 function getUzMonthRange() {
-  const d = new Date();
-  d.setUTCHours(d.getUTCHours() + 5);
-  const start = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1, -5, 0, 0, 0));
-  const end = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1, -5, 0, 0, 0));
-  end.setUTCMilliseconds(-1);
-  return { start, end, uzNow: d };
+  const todayStr = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Tashkent' });
+  const [y, m] = todayStr.split('-').map(Number);
+  const start = new Date(Date.UTC(y, m - 1, 0, 19, 0, 0, 0));
+  const end = new Date(Date.UTC(y, m, 0, 18, 59, 59, 999));
+  const uzNow = new Date(Date.now() + 5 * 60 * 60 * 1000);
+  return { start, end, uzNow };
 }
 
 bot.hears('📊 Bugungi Davomat', async (ctx) => {
