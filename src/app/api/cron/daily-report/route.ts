@@ -11,14 +11,21 @@ function toTashkentDate(d: Date | string): string {
 }
 
 export async function GET(req: Request) {
-  return handleDailyReport();
+  const url = new URL(req.url);
+  const targetId = url.searchParams.get('telegramId') || undefined;
+  return handleDailyReport(targetId);
 }
 
 export async function POST(req: Request) {
-  return handleDailyReport();
+  let targetId: string | undefined;
+  try {
+    const body = await req.json();
+    targetId = body.telegramId;
+  } catch (e) {}
+  return handleDailyReport(targetId);
 }
 
-async function handleDailyReport() {
+export async function handleDailyReport(targetTelegramId?: string) {
   try {
     const now = new Date();
     const todayStr = toTashkentDate(now);
@@ -27,9 +34,14 @@ async function handleDailyReport() {
     const startDate = new Date(Date.UTC(year, month - 1, day, -6, 0, 0));
     const endDate = new Date(Date.UTC(year, month - 1, day + 1, 6, 0, 0));
 
-    const [rawSales, rawSalePayments, rawExpenses] = await Promise.all([
+    const [rawSales, rawSalePayments, rawExpenses, totalStoreDebtAggregate] = await Promise.all([
       prisma.sale.findMany({
-        where: { date: { gte: startDate, lte: endDate } },
+        where: {
+          OR: [
+            { createdAt: { gte: startDate, lte: endDate } },
+            { date: { gte: startDate, lte: endDate } }
+          ]
+        },
         include: { user: true, payments: true }
       }),
       prisma.salePayment.findMany({
@@ -39,16 +51,20 @@ async function handleDailyReport() {
       prisma.expense.findMany({
         where: { createdAt: { gte: startDate, lte: endDate } },
         include: { user: true }
+      }),
+      prisma.sale.aggregate({
+        where: { balance: { gt: 0 } },
+        _sum: { balance: true }
       })
     ]);
 
     // Filter strictly to today in Tashkent timezone
-    const todaySales = rawSales.filter(s => toTashkentDate(s.date) === todayStr);
+    const todaySales = rawSales.filter(s => toTashkentDate(s.createdAt || s.date) === todayStr);
     const todayPayments = rawSalePayments.filter(p => toTashkentDate(p.createdAt) === todayStr);
     const todayExpenses = rawExpenses.filter(e => toTashkentDate(e.createdAt) === todayStr);
 
     const totalSales = todaySales.reduce((sum, s) => sum + (s.totalPrice || 0), 0);
-    const totalReceived = todayPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+    let totalReceived = todayPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
 
     const paymentBreakdown: Record<string, number> = {
       'Naqd': 0,
@@ -62,6 +78,16 @@ async function handleDailyReport() {
       paymentBreakdown[method] = (paymentBreakdown[method] || 0) + p.amount;
     });
 
+    // Fallback if payments relation wasn't recorded
+    if (todayPayments.length === 0 && todaySales.length > 0) {
+      todaySales.forEach(s => {
+        const method = normalizePaymentMethod(s.paymentMethod);
+        const paid = s.advance > 0 ? s.advance : (s.balance === 0 ? s.totalPrice : 0);
+        paymentBreakdown[method] = (paymentBreakdown[method] || 0) + paid;
+      });
+      totalReceived = Object.values(paymentBreakdown).reduce((sum, v) => sum + v, 0);
+    }
+
     const totalExpenses = todayExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
 
     // Cash expenses
@@ -73,6 +99,8 @@ async function handleDailyReport() {
     });
 
     const netCash = (paymentBreakdown['Naqd'] || 0) - cashExpenses;
+    const todayDebt = todaySales.reduce((sum, s) => sum + (s.balance || 0), 0);
+    const totalStoreDebt = totalStoreDebtAggregate._sum.balance || 0;
 
     // Find "Kun qahramoni" (Top employee with highest sales today)
     const userStats: Record<string, { name: string; count: number; total: number }> = {};
@@ -103,8 +131,16 @@ async function handleDailyReport() {
       ? `🏆 <b>Kun qahramoni:</b> ${topHero.name} (${topHero.count} ta savdo, ${topHero.total.toLocaleString()} so'm)`
       : `🏆 <b>Kun qahramoni:</b> Bugun hali savdolar qayd etilmadi`;
 
+    let debtText = '';
+    if (todayDebt > 0) {
+      debtText += `\n⚠️ <b>Bugungi yangi qarz (Nasiya):</b> <b>${todayDebt.toLocaleString()} so'm</b>`;
+    }
+    if (totalStoreDebt > 0) {
+      debtText += `\n📌 <b>Do'konning jami qarz qoldig'i:</b> <b>${totalStoreDebt.toLocaleString()} so'm</b>`;
+    }
+
     const reportMessage = 
-`📊 <b>Bugungi kassa hisoboti (${timeStr})</b>
+`📊 <b>Bugungi Kassa va Savdo Hisoboti (${timeStr})</b>
 📅 <b>Sana:</b> ${readableDate}
 
 💰 <b>Jami savdo:</b> <b>${totalSales.toLocaleString()} so'm</b> (${todaySales.length} ta savdo)
@@ -114,22 +150,35 @@ async function handleDailyReport() {
    • 📟 Terminal: ${(paymentBreakdown['Terminal'] || 0).toLocaleString()} so'm
    • 🏢 Karparativ: ${(paymentBreakdown['Karparativ'] || 0).toLocaleString()} so'm
 🔻 <b>Xarajatlar:</b> <b>${totalExpenses.toLocaleString()} so'm</b> (${todayExpenses.length} ta)
-💼 <b>Sof naqd tushum qoldig'i:</b> <b>${netCash.toLocaleString()} so'm</b>
+💼 <b>Sof naqd kassa qoldig'i:</b> <b>${netCash.toLocaleString()} so'm</b>${debtText}
 
 ${heroText}`;
 
     let sentCount = 0;
     if (process.env.BOT_TOKEN) {
       const bot = new Telegraf(process.env.BOT_TOKEN);
-      const admins = await prisma.user.findMany({ where: { role: 'ADMIN' } });
+      
+      const admins = await prisma.user.findMany({ 
+        where: { 
+          OR: [
+            { role: 'ADMIN' },
+            { role: 'admin' },
+            { telegramId: { in: ['1037362053', '3491381'] } }
+          ] 
+        } 
+      });
 
-      for (const admin of admins) {
-        if (admin.telegramId) {
+      const targets = targetTelegramId 
+        ? [{ telegramId: targetTelegramId, name: 'Admin' }]
+        : admins.filter(a => a.telegramId);
+
+      for (const target of targets) {
+        if (target.telegramId) {
           try {
-            await bot.telegram.sendMessage(admin.telegramId, reportMessage, { parse_mode: 'HTML' });
+            await bot.telegram.sendMessage(target.telegramId, reportMessage, { parse_mode: 'HTML' });
             sentCount++;
           } catch (e) {
-            console.error(`Failed to send daily report to ${admin.name}`, e);
+            console.error(`Failed to send daily report to ${target.name} (${target.telegramId})`, e);
           }
         }
       }
@@ -144,6 +193,8 @@ ${heroText}`;
         totalReceived,
         totalExpenses,
         netCash,
+        todayDebt,
+        totalStoreDebt,
         paymentBreakdown,
         salesCount: todaySales.length,
         hero: topHero

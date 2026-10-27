@@ -1,16 +1,12 @@
 {
   "crons": [
     {
+      "path": "/api/cron/daily-report",
+      "schedule": "0 13 * * *"
+    },
+    {
       "path": "/api/cron/reminders?type=attendance",
       "schedule": "0 4 * * *"
-    },
-    {
-      "path": "/api/cron/reminders?type=orders",
-      "schedule": "0 4 * * *"
-    },
-    {
-      "path": "/api/cron/reminders?type=orders",
-      "schedule": "0 9 * * *"
     },
     {
       "path": "/api/cron/reminders?type=check_open_23",

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { Telegraf, Markup } from 'telegraf';
 import { prisma } from '@/lib/prisma';
 import { calculateMebelKroy, calculateRaskroy, parsePartsFromText } from '@/lib/raskroyEngine';
+import { handleDailyReport } from '@/app/api/cron/daily-report/route';
 
 const bot = new Telegraf(process.env.BOT_TOKEN as string);
 
@@ -40,9 +41,9 @@ bot.start(async (ctx) => {
       await ctx.reply(
         `Xush kelibsiz ${name}! Hisobotlarni pastdagi menyudan tanlang yoki Kroy & Raskroy vositasidan foydalaning.`,
         Markup.keyboard([
+          ['📊 Kassa Hisoboti (18:00)', '💰 Bugungi Savdolar'],
           ['📊 Bugungi Davomat', '📅 Oylik Davomat'],
-          ['💰 Bugungi Savdolar', '📈 Oylik Savdolar'],
-          ['📐 Kroy & Raskroy']
+          ['📈 Oylik Savdolar', '📐 Kroy & Raskroy']
         ]).resize()
       );
       // Ilovani ochish uchun alohida inline tugmalar yuboramiz
@@ -208,6 +209,21 @@ bot.hears('📅 Oylik Davomat', async (ctx) => {
       }
     }).catch(() => {});
   } catch (e) {}
+});
+
+bot.hears(['📊 Kassa Hisoboti (18:00)', '📊 Bugungi Hisobot', '📊 Kassa Hisoboti', '/hisobot', '/report'], async (ctx) => {
+  try {
+    const telegramId = ctx.from.id.toString();
+    const user = await prisma.user.findUnique({ where: { telegramId } });
+    if (!user || (user.role !== 'ADMIN' && telegramId !== '1037362053' && telegramId !== '3491381')) {
+      return ctx.reply('Kechirasiz, ushbu hisobot faqat rahbar va adminlar uchun.');
+    }
+
+    await ctx.reply('⏳ Bugungi kassa va savdo hisoboti tayyorlanmoqda...');
+    await handleDailyReport(telegramId);
+  } catch (e) {
+    console.error('Error sending requested report:', e);
+  }
 });
 
 bot.hears('💰 Bugungi Savdolar', async (ctx) => {

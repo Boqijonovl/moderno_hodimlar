@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { Telegraf } from 'telegraf';
+import { handleDailyReport } from '@/app/api/cron/daily-report/route';
 
 // This endpoint is meant to be called by a CRON job
 export async function GET(req: Request) {
@@ -14,10 +15,15 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'BOT_TOKEN is not configured' }, { status: 500 });
     }
 
-    const bot = new Telegraf(process.env.BOT_TOKEN);
     const url = new URL(req.url);
     const type = url.searchParams.get('type') || 'attendance';
 
+    if (type === 'daily_report' || type === 'daily-report') {
+      const targetId = url.searchParams.get('telegramId') || undefined;
+      return handleDailyReport(targetId);
+    }
+
+    const bot = new Telegraf(process.env.BOT_TOKEN);
     let sentCount = 0;
 
     if (type === 'attendance') {
