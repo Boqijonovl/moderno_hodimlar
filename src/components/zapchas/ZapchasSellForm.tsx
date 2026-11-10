@@ -11,7 +11,7 @@ import {
   User as UserIcon,
 } from 'lucide-react';
 import ZapchasPartPicker from './ZapchasPartPicker';
-import { ZapchasPartItem, formatAmountInput } from './ZapchasTypes';
+import { TelegramWebAppProp, ZapchasPartItem, formatAmountInput } from './ZapchasTypes';
 
 interface SellRow {
   partId: string;
@@ -23,7 +23,7 @@ interface SellRow {
 interface ZapchasSellFormProps {
   telegramId: string;
   parts: ZapchasPartItem[];
-  WebApp: any;
+  WebApp: TelegramWebAppProp | null;
   onSuccess: () => void;
 }
 
@@ -109,10 +109,10 @@ export default function ZapchasSellForm({
 
       const data = await res.json();
       if (!res.ok) {
-        if (WebApp?.HapticFeedback) WebApp.HapticFeedback.notificationOccurred('error');
+        WebApp?.HapticFeedback?.notificationOccurred('error');
         alert(data.error || 'Sotuvni saqlashda xatolik yuz berdi.');
       } else {
-        if (WebApp?.HapticFeedback) WebApp.HapticFeedback.notificationOccurred('success');
+        WebApp?.HapticFeedback?.notificationOccurred('success');
         setRows([{ partId: '', quantity: '1', unitPrice: '', note: '' }]);
         setCustomerName('');
         setBatchNote('');
@@ -120,9 +120,12 @@ export default function ZapchasSellForm({
         setTimeout(() => setSuccessMsg(''), 4000);
         onSuccess();
       }
-    } catch (err: any) {
-      if (WebApp?.HapticFeedback) WebApp.HapticFeedback.notificationOccurred('error');
-      alert('Tarmoq xatosi: ' + (err?.message || ''));
+    } catch (err: unknown) {
+      if (WebApp?.HapticFeedback?.notificationOccurred) {
+        WebApp.HapticFeedback.notificationOccurred('error');
+      }
+      const msg = err instanceof Error ? err.message : '';
+      alert('Tarmoq xatosi: ' + msg);
     }
     setLoading(false);
   };

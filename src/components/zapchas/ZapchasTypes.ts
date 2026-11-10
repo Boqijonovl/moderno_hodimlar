@@ -1,3 +1,19 @@
+export interface ZapchasUserProp {
+  id?: string;
+  telegramId: string;
+  name: string;
+  role: string;
+  active?: boolean;
+  canUseZapchas?: boolean;
+  canManageZapchas?: boolean;
+}
+
+export interface TelegramWebAppProp {
+  HapticFeedback?: {
+    notificationOccurred: (type: 'error' | 'success' | 'warning') => void;
+  };
+}
+
 export interface ZapchasPartItem {
   id: string;
   name: string;

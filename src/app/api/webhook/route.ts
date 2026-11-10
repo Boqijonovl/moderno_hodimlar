@@ -369,7 +369,7 @@ bot.hears(['🔧 Zapchaslar', '/zapchas'], async (ctx) => {
       msg += `Ombordagi mavjud zapchaslarni ko'rish va sotilgan zapchaslarni tizimga kiritish uchun quyidagi tugmani bosing:`;
     }
 
-    const keyboard: any[] = [
+    const keyboard: Array<Array<{ text: string; web_app: { url: string } }>> = [
       [{ text: "🔧 Zapchas bo'limini ochish", web_app: { url: `${webAppUrl}/zapchas` } }],
     ];
     if (isAdmin) {

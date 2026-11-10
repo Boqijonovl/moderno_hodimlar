@@ -96,7 +96,18 @@ export async function POST(req: Request) {
 
       const cleanBatchNote = body.note ? String(body.note).trim() : null;
 
-      const parsedItems = items.map((item: any) => ({
+      interface InRequestItem {
+        partId?: string;
+        partName?: string;
+        unit?: string;
+        quantity?: unknown;
+        unitPrice?: unknown;
+        price?: unknown;
+        minQuantity?: unknown;
+        note?: string;
+      }
+
+      const parsedItems = (items as InRequestItem[]).map((item) => ({
         partId: item.partId ? String(item.partId).trim() : undefined,
         partName: item.partName ? String(item.partName).trim() : undefined,
         unit: item.unit ? String(item.unit).trim() : undefined,
@@ -271,7 +282,7 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ error: "Noto'g'ri amal turi" }, { status: 400 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (error instanceof ZapchasValidationError) {
       return NextResponse.json({ error: error.message }, { status: error.status });
     }

@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { UserCheck, UserPlus, UserX, Users, ChevronDown, ChevronUp } from 'lucide-react';
 import ZapchasSection from '@/components/ZapchasSection';
+import { TelegramWebAppProp, ZapchasUserProp } from '@/components/zapchas/ZapchasTypes';
 
 interface ManagedEmployee {
   id: string;
@@ -15,28 +16,34 @@ interface ManagedEmployee {
 }
 
 export default function AdminZapchasPage() {
-  const [adminUser, setAdminUser] = useState<any>(null);
-  const [webApp, setWebApp] = useState<any>(null);
+  const [adminUser, setAdminUser] = useState<ZapchasUserProp | null>(null);
+  const [webApp, setWebApp] = useState<TelegramWebAppProp | null>(null);
   const [employees, setEmployees] = useState<ManagedEmployee[]>([]);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('');
   const [assignLoading, setAssignLoading] = useState(false);
   const [showSellerPerms, setShowSellerPerms] = useState(false);
-
-  const fetchEmployees = useCallback(async () => {
-    try {
-      const res = await fetch('/api/admin/zapchas/managers');
-      if (res.ok) {
-        const data = await res.json();
-        setEmployees(data.users || []);
-      }
-    } catch (e) {
-      console.error('Error fetching employees:', e);
-    }
-  }, []);
+  const [reloadEmployeesKey, setReloadEmployeesKey] = useState(0);
 
   useEffect(() => {
-    fetchEmployees();
+    let cancelled = false;
+    async function loadEmployees() {
+      try {
+        const res = await fetch('/api/admin/zapchas/managers');
+        if (res.ok && !cancelled) {
+          const data = await res.json();
+          setEmployees(data.users || []);
+        }
+      } catch (e) {
+        console.error('Error fetching employees:', e);
+      }
+    }
+    loadEmployees();
+    return () => {
+      cancelled = true;
+    };
+  }, [reloadEmployeesKey]);
 
+  useEffect(() => {
     if (typeof window !== 'undefined') {
       import('@twa-dev/sdk')
         .then((mod) => {
@@ -63,7 +70,7 @@ export default function AdminZapchasPage() {
         })
         .catch(() => {});
     }
-  }, [fetchEmployees]);
+  }, []);
 
   const updateEmployeeZapchasRole = async (
     targetUserId: string,
@@ -85,7 +92,7 @@ export default function AdminZapchasPage() {
         alert(data.error || 'Xatolik yuz berdi');
       } else {
         setSelectedEmployeeId('');
-        await fetchEmployees();
+        setReloadEmployeesKey((k) => k + 1);
       }
     } catch {
       alert('Tarmoq xatosi');

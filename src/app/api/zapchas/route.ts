@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import {
   canManageZapchasUser,
@@ -83,7 +84,9 @@ export async function GET(req: Request) {
       });
     }
 
-    const txWhere: any = canManage ? {} : { userId: user.id, type: 'OUT' };
+    const txWhere: Prisma.ZapchasTransactionWhereInput = canManage
+      ? {}
+      : { userId: user.id, type: 'OUT' };
     if (canManage && typeFilter && typeFilter !== 'ALL') {
       txWhere.type = typeFilter;
     }

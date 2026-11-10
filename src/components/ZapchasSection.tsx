@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import {
   AlertTriangle,
   ArrowDownLeft,
@@ -24,10 +24,12 @@ import {
   QuickStockModal,
 } from './zapchas/ZapchasModals';
 import {
+  TelegramWebAppProp,
   ZapchasPartItem,
   ZapchasPermissions,
   ZapchasSummary,
   ZapchasTxItem,
+  ZapchasUserProp,
   getStockStatusBadge,
 } from './zapchas/ZapchasTypes';
 
@@ -39,8 +41,8 @@ export default function ZapchasSection({
   initialView,
   onDataChanged,
 }: {
-  user: any;
-  WebApp: any;
+  user: ZapchasUserProp;
+  WebApp: TelegramWebAppProp | null;
   initialView?: ZapchasTabKey;
   onDataChanged?: () => void;
 }) {
@@ -86,31 +88,37 @@ export default function ZapchasSection({
     action: 'IN' | 'OUT' | 'ADJUST';
   } | null>(null);
   const [editTxModal, setEditTxModal] = useState<ZapchasTxItem | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
-  const fetchData = useCallback(async () => {
-    if (!user?.telegramId) return;
-    try {
-      const res = await fetch(`/api/zapchas?telegramId=${encodeURIComponent(user.telegramId)}`);
-      if (res.ok) {
-        const data = await res.json();
-        setParts(data.parts || []);
-        setTransactions(data.transactions || []);
-        if (data.summary) setSummary(data.summary);
-        if (data.permissions) setPermissions(data.permissions);
-      }
-    } catch (e) {
-      console.error('Error loading zapchas:', e);
-    } finally {
-      setLoading(false);
-    }
-  }, [user?.telegramId]);
+  const telegramId = user?.telegramId || '';
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    if (!telegramId) return;
+    let cancelled = false;
+    async function load() {
+      try {
+        const res = await fetch(`/api/zapchas?telegramId=${encodeURIComponent(telegramId)}`);
+        if (res.ok && !cancelled) {
+          const data = await res.json();
+          setParts(data.parts || []);
+          setTransactions(data.transactions || []);
+          if (data.summary) setSummary(data.summary);
+          if (data.permissions) setPermissions(data.permissions);
+        }
+      } catch (e) {
+        console.error('Error loading zapchas:', e);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [telegramId, reloadKey]);
 
   const handleRefresh = () => {
-    fetchData();
+    setReloadKey((k) => k + 1);
     if (onDataChanged) onDataChanged();
   };
 
@@ -553,16 +561,18 @@ export default function ZapchasSection({
               </div>
 
               <div className="flex flex-wrap gap-1.5">
-                {[
-                  { key: 'ALL', label: 'Barchasi' },
-                  { key: 'IN', label: '📥 Kelgan' },
-                  { key: 'OUT', label: '📤 Ketgan' },
-                  { key: 'ADJUST', label: '⚖️ Tuzatilgan' },
-                ].map((opt) => (
+                {(
+                  [
+                    { key: 'ALL', label: 'Barchasi' },
+                    { key: 'IN', label: '📥 Kelgan' },
+                    { key: 'OUT', label: '📤 Ketgan' },
+                    { key: 'ADJUST', label: '⚖️ Tuzatilgan' },
+                  ] as const
+                ).map((opt) => (
                   <button
                     key={opt.key}
                     type="button"
-                    onClick={() => setTxTypeFilter(opt.key as any)}
+                    onClick={() => setTxTypeFilter(opt.key)}
                     className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors ${
                       txTypeFilter === opt.key
                         ? 'bg-blue-600 text-white'

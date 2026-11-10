@@ -4,10 +4,13 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Settings as SettingsIcon, Wrench } from 'lucide-react';
 import ZapchasSection from '@/components/ZapchasSection';
+import { TelegramWebAppProp, ZapchasUserProp } from '@/components/zapchas/ZapchasTypes';
+
+type PageUserState = (ZapchasUserProp & { blocked_by_browser?: false }) | { blocked_by_browser: true };
 
 export default function ZapchasPage() {
-  const [user, setUser] = useState<any>(null);
-  const [WebApp, setWebApp] = useState<any>(null);
+  const [user, setUser] = useState<PageUserState | null>(null);
+  const [WebApp, setWebApp] = useState<TelegramWebAppProp | null>(null);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {

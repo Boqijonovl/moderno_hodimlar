@@ -3,7 +3,12 @@
 import { useState } from 'react';
 import { ArrowDownLeft, CheckCircle2, Plus, Send, Trash2 } from 'lucide-react';
 import ZapchasPartPicker from './ZapchasPartPicker';
-import { ZAPCHAS_UNITS, ZapchasPartItem, formatAmountInput } from './ZapchasTypes';
+import {
+  TelegramWebAppProp,
+  ZAPCHAS_UNITS,
+  ZapchasPartItem,
+  formatAmountInput,
+} from './ZapchasTypes';
 
 interface InRow {
   partId: string;
@@ -16,7 +21,7 @@ interface InRow {
 interface ZapchasInFormProps {
   telegramId: string;
   parts: ZapchasPartItem[];
-  WebApp: any;
+  WebApp: TelegramWebAppProp | null;
   onSuccess: () => void;
 }
 
@@ -87,19 +92,22 @@ export default function ZapchasInForm({
 
       const data = await res.json();
       if (!res.ok) {
-        if (WebApp?.HapticFeedback) WebApp.HapticFeedback.notificationOccurred('error');
+        WebApp?.HapticFeedback?.notificationOccurred('error');
         alert(data.error || 'Kirimni saqlashda xatolik yuz berdi.');
       } else {
-        if (WebApp?.HapticFeedback) WebApp.HapticFeedback.notificationOccurred('success');
+        WebApp?.HapticFeedback?.notificationOccurred('success');
         setRows([{ partId: '', partName: '', unit: 'dona', quantity: '1', unitPrice: '' }]);
         setBatchNote('');
         setSuccessMsg('Kelgan zapchaslar omborga muvaffaqiyatli qo\'shildi!');
         setTimeout(() => setSuccessMsg(''), 4000);
         onSuccess();
       }
-    } catch (err: any) {
-      if (WebApp?.HapticFeedback) WebApp.HapticFeedback.notificationOccurred('error');
-      alert('Tarmoq xatosi: ' + (err?.message || ''));
+    } catch (err: unknown) {
+      if (WebApp?.HapticFeedback?.notificationOccurred) {
+        WebApp.HapticFeedback.notificationOccurred('error');
+      }
+      const msg = err instanceof Error ? err.message : '';
+      alert('Tarmoq xatosi: ' + msg);
     }
     setLoading(false);
   };

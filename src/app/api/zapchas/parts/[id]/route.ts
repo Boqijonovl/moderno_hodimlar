@@ -61,7 +61,7 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
     });
 
     return NextResponse.json({ success: true, part: updated });
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (error instanceof ZapchasValidationError) {
       return NextResponse.json({ error: error.message }, { status: error.status });
     }

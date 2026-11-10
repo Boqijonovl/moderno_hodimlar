@@ -30,7 +30,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Sizga zapchas sotish ruxsati berilmagan' }, { status: 403 });
     }
 
-    const parsedItems = items.map((item: any) => ({
+    interface SellRequestItem {
+      partId?: string;
+      quantity?: unknown;
+      unitPrice?: unknown;
+      note?: string;
+    }
+
+    const parsedItems = (items as SellRequestItem[]).map((item) => ({
       partId: String(item.partId || '').trim(),
       quantity: parsePositiveInt(item.quantity, 'Sotilgan soni'),
       unitPrice: parseOptionalPrice(item.unitPrice),
@@ -108,7 +115,7 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json({ success: true, transactions: results });
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (error instanceof ZapchasValidationError) {
       return NextResponse.json({ error: error.message }, { status: error.status });
     }

@@ -26,19 +26,9 @@ export default function ZapchasPartPicker({
   onClear,
 }: ZapchasPartPickerProps) {
   const selectedPart = parts.find((p) => p.id === selectedPartId) || null;
-  const [query, setQuery] = useState<string>(selectedPart?.name || customPartName || '');
+  const [draftQuery, setDraftQuery] = useState<string>('');
   const [isOpen, setIsOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (selectedPart) {
-      setQuery(selectedPart.name);
-    } else if (customPartName) {
-      setQuery(customPartName);
-    } else if (!selectedPartId && !customPartName) {
-      setQuery('');
-    }
-  }, [selectedPartId, customPartName, selectedPart]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent | TouchEvent) => {
@@ -54,17 +44,24 @@ export default function ZapchasPartPicker({
     };
   }, []);
 
-  const trimmedQuery = query.trim();
-  const filteredParts = trimmedQuery
-    ? parts.filter((p) => p.name.toLowerCase().includes(trimmedQuery.toLowerCase()))
-    : parts;
+  const inputValue = selectedPart
+    ? selectedPart.name
+    : customPartName
+      ? customPartName
+      : draftQuery;
+
+  const trimmedQuery = inputValue.trim();
+  const filteredParts =
+    !selectedPart && !customPartName && trimmedQuery
+      ? parts.filter((p) => p.name.toLowerCase().includes(trimmedQuery.toLowerCase()))
+      : parts;
 
   const exactMatch = parts.some(
     (p) => p.name.toLowerCase() === trimmedQuery.toLowerCase()
   );
 
   const handleInputChange = (val: string) => {
-    setQuery(val);
+    setDraftQuery(val);
     setIsOpen(true);
     if (selectedPartId || customPartName) {
       onClear();
@@ -77,7 +74,7 @@ export default function ZapchasPartPicker({
         <Search className="w-4 h-4 text-slate-400 absolute left-3.5 pointer-events-none" />
         <input
           type="text"
-          value={query}
+          value={inputValue}
           onFocus={() => setIsOpen(true)}
           onChange={(e) => handleInputChange(e.target.value)}
           placeholder={placeholder}
@@ -89,11 +86,11 @@ export default function ZapchasPartPicker({
                 : 'border-slate-200 dark:border-slate-700'
           }`}
         />
-        {(query || selectedPartId || customPartName) && (
+        {(inputValue || selectedPartId || customPartName) && (
           <button
             type="button"
             onClick={() => {
-              setQuery('');
+              setDraftQuery('');
               onClear();
               setIsOpen(true);
             }}
@@ -138,7 +135,7 @@ export default function ZapchasPartPicker({
               type="button"
               onClick={() => {
                 onSelectNew(trimmedQuery);
-                setQuery(trimmedQuery);
+                setDraftQuery(trimmedQuery);
                 setIsOpen(false);
               }}
               className="w-full px-3.5 py-2.5 text-left flex items-center gap-2 bg-emerald-50/70 dark:bg-emerald-950/30 hover:bg-emerald-100/80 dark:hover:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 transition-colors"
@@ -169,7 +166,7 @@ export default function ZapchasPartPicker({
                   disabled={isOutForSell}
                   onClick={() => {
                     onSelectExisting(part);
-                    setQuery(part.name);
+                    setDraftQuery(part.name);
                     setIsOpen(false);
                   }}
                   className={`w-full px-3.5 py-2.5 text-left flex items-center justify-between gap-2 transition-colors ${
