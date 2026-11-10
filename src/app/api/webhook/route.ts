@@ -39,35 +39,26 @@ bot.start(async (ctx) => {
   try {
     if (role === 'ADMIN') {
       await ctx.reply(
-        `Xush kelibsiz ${name}! Hisobotlarni pastdagi menyudan tanlang yoki Zapchaslar bo'limidan foydalaning.`,
+        `Xush kelibsiz ${name}! Hisobotlarni pastdagi menyudan (stiker yonidagi tugma) tanlang.`,
         Markup.keyboard([
           ['📊 Kassa Hisoboti (18:00)', '💰 Bugungi Savdolar'],
           ['📊 Bugungi Davomat', '📅 Oylik Davomat'],
-          ['📈 Oylik Savdolar', '🔧 Zapchaslar']
-        ]).resize()
-      );
-      // Ilovani ochish uchun alohida inline tugmalar yuboramiz
-      await ctx.reply(`Quyidagi tugmalar orqali xizmatlarni ochishingiz mumkin:`, {
-        reply_markup: {
-          inline_keyboard: [
-            [{ text: '📱 Asosiy Ilovani ochish', web_app: { url: webAppUrl } }],
-            [{ text: '🔧 Zapchaslar bo\'limi', web_app: { url: `${webAppUrl}/zapchas` } }]
-          ]
-        }
-      });
-    } else {
-      await ctx.reply(
-        `Xush kelibsiz ${name}! Menyudan xizmatni tanlang yoki ilovani oching:`,
-        Markup.keyboard([
-          ['🔧 Zapchaslar']
+          ['📈 Oylik Savdolar']
         ]).resize()
       );
       await ctx.reply(`Ilovani ochish uchun tugmani bosing:`, {
         reply_markup: {
-          inline_keyboard: [
-            [{ text: '📱 Asosiy Ilovani ochish', web_app: { url: webAppUrl } }],
-            [{ text: '🔧 Zapchaslar bo\'limi', web_app: { url: `${webAppUrl}/zapchas` } }]
-          ]
+          inline_keyboard: [[{ text: '📱 Ilovani ochish', web_app: { url: webAppUrl } }]]
+        }
+      });
+    } else {
+      await ctx.reply(
+        `Xush kelibsiz ${name}! Ilovani ochish uchun quyidagi tugmani bosing.`,
+        Markup.removeKeyboard()
+      );
+      await ctx.reply(`Ilovani ochish uchun tugmani bosing:`, {
+        reply_markup: {
+          inline_keyboard: [[{ text: '📱 Ilovani ochish', web_app: { url: webAppUrl } }]]
         }
       });
     }

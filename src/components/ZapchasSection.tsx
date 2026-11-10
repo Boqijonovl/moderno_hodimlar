@@ -6,6 +6,7 @@ import {
   ArrowDownLeft,
   ArrowUpRight,
   Boxes,
+  CreditCard,
   Edit2,
   History,
   Package,
@@ -18,15 +19,18 @@ import {
 } from 'lucide-react';
 import ZapchasSellForm from './zapchas/ZapchasSellForm';
 import ZapchasInForm from './zapchas/ZapchasInForm';
+import ZapchasSalesList from './zapchas/ZapchasSalesList';
 import {
   EditTransactionModal,
   PartFormModal,
   QuickStockModal,
 } from './zapchas/ZapchasModals';
 import {
+  PaymentMethodOption,
   TelegramWebAppProp,
   ZapchasPartItem,
   ZapchasPermissions,
+  ZapchasSaleItem,
   ZapchasSummary,
   ZapchasTxItem,
   ZapchasUserProp,
@@ -55,8 +59,12 @@ export default function ZapchasSection({
   const [activeView, setActiveView] = useState<ZapchasTabKey>(
     initialView || (isDefaultManager ? 'stock' : 'sell')
   );
+  const [historySubTab, setHistorySubTab] = useState<'sales' | 'movements'>('sales');
   const [parts, setParts] = useState<ZapchasPartItem[]>([]);
   const [transactions, setTransactions] = useState<ZapchasTxItem[]>([]);
+  const [sales, setSales] = useState<ZapchasSaleItem[]>([]);
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethodOption[]>([]);
+  const [selectedMonth, setSelectedMonth] = useState('');
   const [summary, setSummary] = useState<ZapchasSummary>({
     totalParts: 0,
     totalStock: 0,
@@ -64,6 +72,9 @@ export default function ZapchasSection({
     lowStockCount: 0,
     todayIn: 0,
     todayOut: 0,
+    todaySalesRevenue: 0,
+    totalZapchasDebt: 0,
+    todayPaymentBreakdown: {},
   });
   const [permissions, setPermissions] = useState<ZapchasPermissions>({
     canSell: true,
@@ -93,15 +104,34 @@ export default function ZapchasSection({
   const telegramId = user?.telegramId || '';
 
   useEffect(() => {
+    let cancelled = false;
+    fetch('/api/payment-methods')
+      .then((res) => (res.ok ? res.json() : []))
+      .then((methods) => {
+        if (!cancelled && Array.isArray(methods)) {
+          setPaymentMethods(methods);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
     if (!telegramId) return;
     let cancelled = false;
     async function load() {
       try {
-        const res = await fetch(`/api/zapchas?telegramId=${encodeURIComponent(telegramId)}`);
+        const url = `/api/zapchas?telegramId=${encodeURIComponent(telegramId)}${
+          selectedMonth ? `&month=${encodeURIComponent(selectedMonth)}` : ''
+        }`;
+        const res = await fetch(url);
         if (res.ok && !cancelled) {
           const data = await res.json();
           setParts(data.parts || []);
           setTransactions(data.transactions || []);
+          setSales(data.sales || []);
           if (data.summary) setSummary(data.summary);
           if (data.permissions) setPermissions(data.permissions);
         }
@@ -115,7 +145,7 @@ export default function ZapchasSection({
     return () => {
       cancelled = true;
     };
-  }, [telegramId, reloadKey]);
+  }, [telegramId, selectedMonth, reloadKey]);
 
   const handleRefresh = () => {
     setReloadKey((k) => k + 1);
@@ -200,6 +230,8 @@ export default function ZapchasSection({
     );
   }
 
+  const todayPaymentEntries = Object.entries(summary.todayPaymentBreakdown || {});
+
   return (
     <div className="space-y-5 pb-6">
       {/* Header Role & Summary */}
@@ -215,8 +247,8 @@ export default function ZapchasSection({
               </h1>
               <p className="text-xs text-slate-500 dark:text-slate-400">
                 {permissions.canManage
-                  ? 'Kelgan-ketgan sonini boshqarish va sotuv'
-                  : 'Sotilgan zapchaslarni kiritish va qoldiq'}
+                  ? "Kelgan-ketgan soni, sotuv va to'lovlarni boshqarish"
+                  : "Zapchas sotish, to'lov kiritish va ombor qoldig'i"}
               </p>
             </div>
           </div>
@@ -299,6 +331,31 @@ export default function ZapchasSection({
           )}
         </div>
 
+        {/* Today Revenue & Debt strip for Managers/Admins */}
+        {permissions.canManage &&
+          ((summary.todaySalesRevenue || 0) > 0 || (summary.totalZapchasDebt || 0) > 0) && (
+            <div className="flex flex-wrap items-center justify-between gap-2 p-3 bg-blue-50/70 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/40 rounded-2xl text-xs">
+              <div>
+                <span className="text-slate-600 dark:text-slate-300 font-semibold">
+                  Bugungi Zapchas tushumi:{' '}
+                </span>
+                <b className="text-emerald-600 dark:text-emerald-400">
+                  {(summary.todaySalesRevenue || 0).toLocaleString()} so&apos;m
+                </b>
+                {todayPaymentEntries.length > 0 && (
+                  <span className="text-slate-500 dark:text-slate-400 ml-2">
+                    ({todayPaymentEntries.map(([m, a]) => `${m}: ${a.toLocaleString()}`).join(' • ')})
+                  </span>
+                )}
+              </div>
+              {(summary.totalZapchasDebt || 0) > 0 && (
+                <div className="text-rose-600 dark:text-rose-400 font-bold">
+                  Umumiy qarz: {(summary.totalZapchasDebt || 0).toLocaleString()} so&apos;m
+                </div>
+              )}
+            </div>
+          )}
+
         {/* Navigation Tabs for Manager & Admin */}
         {permissions.canManage && (
           <div className="grid grid-cols-4 gap-1.5 bg-slate-100 dark:bg-slate-800 p-1.5 rounded-2xl">
@@ -354,11 +411,12 @@ export default function ZapchasSection({
         )}
       </div>
 
-      {/* VIEW 1: SELLER FORM (or Manager/Admin Sell tab) */}
+      {/* VIEW 1: SELLER FORM (with Payment Methods!) */}
       {(!permissions.canManage || activeView === 'sell') && (
         <ZapchasSellForm
           telegramId={user.telegramId}
           parts={parts}
+          paymentMethods={paymentMethods}
           WebApp={WebApp}
           onSuccess={handleRefresh}
         />
@@ -374,7 +432,20 @@ export default function ZapchasSection({
         />
       )}
 
-      {/* VIEW 3: INVENTORY CATALOG (Full manage for Manager/Admin, Read-only for Seller) */}
+      {/* SELLER'S SALES HISTORY (grouped with payments & Pay Debt, right under Sell Form) */}
+      {!permissions.canManage && (
+        <ZapchasSalesList
+          telegramId={user.telegramId}
+          sales={sales}
+          paymentMethods={paymentMethods}
+          canManage={false}
+          selectedMonth={selectedMonth}
+          onMonthChange={setSelectedMonth}
+          onUpdated={handleRefresh}
+        />
+      )}
+
+      {/* VIEW 3: INVENTORY CATALOG */}
       {(activeView === 'stock' || !permissions.canManage) && (
         <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 shadow-sm border border-slate-100 dark:border-slate-800 space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -532,154 +603,196 @@ export default function ZapchasSection({
         </div>
       )}
 
-      {/* VIEW 4: MOVEMENT HISTORY (Full kelgan-ketgan for Manager/Admin, own sales for Seller) */}
-      {(activeView === 'history' || !permissions.canManage) && (
-        <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 shadow-sm border border-slate-100 dark:border-slate-800 space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className="text-base font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-              <History className="w-5 h-5 text-blue-600" />
-              {permissions.canManage
-                ? 'Kelgan-Ketgan Tarixi'
-                : 'Mening Sotgan Zapchaslarim'}
-            </h2>
-            <span className="text-xs font-bold text-slate-400">
-              {filteredTransactions.length} ta yozuv
-            </span>
+      {/* VIEW 4: MANAGER/ADMIN HISTORY (Switch between Sales+Payments and Stock Movements) */}
+      {permissions.canManage && activeView === 'history' && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-2 bg-white dark:bg-slate-900 p-1.5 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm">
+            <button
+              type="button"
+              onClick={() => setHistorySubTab('sales')}
+              className={`py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+                historySubTab === 'sales'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'text-slate-500 dark:text-slate-400'
+              }`}
+            >
+              <CreditCard className="w-4 h-4" />
+              Sotuvlar & To&apos;lovlar ({sales.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setHistorySubTab('movements')}
+              className={`py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+                historySubTab === 'movements'
+                  ? 'bg-slate-800 dark:bg-blue-600 text-white shadow-sm'
+                  : 'text-slate-500 dark:text-slate-400'
+              }`}
+            >
+              <History className="w-4 h-4" />
+              Kelgan-Ketgan ({transactions.length})
+            </button>
           </div>
 
-          {permissions.canManage && (
-            <div className="space-y-2">
-              <div className="relative flex items-center">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3 pointer-events-none" />
-                <input
-                  type="text"
-                  value={txSearch}
-                  onChange={(e) => setTxSearch(e.target.value)}
-                  placeholder="Zapchas, xodim, mijoz yoki izoh bo'yicha qidirish..."
-                  className="w-full pl-9 pr-3 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm dark:text-white outline-none focus:ring-2 focus:ring-blue-500"
-                />
+          {historySubTab === 'sales' ? (
+            <ZapchasSalesList
+              telegramId={user.telegramId}
+              sales={sales}
+              paymentMethods={paymentMethods}
+              canManage={true}
+              selectedMonth={selectedMonth}
+              onMonthChange={setSelectedMonth}
+              onUpdated={handleRefresh}
+            />
+          ) : (
+            <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 shadow-sm border border-slate-100 dark:border-slate-800 space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h2 className="text-base font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                  <History className="w-5 h-5 text-blue-600" />
+                  Kelgan-Ketgan Harakati
+                </h2>
+                <span className="text-xs font-bold text-slate-400">
+                  {filteredTransactions.length} ta yozuv
+                </span>
               </div>
 
-              <div className="flex flex-wrap gap-1.5">
-                {(
-                  [
-                    { key: 'ALL', label: 'Barchasi' },
-                    { key: 'IN', label: '📥 Kelgan' },
-                    { key: 'OUT', label: '📤 Ketgan' },
-                    { key: 'ADJUST', label: '⚖️ Tuzatilgan' },
-                  ] as const
-                ).map((opt) => (
-                  <button
-                    key={opt.key}
-                    type="button"
-                    onClick={() => setTxTypeFilter(opt.key)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors ${
-                      txTypeFilter === opt.key
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
+              <div className="space-y-2">
+                <div className="relative flex items-center">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={txSearch}
+                    onChange={(e) => setTxSearch(e.target.value)}
+                    placeholder="Zapchas, xodim, mijoz yoki izoh bo'yicha qidirish..."
+                    className="w-full pl-9 pr-3 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm dark:text-white outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div className="flex flex-wrap gap-1.5">
+                  {(
+                    [
+                      { key: 'ALL', label: 'Barchasi' },
+                      { key: 'IN', label: '📥 Kelgan' },
+                      { key: 'OUT', label: '📤 Ketgan' },
+                      { key: 'ADJUST', label: '⚖️ Tuzatilgan' },
+                    ] as const
+                  ).map((opt) => (
+                    <button
+                      key={opt.key}
+                      type="button"
+                      onClick={() => setTxTypeFilter(opt.key)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors ${
+                        txTypeFilter === opt.key
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2.5">
+                {filteredTransactions.length === 0 ? (
+                  <div className="text-center py-8 text-sm text-slate-400">
+                    Hali harakatlar qayd etilmagan.
+                  </div>
+                ) : (
+                  filteredTransactions.map((tx) => {
+                    const isIn = tx.type === 'IN';
+                    const isOut = tx.type === 'OUT';
+                    const sign = tx.quantityDelta > 0 ? '+' : '';
+                    return (
+                      <div
+                        key={tx.id}
+                        className="p-3.5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700/70 flex items-start justify-between gap-3"
+                      >
+                        <div className="min-w-0 space-y-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span
+                              className={`text-xs font-black px-2 py-0.5 rounded-lg ${
+                                isIn
+                                  ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300'
+                                  : isOut
+                                    ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-300'
+                                    : 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300'
+                              }`}
+                            >
+                              {sign}
+                              {tx.quantityDelta} {tx.part.unit}
+                            </span>
+                            <span className="font-bold text-sm text-slate-800 dark:text-slate-100">
+                              {tx.part.name}
+                            </span>
+                            {tx.zapchasSale && (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                                {tx.zapchasSale.paymentMethod}
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="text-[11px] text-slate-500 dark:text-slate-400 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                            {tx.user?.name && (
+                              <span>
+                                👤 <b>{tx.user.name}</b>
+                              </span>
+                            )}
+                            <span>
+                              • Qoldiq: <b>{tx.balanceAfter} {tx.part.unit}</b>
+                            </span>
+                            {tx.totalPrice ? (
+                              <span>• {tx.totalPrice.toLocaleString()} so&apos;m</span>
+                            ) : null}
+                          </div>
+
+                          {(tx.customerName || tx.note) && (
+                            <div className="text-[11px] text-slate-600 dark:text-slate-300">
+                              {tx.customerName && <span className="mr-2">🏷 {tx.customerName}</span>}
+                              {tx.note && <span className="italic">📝 {tx.note}</span>}
+                            </div>
+                          )}
+
+                          <div className="text-[10px] text-slate-400">
+                            {new Date(tx.createdAt).toLocaleDateString('uz-UZ', {
+                              timeZone: 'Asia/Tashkent',
+                            })}{' '}
+                            {new Date(tx.createdAt).toLocaleTimeString('uz-UZ', {
+                              timeZone: 'Asia/Tashkent',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </div>
+                        </div>
+
+                        {!tx.zapchasSaleId && (
+                          <div className="flex items-center gap-1 shrink-0">
+                            {tx.type !== 'ADJUST' && (
+                              <button
+                                type="button"
+                                onClick={() => setEditTxModal(tx)}
+                                className="p-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100"
+                                title="Tahrirlash"
+                              >
+                                <Edit2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteTx(tx)}
+                              className="p-1.5 bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 rounded-lg hover:bg-rose-100"
+                              title="O'chirish va qoldiqni qaytarish"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
               </div>
             </div>
           )}
-
-          <div className="space-y-2.5">
-            {filteredTransactions.length === 0 ? (
-              <div className="text-center py-8 text-sm text-slate-400">
-                Hali harakatlar qayd etilmagan.
-              </div>
-            ) : (
-              filteredTransactions.map((tx) => {
-                const isIn = tx.type === 'IN';
-                const isOut = tx.type === 'OUT';
-                const sign = tx.quantityDelta > 0 ? '+' : '';
-                return (
-                  <div
-                    key={tx.id}
-                    className="p-3.5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700/70 flex items-start justify-between gap-3"
-                  >
-                    <div className="min-w-0 space-y-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span
-                          className={`text-xs font-black px-2 py-0.5 rounded-lg ${
-                            isIn
-                              ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300'
-                              : isOut
-                                ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-300'
-                                : 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300'
-                          }`}
-                        >
-                          {sign}
-                          {tx.quantityDelta} {tx.part.unit}
-                        </span>
-                        <span className="font-bold text-sm text-slate-800 dark:text-slate-100">
-                          {tx.part.name}
-                        </span>
-                      </div>
-
-                      <div className="text-[11px] text-slate-500 dark:text-slate-400 flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                        {tx.user?.name && (
-                          <span>
-                            👤 <b>{tx.user.name}</b>
-                          </span>
-                        )}
-                        <span>
-                          • Qoldiq: <b>{tx.balanceAfter} {tx.part.unit}</b>
-                        </span>
-                        {tx.totalPrice ? (
-                          <span>• {tx.totalPrice.toLocaleString()} so&apos;m</span>
-                        ) : null}
-                      </div>
-
-                      {(tx.customerName || tx.note) && (
-                        <div className="text-[11px] text-slate-600 dark:text-slate-300">
-                          {tx.customerName && <span className="mr-2">🏷 {tx.customerName}</span>}
-                          {tx.note && <span className="italic">📝 {tx.note}</span>}
-                        </div>
-                      )}
-
-                      <div className="text-[10px] text-slate-400">
-                        {new Date(tx.createdAt).toLocaleDateString('uz-UZ', {
-                          timeZone: 'Asia/Tashkent',
-                        })}{' '}
-                        {new Date(tx.createdAt).toLocaleTimeString('uz-UZ', {
-                          timeZone: 'Asia/Tashkent',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                      </div>
-                    </div>
-
-                    {permissions.canManage && (
-                      <div className="flex items-center gap-1 shrink-0">
-                        {tx.type !== 'ADJUST' && (
-                          <button
-                            type="button"
-                            onClick={() => setEditTxModal(tx)}
-                            className="p-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100"
-                            title="Tahrirlash"
-                          >
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteTx(tx)}
-                          className="p-1.5 bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 rounded-lg hover:bg-rose-100"
-                          title="O'chirish va qoldiqni qaytarish"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                );
-              })
-            )}
-          </div>
         </div>
       )}
 

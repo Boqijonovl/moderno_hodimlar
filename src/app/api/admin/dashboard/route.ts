@@ -19,7 +19,7 @@ export async function GET() {
   try {
     const { start: todayStart, end: todayEnd, todayDateMidnight } = getTashkentTodayRange();
 
-    const [sales, todayPayments, attendance, totalStoreDebtAggregate, zapchasParts, todayZapchasGrouped] = await Promise.all([
+    const [sales, todayPayments, attendance, totalStoreDebtAggregate, zapchasParts, todayZapchasGrouped, todayZapchasRevenueAgg] = await Promise.all([
       prisma.sale.findMany({
         where: { createdAt: { gte: todayStart, lte: todayEnd } },
         include: { user: true, items: true, payments: true }
@@ -47,6 +47,10 @@ export async function GET() {
         by: ['type'],
         where: { createdAt: { gte: todayStart, lte: todayEnd } },
         _sum: { quantity: true }
+      }),
+      prisma.zapchasSalePayment.aggregate({
+        where: { createdAt: { gte: todayStart, lte: todayEnd } },
+        _sum: { amount: true }
       })
     ]);
 
@@ -133,7 +137,8 @@ export async function GET() {
         totalStock: zapchasParts.reduce((sum, p) => sum + p.quantity, 0),
         lowStockCount: zapchasParts.filter(p => p.quantity <= 0 || (p.minQuantity > 0 && p.quantity <= p.minQuantity)).length,
         todayIn: todayZapchasIn,
-        todayOut: todayZapchasOut
+        todayOut: todayZapchasOut,
+        todayRevenue: todayZapchasRevenueAgg._sum.amount || 0
       },
       chartData,
       recentSales: await prisma.sale.findMany({

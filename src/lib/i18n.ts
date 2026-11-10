@@ -5,7 +5,6 @@ export const translations = {
     menu_attendance: "Davomat",
     menu_sales: "Savdolar",
     menu_zapchas: "Zapchas",
-    menu_constructor: "Konstruktor",
     menu_settings: "Sozlamalar",
     
     // Admin Panel
@@ -82,7 +81,6 @@ export const translations = {
     menu_attendance: "Посещаемость",
     menu_sales: "Продажи",
     menu_zapchas: "Запчасти",
-    menu_constructor: "Конструктор",
     menu_settings: "Настройки",
     
     // Admin Panel

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { User, Settings, Globe, Palette, ShieldAlert, Wrench } from 'lucide-react';
+import { User, Settings, Globe, Palette, ShieldAlert } from 'lucide-react';
 import Link from 'next/link';
 import { useTranslation, Language } from '@/lib/i18n';
 
@@ -67,31 +67,6 @@ export default function SettingsTab({ user, onUserUpdate }: { user: any, onUserU
           </p>
           <Link href="/admin" className="inline-flex items-center justify-center w-full bg-white text-blue-600 hover:bg-blue-50 font-bold rounded-xl p-3 transition-colors">
             {t('go_to_panel')}
-          </Link>
-        </div>
-      )}
-
-      {/* Zapchaslar Bo'limi */}
-      {(user?.role === 'ADMIN' || user?.canManageZapchas || user?.canUseZapchas !== false) && (
-        <div className="bg-gradient-to-r from-slate-900 to-slate-800 rounded-3xl p-6 shadow-md text-white border border-slate-700/60">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2.5 rounded-2xl bg-blue-600/30 text-blue-400 border border-blue-500/30">
-              <Wrench className="w-6 h-6" />
-            </div>
-            <div>
-              <h2 className="text-lg font-bold">Zapchaslar (Ombor & Sotuv)</h2>
-              <p className="text-slate-400 text-xs">
-                {user?.role === 'ADMIN' || user?.canManageZapchas
-                  ? "Kelgan-ketgan zapchaslarni boshqarish"
-                  : "Zapchas sotuvlarini kiritish"}
-              </p>
-            </div>
-          </div>
-          <p className="text-slate-300 text-xs mb-4">
-            Ombordagi zapchaslar sonini kuzating va sotilgan zapchaslarni tezkor kiriting.
-          </p>
-          <Link href="/zapchas" className="inline-flex items-center justify-center w-full bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl p-3 text-xs transition-colors shadow-lg shadow-blue-500/20">
-            🔧 Zapchaslar Bo&apos;limini Ochish
           </Link>
         </div>
       )}

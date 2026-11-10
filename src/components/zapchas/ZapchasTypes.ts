@@ -14,6 +14,11 @@ export interface TelegramWebAppProp {
   };
 }
 
+export interface PaymentMethodOption {
+  id: string;
+  name: string;
+}
+
 export interface ZapchasPartItem {
   id: string;
   name: string;
@@ -31,6 +36,7 @@ export interface ZapchasPartItem {
 export interface ZapchasTxItem {
   id: string;
   partId: string;
+  zapchasSaleId?: string | null;
   type: 'IN' | 'OUT' | 'ADJUST' | string;
   quantity: number;
   quantityDelta: number;
@@ -52,6 +58,54 @@ export interface ZapchasTxItem {
     role: string;
     telegramId?: string;
   };
+  zapchasSale?: {
+    id: string;
+    paymentMethod: string;
+    totalPrice: number;
+    advance: number;
+    balance: number;
+    status: string;
+  } | null;
+}
+
+export interface ZapchasSalePaymentItem {
+  id: string;
+  method: string;
+  amount: number;
+  createdAt: string;
+}
+
+export interface ZapchasSaleItem {
+  id: string;
+  userId: string;
+  customerName: string | null;
+  customerPhone: string | null;
+  totalPrice: number;
+  advance: number;
+  balance: number;
+  paymentMethod: string;
+  status: string;
+  note: string | null;
+  createdAt: string;
+  user?: {
+    id: string;
+    name: string;
+    role: string;
+  };
+  payments: ZapchasSalePaymentItem[];
+  transactions: Array<{
+    id: string;
+    partId: string;
+    quantity: number;
+    unitPrice: number | null;
+    totalPrice: number | null;
+    balanceAfter: number;
+    part: {
+      id: string;
+      name: string;
+      unit: string;
+    };
+  }>;
 }
 
 export interface ZapchasSummary {
@@ -61,6 +115,9 @@ export interface ZapchasSummary {
   lowStockCount: number;
   todayIn: number;
   todayOut: number;
+  todaySalesRevenue?: number;
+  totalZapchasDebt?: number;
+  todayPaymentBreakdown?: Record<string, number>;
 }
 
 export interface ZapchasPermissions {
@@ -75,6 +132,27 @@ export function formatAmountInput(val: string): string {
   const raw = val.replace(/\D/g, '');
   if (!raw) return '';
   return Number(raw).toLocaleString('uz-UZ').replace(/,/g, ' ');
+}
+
+export function parseNumericInput(val: string): number {
+  return parseFloat(val.replace(/\s/g, '')) || 0;
+}
+
+export function formatPhoneNumberInput(val: string): string {
+  if (!val || val === '+998' || val === '+998 ') return '';
+  let digits = val.replace(/\D/g, '');
+  if (digits.startsWith('998')) {
+    digits = digits.slice(3);
+  }
+  digits = digits.slice(0, 9);
+  if (!digits) return '';
+
+  let res = '+998';
+  if (digits.length > 0) res += ' ' + digits.slice(0, 2);
+  if (digits.length > 2) res += ' ' + digits.slice(2, 5);
+  if (digits.length > 5) res += ' ' + digits.slice(5, 7);
+  if (digits.length > 7) res += ' ' + digits.slice(7, 9);
+  return res;
 }
 
 export function getStockStatusBadge(quantity: number, minQuantity: number) {

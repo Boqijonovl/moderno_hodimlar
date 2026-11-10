@@ -34,7 +34,7 @@ export async function handleDailyReport(targetTelegramId?: string) {
     const startDate = new Date(Date.UTC(year, month - 1, day, -6, 0, 0));
     const endDate = new Date(Date.UTC(year, month - 1, day + 1, 6, 0, 0));
 
-    const [rawSales, rawSalePayments, rawExpenses, totalStoreDebtAggregate, rawZapchasTx] = await Promise.all([
+    const [rawSales, rawSalePayments, rawExpenses, totalStoreDebtAggregate, rawZapchasTx, rawZapchasPayments] = await Promise.all([
       prisma.sale.findMany({
         where: {
           OR: [
@@ -58,6 +58,9 @@ export async function handleDailyReport(targetTelegramId?: string) {
       }),
       prisma.zapchasTransaction.findMany({
         where: { createdAt: { gte: startDate, lte: endDate } }
+      }),
+      prisma.zapchasSalePayment.findMany({
+        where: { createdAt: { gte: startDate, lte: endDate } }
       })
     ]);
 
@@ -68,6 +71,9 @@ export async function handleDailyReport(targetTelegramId?: string) {
     const todayZapchas = rawZapchasTx.filter(z => toTashkentDate(z.createdAt) === todayStr);
     const todayZapchasIn = todayZapchas.filter(z => z.type === 'IN').reduce((sum, z) => sum + z.quantity, 0);
     const todayZapchasOut = todayZapchas.filter(z => z.type === 'OUT').reduce((sum, z) => sum + z.quantity, 0);
+    const todayZapchasRevenue = rawZapchasPayments
+      .filter(p => toTashkentDate(p.createdAt) === todayStr)
+      .reduce((sum, p) => sum + p.amount, 0);
 
     const totalSales = todaySales.reduce((sum, s) => sum + (s.totalPrice || 0), 0);
     let totalReceived = todayPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
@@ -146,8 +152,9 @@ export async function handleDailyReport(targetTelegramId?: string) {
     }
 
     let zapchasText = '';
-    if (todayZapchasIn > 0 || todayZapchasOut > 0) {
-      zapchasText = `\n🔧 <b>Zapchas harakati:</b> Keldi +${todayZapchasIn} | Ketdi/Sotildi -${todayZapchasOut}`;
+    if (todayZapchasIn > 0 || todayZapchasOut > 0 || todayZapchasRevenue > 0) {
+      const revStr = todayZapchasRevenue > 0 ? ` | Tushum: ${todayZapchasRevenue.toLocaleString()} so'm` : '';
+      zapchasText = `\n🔧 <b>Zapchas harakati:</b> Keldi +${todayZapchasIn} | Ketdi/Sotildi -${todayZapchasOut}${revStr}`;
     }
 
     const reportMessage = 

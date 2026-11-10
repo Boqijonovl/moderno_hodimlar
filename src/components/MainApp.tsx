@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Clock, Package, Wallet, Settings as SettingsIcon, Ruler, Wrench } from 'lucide-react';
+import { Clock, Package, Wallet, Settings as SettingsIcon, Wrench } from 'lucide-react';
 import AttendanceTab from '@/components/tabs/AttendanceTab';
 import SalesTab from '@/components/tabs/SalesTab';
 import ExpensesTab from '@/components/tabs/ExpensesTab';
@@ -74,32 +74,6 @@ export default function MainApp() {
     }
   };
 
-  // Open Furniture Constructor in External Browser with Personalized Access Token
-  const handleOpenConstructor = async () => {
-    if (!user?.telegramId) return;
-    try {
-      const res = await fetch('/api/constructor/token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ telegramId: user.telegramId })
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        alert(data.error || 'Konstruktorga kirishda xatolik yuz berdi');
-        return;
-      }
-      const appOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://moderno-hodimlar.vercel.app';
-      const constructorUrl = `${appOrigin}/constructor?token=${data.token}`;
-      if (WebApp && typeof WebApp.openLink === 'function') {
-        WebApp.openLink(constructorUrl);
-      } else {
-        window.open(constructorUrl, '_blank');
-      }
-    } catch (e: any) {
-      alert("Tarmoq xatosi: " + e.message);
-    }
-  };
-
   const t = useTranslation(user?.language as Language);
 
   // Wait for user to be loaded
@@ -156,7 +130,6 @@ export default function MainApp() {
   const showSales = user.canUseSales !== false;
   const showExpenses = user.canUseExpenses !== false;
   const showZapchas = user.role === 'ADMIN' || user.canManageZapchas === true || user.canUseZapchas !== false;
-  const showConstructor = user.role === 'ADMIN' || user.canUseConstructor === true;
   
   let currentTab = activeTab;
   if (!showAttendance && currentTab === 'attendance') {
@@ -171,35 +144,19 @@ export default function MainApp() {
 
   return (
     <main className="min-h-screen bg-slate-50/50 dark:bg-slate-950 flex flex-col pb-[80px] font-sans">
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-800 dark:to-indigo-900 text-white p-6 shadow-lg rounded-b-3xl shrink-0 z-10 relative flex justify-between items-center gap-3">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Moderno Mebel</h1>
-          <p className="text-blue-100 dark:text-blue-200 mt-1 font-medium">
-            {currentTab === 'attendance'
-              ? t('menu_attendance')
-              : currentTab === 'sales'
-                ? t('menu_sales')
-                : currentTab === 'expenses'
-                  ? t('menu_expenses')
-                  : currentTab === 'zapchas'
-                    ? t('menu_zapchas')
-                    : t('menu_settings')}
-          </p>
-        </div>
-        {showZapchas && (
-          <button
-            type="button"
-            onClick={() => setActiveTab('zapchas')}
-            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-2xl backdrop-blur-md text-xs font-bold transition-all shadow-md hover:scale-105 active:scale-95 shrink-0 border ${
-              currentTab === 'zapchas'
-                ? 'bg-white text-blue-700 border-white'
-                : 'bg-white/20 hover:bg-white/30 text-white border-white/20'
-            }`}
-          >
-            <Wrench className={`w-4 h-4 ${currentTab === 'zapchas' ? 'text-blue-600' : 'text-blue-200'}`} />
-            <span>{t('menu_zapchas')}</span>
-          </button>
-        )}
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-800 dark:to-indigo-900 text-white p-6 shadow-lg rounded-b-3xl shrink-0 z-10 relative">
+        <h1 className="text-2xl font-bold tracking-tight">Moderno Mebel</h1>
+        <p className="text-blue-100 dark:text-blue-200 mt-1 font-medium">
+          {currentTab === 'attendance'
+            ? t('menu_attendance')
+            : currentTab === 'sales'
+              ? t('menu_sales')
+              : currentTab === 'expenses'
+                ? t('menu_expenses')
+                : currentTab === 'zapchas'
+                  ? t('menu_zapchas')
+                  : t('menu_settings')}
+        </p>
       </div>
 
       <div className="flex-1 overflow-x-hidden overflow-y-auto p-4 relative z-0 mt-[-20px] pt-[40px]">
@@ -258,22 +215,6 @@ export default function MainApp() {
           >
             <Wrench className={`w-5 h-5 sm:w-6 sm:h-6 mb-1 ${currentTab === 'zapchas' ? 'fill-blue-50 dark:fill-blue-900' : ''}`} />
             <span className="text-[10px] font-bold truncate max-w-full">{t('menu_zapchas')}</span>
-          </button>
-        )}
-
-        {showConstructor && (
-          <button 
-            onClick={handleOpenConstructor}
-            className="flex flex-col items-center justify-center transition-all duration-300 flex-1 min-w-0 px-0.5 text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 group relative"
-            title="Mebel Konstruktor (Brauzerda ochish)"
-          >
-            <div className="relative">
-              <Ruler className="w-5 h-5 sm:w-6 sm:h-6 mb-1 text-slate-400 dark:text-slate-500 group-hover:text-blue-600 dark:group-hover:text-blue-400 group-hover:scale-110 transition-all" />
-              <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-            </div>
-            <span className="text-[10px] font-bold truncate max-w-full text-slate-400 dark:text-slate-500 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-              {t('menu_constructor')}
-            </span>
           </button>
         )}
 

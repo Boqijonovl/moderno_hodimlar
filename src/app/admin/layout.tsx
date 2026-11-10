@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { Home, Users, BarChart3, Settings, Clock, ArrowLeft, Bell, FileText, Sparkles } from 'lucide-react';
+import { Home, Users, BarChart3, Settings, Clock, ArrowLeft, Bell, FileText, Sparkles, Wrench } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -69,15 +69,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       <div className="bg-white/80 backdrop-blur-md border-b border-slate-200 px-4 py-3 flex justify-between items-center shadow-sm sticky top-0 z-40">
         <div className="font-bold text-slate-800">Admin Panel</div>
-        <div className="flex items-center gap-2">
-          <Link href="/admin/zapchas" className="flex items-center gap-1 text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1.5 rounded-lg transition-colors">
-            🔧 Zapchas
-          </Link>
-          <Link href="/" className="flex items-center gap-1 text-xs font-semibold text-blue-600 bg-blue-50 px-2.5 py-1.5 rounded-lg hover:bg-blue-100 transition-colors">
-            <ArrowLeft className="w-3.5 h-3.5" />
-            Ilovaga
-          </Link>
-        </div>
+        <Link href="/" className="flex items-center gap-1 text-xs font-semibold text-blue-600 bg-blue-50 px-2.5 py-1.5 rounded-lg hover:bg-blue-100 transition-colors">
+          <ArrowLeft className="w-3.5 h-3.5" />
+          Ilovaga
+        </Link>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4">
@@ -92,30 +87,34 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <Sparkles className="w-6 h-6" />
       </Link>
       
-      <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-slate-200 flex justify-around p-3 pb-safe z-50">
-        <Link href="/admin" className="flex flex-col items-center text-slate-500 hover:text-blue-600 transition-colors">
-          <Home className="w-6 h-6" />
-          <span className="text-[10px] font-medium mt-1">Asosiy</span>
+      <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-slate-200 flex justify-around px-1 py-2.5 pb-safe z-50">
+        <Link href="/admin" className="flex flex-col items-center flex-1 min-w-0 text-slate-500 hover:text-blue-600 transition-colors">
+          <Home className="w-5 h-5 sm:w-6 sm:h-6" />
+          <span className="text-[10px] font-medium mt-1 truncate max-w-full">Asosiy</span>
         </Link>
-        <Link href="/admin/attendance" className="flex flex-col items-center text-slate-500 hover:text-blue-600 transition-colors">
-          <Clock className="w-6 h-6" />
-          <span className="text-[10px] font-medium mt-1">Davomat</span>
+        <Link href="/admin/attendance" className="flex flex-col items-center flex-1 min-w-0 text-slate-500 hover:text-blue-600 transition-colors">
+          <Clock className="w-5 h-5 sm:w-6 sm:h-6" />
+          <span className="text-[10px] font-medium mt-1 truncate max-w-full">Davomat</span>
         </Link>
-        <Link href="/admin/sales" className="flex flex-col items-center text-slate-500 hover:text-blue-600 transition-colors">
-          <BarChart3 className="w-6 h-6" />
-          <span className="text-[10px] font-medium mt-1">Savdolar</span>
+        <Link href="/admin/sales" className="flex flex-col items-center flex-1 min-w-0 text-slate-500 hover:text-blue-600 transition-colors">
+          <BarChart3 className="w-5 h-5 sm:w-6 sm:h-6" />
+          <span className="text-[10px] font-medium mt-1 truncate max-w-full">Savdolar</span>
         </Link>
-        <Link href="/admin/users" className="flex flex-col items-center text-slate-500 hover:text-blue-600 transition-colors">
-          <Users className="w-6 h-6" />
-          <span className="text-[10px] font-medium mt-1">Xodimlar</span>
+        <Link href="/admin/zapchas" className="flex flex-col items-center flex-1 min-w-0 text-slate-500 hover:text-blue-600 transition-colors">
+          <Wrench className="w-5 h-5 sm:w-6 sm:h-6" />
+          <span className="text-[10px] font-medium mt-1 truncate max-w-full">Zapchas</span>
         </Link>
-        <Link href="/admin/reports" className="flex flex-col items-center text-slate-500 hover:text-blue-600 transition-colors">
-          <FileText className="w-6 h-6" />
-          <span className="text-[10px] font-medium mt-1">Hisobot</span>
+        <Link href="/admin/users" className="flex flex-col items-center flex-1 min-w-0 text-slate-500 hover:text-blue-600 transition-colors">
+          <Users className="w-5 h-5 sm:w-6 sm:h-6" />
+          <span className="text-[10px] font-medium mt-1 truncate max-w-full">Xodimlar</span>
         </Link>
-        <Link href="/admin/settings" className="flex flex-col items-center text-slate-500 hover:text-blue-600 transition-colors">
-          <Settings className="w-6 h-6" />
-          <span className="text-[10px] font-medium mt-1">Sozlamalar</span>
+        <Link href="/admin/reports" className="flex flex-col items-center flex-1 min-w-0 text-slate-500 hover:text-blue-600 transition-colors">
+          <FileText className="w-5 h-5 sm:w-6 sm:h-6" />
+          <span className="text-[10px] font-medium mt-1 truncate max-w-full">Hisobot</span>
+        </Link>
+        <Link href="/admin/settings" className="flex flex-col items-center flex-1 min-w-0 text-slate-500 hover:text-blue-600 transition-colors">
+          <Settings className="w-5 h-5 sm:w-6 sm:h-6" />
+          <span className="text-[10px] font-medium mt-1 truncate max-w-full">Sozlamalar</span>
         </Link>
       </div>
     </div>

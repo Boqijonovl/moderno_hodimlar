@@ -32,6 +32,12 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
       if (!existingTx) {
         throw new ZapchasValidationError('Harakat yozuvi topilmadi.', 404);
       }
+      if (existingTx.zapchasSaleId) {
+        throw new ZapchasValidationError(
+          "Bu yozuv to'lovli zapchas savdosiga biriktirilgan. Uni 'Sotuvlar' ro'yxatidan boshqaring.",
+          400
+        );
+      }
 
       let newQty = existingTx.quantity;
       let newDelta = existingTx.quantityDelta;
@@ -138,6 +144,12 @@ export async function DELETE(req: Request, props: { params: Promise<{ id: string
       });
       if (!existingTx) {
         throw new ZapchasValidationError('Harakat yozuvi topilmadi.', 404);
+      }
+      if (existingTx.zapchasSaleId) {
+        throw new ZapchasValidationError(
+          "Bu yozuv to'lovli zapchas savdosiga biriktirilgan. Uni 'Sotuvlar' ro'yxatidan boshqaring.",
+          400
+        );
       }
 
       const revertedQty = existingTx.part.quantity - existingTx.quantityDelta;

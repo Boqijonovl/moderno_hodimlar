@@ -21,8 +21,6 @@ model User {
   canUseOrders      Boolean              @default(true)
   canUseZapchas     Boolean              @default(true)
   canManageZapchas  Boolean              @default(false)
-  canUseConstructor Boolean              @default(false)
-  constructorToken  String?              @unique
   workStartTime     String               @default("09:00")
   workEndTime       String               @default("18:00")
   language          String               @default("uz") // uz, ru
@@ -34,6 +32,7 @@ model User {
   assignedOrders    Order[]              @relation("AssignedOrders")
   createdOrders     Order[]              @relation("CreatedOrders")
   zapchasLogs       ZapchasTransaction[] @relation("ZapchasActor")
+  zapchasSales      ZapchasSale[]        @relation("ZapchasSeller")
 }
 
 model Attendance {
@@ -176,11 +175,41 @@ model ZapchasPart {
   transactions ZapchasTransaction[]
 }
 
+model ZapchasSale {
+  id            String               @id @default(uuid())
+  userId        String
+  user          User                 @relation("ZapchasSeller", fields: [userId], references: [id])
+  customerName  String?
+  customerPhone String?
+  totalPrice    Float                @default(0)
+  advance       Float                @default(0)
+  balance       Float                @default(0)
+  paymentMethod String               @default("Naqd")
+  status        String               @default("COMPLETED") // COMPLETED, INCOMPLETE
+  note          String?
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+  transactions  ZapchasTransaction[]
+  payments      ZapchasSalePayment[]
+}
+
+model ZapchasSalePayment {
+  id        String      @id @default(uuid())
+  saleId    String
+  sale      ZapchasSale @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  method    String
+  amount    Float
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+}
+
 model ZapchasTransaction {
-  id            String      @id @default(uuid())
+  id            String       @id @default(uuid())
   partId        String
-  part          ZapchasPart @relation(fields: [partId], references: [id], onDelete: Cascade)
-  type          String      // IN, OUT, ADJUST
+  part          ZapchasPart  @relation(fields: [partId], references: [id], onDelete: Cascade)
+  zapchasSaleId String?
+  zapchasSale   ZapchasSale? @relation(fields: [zapchasSaleId], references: [id], onDelete: Cascade)
+  type          String       // IN, OUT, ADJUST
   quantity      Int
   quantityDelta Int
   balanceAfter  Int
@@ -189,7 +218,7 @@ model ZapchasTransaction {
   customerName  String?
   note          String?
   userId        String
-  user          User        @relation("ZapchasActor", fields: [userId], references: [id])
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  user          User         @relation("ZapchasActor", fields: [userId], references: [id])
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
 }

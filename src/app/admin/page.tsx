@@ -92,6 +92,12 @@ export default function AdminDashboard() {
              <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Ketgan</p>
            </div>
         </div>
+        {(data.zapchas?.todayRevenue ?? 0) > 0 && (
+          <div className="mt-3 pt-3 border-t border-slate-100 flex justify-between items-center text-xs">
+            <span className="text-slate-500 font-medium">Bugungi Zapchas tushumi:</span>
+            <span className="font-bold text-emerald-600">{data.zapchas.todayRevenue.toLocaleString()} so&apos;m</span>
+          </div>
+        )}
       </div>
 
       <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 mt-6">

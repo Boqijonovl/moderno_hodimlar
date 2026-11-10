@@ -16,21 +16,12 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
       canUseOrders, 
       canUseZapchas,
       canManageZapchas,
-      canUseConstructor, 
-      regenerateToken, 
       workStartTime, 
       workEndTime, 
       phone 
     } = body;
 
     const existingUser = await prisma.user.findUnique({ where: { id } });
-    let tokenUpdate: string | undefined = undefined;
-
-    if (regenerateToken) {
-      tokenUpdate = crypto.randomUUID();
-    } else if (canUseConstructor === true && !existingUser?.constructorToken) {
-      tokenUpdate = crypto.randomUUID();
-    }
 
     const user = await prisma.user.update({
       where: { id },
@@ -43,8 +34,6 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
         canUseOrders: canUseOrders !== undefined ? canUseOrders : undefined,
         canUseZapchas: canUseZapchas !== undefined ? canUseZapchas : undefined,
         canManageZapchas: canManageZapchas !== undefined ? canManageZapchas : undefined,
-        canUseConstructor: canUseConstructor !== undefined ? canUseConstructor : undefined,
-        constructorToken: tokenUpdate !== undefined ? tokenUpdate : undefined,
         workStartTime: workStartTime !== undefined ? workStartTime : undefined,
         workEndTime: workEndTime !== undefined ? workEndTime : undefined,
         phone: phone !== undefined ? phone : undefined
