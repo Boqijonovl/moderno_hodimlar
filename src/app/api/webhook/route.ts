@@ -360,12 +360,12 @@ bot.hears(['🔧 Zapchaslar', '/zapchas'], async (ctx) => {
       msg += `Ombordagi mavjud zapchaslarni ko'rish va sotilgan zapchaslarni tizimga kiritish uchun quyidagi tugmani bosing:`;
     }
 
-    const keyboard: Array<Array<{ text: string; web_app: { url: string } }>> = [
-      [{ text: "🔧 Zapchas bo'limini ochish", web_app: { url: `${webAppUrl}/zapchas` } }],
-    ];
-    if (isAdmin) {
-      keyboard.push([{ text: '🛡 Admin Zapchas Boshqaruvi', web_app: { url: `${webAppUrl}/admin/zapchas` } }]);
-    }
+    const keyboard: Array<Array<{ text: string; web_app: { url: string } }>> = isAdmin
+      ? [
+          [{ text: '🛡 Admin Zapchas Nazorati', web_app: { url: `${webAppUrl}/admin/zapchas` } }],
+          [{ text: '📱 Sotish (Asosiy Ilova)', web_app: { url: webAppUrl } }],
+        ]
+      : [[{ text: "🔧 Zapchas bo'limini ochish", web_app: { url: `${webAppUrl}/zapchas` } }]];
 
     await ctx.reply(msg, {
       parse_mode: 'HTML',

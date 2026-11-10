@@ -5,6 +5,7 @@ import {
   AlertTriangle,
   ArrowDownLeft,
   ArrowUpRight,
+  BarChart3,
   Boxes,
   CreditCard,
   Edit2,
@@ -20,6 +21,7 @@ import {
 import ZapchasSellForm from './zapchas/ZapchasSellForm';
 import ZapchasInForm from './zapchas/ZapchasInForm';
 import ZapchasSalesList from './zapchas/ZapchasSalesList';
+import ZapchasAnalyticsPanel from './zapchas/ZapchasAnalyticsPanel';
 import {
   EditTransactionModal,
   PartFormModal,
@@ -28,6 +30,7 @@ import {
 import {
   PaymentMethodOption,
   TelegramWebAppProp,
+  ZapchasAnalytics,
   ZapchasPartItem,
   ZapchasPermissions,
   ZapchasSaleItem,
@@ -37,24 +40,30 @@ import {
   getStockStatusBadge,
 } from './zapchas/ZapchasTypes';
 
-type ZapchasTabKey = 'sell' | 'in' | 'stock' | 'history';
+type ZapchasTabKey = 'sell' | 'in' | 'stock' | 'history' | 'analytics';
 
 export default function ZapchasSection({
   user,
   WebApp,
+  viewScope = 'app',
   initialView,
   onDataChanged,
 }: {
   user: ZapchasUserProp;
   WebApp: TelegramWebAppProp | null;
+  viewScope?: 'app' | 'admin';
   initialView?: ZapchasTabKey;
   onDataChanged?: () => void;
 }) {
-  const isDefaultManager =
+  const isUserAdmin =
     user?.role === 'ADMIN' ||
-    user?.canManageZapchas === true ||
     user?.telegramId === '1037362053' ||
     user?.telegramId === '3491381';
+
+  const isDefaultManager =
+    viewScope === 'admin'
+      ? isUserAdmin
+      : !isUserAdmin && user?.canManageZapchas === true;
 
   const [activeView, setActiveView] = useState<ZapchasTabKey>(
     initialView || (isDefaultManager ? 'stock' : 'sell')
@@ -63,6 +72,7 @@ export default function ZapchasSection({
   const [parts, setParts] = useState<ZapchasPartItem[]>([]);
   const [transactions, setTransactions] = useState<ZapchasTxItem[]>([]);
   const [sales, setSales] = useState<ZapchasSaleItem[]>([]);
+  const [analytics, setAnalytics] = useState<ZapchasAnalytics | null>(null);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethodOption[]>([]);
   const [selectedMonth, setSelectedMonth] = useState('');
   const [summary, setSummary] = useState<ZapchasSummary>({
@@ -79,13 +89,13 @@ export default function ZapchasSection({
   const [permissions, setPermissions] = useState<ZapchasPermissions>({
     canSell: true,
     canManage: isDefaultManager,
-    isAdmin: user?.role === 'ADMIN',
+    isAdmin: isUserAdmin,
   });
   const [loading, setLoading] = useState(true);
 
   // Filters
   const [stockSearch, setStockSearch] = useState('');
-  const [stockFilter, setStockFilter] = useState<'all' | 'low'>('all');
+  const [stockFilter, setStockFilter] = useState<'all' | 'available' | 'low'>('all');
   const [txTypeFilter, setTxTypeFilter] = useState<'ALL' | 'IN' | 'OUT' | 'ADJUST'>('ALL');
   const [txSearch, setTxSearch] = useState('');
 
@@ -123,7 +133,7 @@ export default function ZapchasSection({
     let cancelled = false;
     async function load() {
       try {
-        const url = `/api/zapchas?telegramId=${encodeURIComponent(telegramId)}${
+        const url = `/api/zapchas?telegramId=${encodeURIComponent(telegramId)}&scope=${viewScope}${
           selectedMonth ? `&month=${encodeURIComponent(selectedMonth)}` : ''
         }`;
         const res = await fetch(url);
@@ -132,6 +142,7 @@ export default function ZapchasSection({
           setParts(data.parts || []);
           setTransactions(data.transactions || []);
           setSales(data.sales || []);
+          setAnalytics(data.analytics || null);
           if (data.summary) setSummary(data.summary);
           if (data.permissions) setPermissions(data.permissions);
         }
@@ -145,7 +156,7 @@ export default function ZapchasSection({
     return () => {
       cancelled = true;
     };
-  }, [telegramId, selectedMonth, reloadKey]);
+  }, [telegramId, viewScope, selectedMonth, reloadKey]);
 
   const handleRefresh = () => {
     setReloadKey((k) => k + 1);
@@ -206,7 +217,12 @@ export default function ZapchasSection({
         (p.note || '').toLowerCase().includes(stockSearch.trim().toLowerCase())
       : true;
     const isLow = p.quantity <= 0 || (p.minQuantity > 0 && p.quantity <= p.minQuantity);
-    const matchesFilter = stockFilter === 'all' ? true : isLow;
+    const matchesFilter =
+      stockFilter === 'all'
+        ? true
+        : stockFilter === 'available'
+          ? p.quantity > 0
+          : isLow;
     return matchesSearch && matchesFilter;
   });
 
@@ -247,7 +263,7 @@ export default function ZapchasSection({
               </h1>
               <p className="text-xs text-slate-500 dark:text-slate-400">
                 {permissions.canManage
-                  ? "Kelgan-ketgan soni, sotuv va to'lovlarni boshqarish"
+                  ? "Kelgan-ketgan soni, sotuv, to'lovlar va nazorat"
                   : "Zapchas sotish, to'lov kiritish va ombor qoldig'i"}
               </p>
             </div>
@@ -255,7 +271,7 @@ export default function ZapchasSection({
 
           <span
             className={`text-[11px] font-bold px-3 py-1 rounded-full flex items-center gap-1 ${
-              permissions.isAdmin
+              permissions.canManage && viewScope === 'admin'
                 ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300'
                 : permissions.canManage
                   ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
@@ -263,11 +279,11 @@ export default function ZapchasSection({
             }`}
           >
             <ShieldCheck className="w-3.5 h-3.5" />
-            {permissions.isAdmin
-              ? 'Admin'
+            {permissions.canManage && viewScope === 'admin'
+              ? 'Admin Nazorati'
               : permissions.canManage
                 ? "Mas'ul Boshqaruvchi"
-                : 'Sotuvchi'}
+                : 'Sotish Rejimi'}
           </span>
         </div>
 
@@ -356,13 +372,13 @@ export default function ZapchasSection({
             </div>
           )}
 
-        {/* Navigation Tabs for Manager & Admin */}
+        {/* Navigation Tabs for Manager (in app) & Admin (in /admin/zapchas) */}
         {permissions.canManage && (
-          <div className="grid grid-cols-4 gap-1.5 bg-slate-100 dark:bg-slate-800 p-1.5 rounded-2xl">
+          <div className="grid grid-cols-5 gap-1 bg-slate-100 dark:bg-slate-800 p-1.5 rounded-2xl">
             <button
               type="button"
               onClick={() => setActiveView('stock')}
-              className={`py-2 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-all ${
+              className={`py-2 px-1 rounded-xl text-[11px] font-bold flex flex-col sm:flex-row items-center justify-center gap-1 transition-all ${
                 activeView === 'stock'
                   ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-sm'
                   : 'text-slate-500 dark:text-slate-400'
@@ -374,7 +390,7 @@ export default function ZapchasSection({
             <button
               type="button"
               onClick={() => setActiveView('in')}
-              className={`py-2 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-all ${
+              className={`py-2 px-1 rounded-xl text-[11px] font-bold flex flex-col sm:flex-row items-center justify-center gap-1 transition-all ${
                 activeView === 'in'
                   ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm'
                   : 'text-slate-500 dark:text-slate-400'
@@ -386,7 +402,7 @@ export default function ZapchasSection({
             <button
               type="button"
               onClick={() => setActiveView('sell')}
-              className={`py-2 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-all ${
+              className={`py-2 px-1 rounded-xl text-[11px] font-bold flex flex-col sm:flex-row items-center justify-center gap-1 transition-all ${
                 activeView === 'sell'
                   ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm'
                   : 'text-slate-500 dark:text-slate-400'
@@ -398,7 +414,7 @@ export default function ZapchasSection({
             <button
               type="button"
               onClick={() => setActiveView('history')}
-              className={`py-2 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-all ${
+              className={`py-2 px-1 rounded-xl text-[11px] font-bold flex flex-col sm:flex-row items-center justify-center gap-1 transition-all ${
                 activeView === 'history'
                   ? 'bg-white dark:bg-slate-900 text-slate-800 dark:text-white shadow-sm'
                   : 'text-slate-500 dark:text-slate-400'
@@ -407,11 +423,23 @@ export default function ZapchasSection({
               <History className="w-3.5 h-3.5 shrink-0" />
               <span>Tarix</span>
             </button>
+            <button
+              type="button"
+              onClick={() => setActiveView('analytics')}
+              className={`py-2 px-1 rounded-xl text-[11px] font-bold flex flex-col sm:flex-row items-center justify-center gap-1 transition-all ${
+                activeView === 'analytics'
+                  ? 'bg-white dark:bg-slate-900 text-amber-600 dark:text-amber-400 shadow-sm'
+                  : 'text-slate-500 dark:text-slate-400'
+              }`}
+            >
+              <BarChart3 className="w-3.5 h-3.5 shrink-0" />
+              <span>Nazorat</span>
+            </button>
           </div>
         )}
       </div>
 
-      {/* VIEW 1: SELLER FORM (with Payment Methods!) */}
+      {/* VIEW 1: SELLER FORM (with Payment Methods) */}
       {(!permissions.canManage || activeView === 'sell') && (
         <ZapchasSellForm
           telegramId={user.telegramId}
@@ -432,6 +460,19 @@ export default function ZapchasSection({
         />
       )}
 
+      {/* VIEW 5: ANALYTICS & SUPERVISION */}
+      {permissions.canManage && activeView === 'analytics' && (
+        <ZapchasAnalyticsPanel
+          analytics={analytics}
+          parts={parts}
+          sales={sales}
+          transactions={transactions}
+          selectedMonth={selectedMonth}
+          onMonthChange={setSelectedMonth}
+          onQuickRestock={(part) => setQuickStockModal({ part, action: 'IN' })}
+        />
+      )}
+
       {/* SELLER'S SALES HISTORY (grouped with payments & Pay Debt, right under Sell Form) */}
       {!permissions.canManage && (
         <ZapchasSalesList
@@ -446,7 +487,7 @@ export default function ZapchasSection({
       )}
 
       {/* VIEW 3: INVENTORY CATALOG */}
-      {(activeView === 'stock' || !permissions.canManage) && (
+      {((permissions.canManage && activeView === 'stock') || !permissions.canManage) && (
         <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 shadow-sm border border-slate-100 dark:border-slate-800 space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-base font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
@@ -478,7 +519,7 @@ export default function ZapchasSection({
               />
             </div>
 
-            <div className="flex gap-1.5">
+            <div className="flex gap-1.5 flex-wrap">
               <button
                 type="button"
                 onClick={() => setStockFilter('all')}
@@ -490,6 +531,19 @@ export default function ZapchasSection({
               >
                 Barchasi
               </button>
+              {!permissions.canManage && (
+                <button
+                  type="button"
+                  onClick={() => setStockFilter('available')}
+                  className={`px-3 py-2 rounded-xl text-xs font-bold transition-colors ${
+                    stockFilter === 'available'
+                      ? 'bg-emerald-600 text-white'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
+                  }`}
+                >
+                  Mavjudlar
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => setStockFilter('low')}
@@ -500,7 +554,8 @@ export default function ZapchasSection({
                 }`}
               >
                 <AlertTriangle className="w-3.5 h-3.5" />
-                Kam / Tugagan ({summary.outOfStockCount + summary.lowStockCount})
+                {permissions.canManage ? 'Kam / Tugagan' : 'Tugagan'} (
+                {summary.outOfStockCount + summary.lowStockCount})
               </button>
             </div>
           </div>
@@ -529,6 +584,11 @@ export default function ZapchasSection({
                           <span>Birlik: {part.unit}</span>
                           {part.price ? (
                             <span>• {part.price.toLocaleString()} so&apos;m</span>
+                          ) : null}
+                          {permissions.canManage && part.price && part.quantity > 0 ? (
+                            <span className="text-blue-600 dark:text-blue-400 font-semibold">
+                              • Jami: {(part.price * part.quantity).toLocaleString()} so&apos;m
+                            </span>
                           ) : null}
                           {part.note ? <span>• {part.note}</span> : null}
                         </div>
@@ -603,7 +663,7 @@ export default function ZapchasSection({
         </div>
       )}
 
-      {/* VIEW 4: MANAGER/ADMIN HISTORY (Switch between Sales+Payments and Stock Movements) */}
+      {/* VIEW 4: MANAGER/ADMIN HISTORY */}
       {permissions.canManage && activeView === 'history' && (
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-2 bg-white dark:bg-slate-900 p-1.5 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm">

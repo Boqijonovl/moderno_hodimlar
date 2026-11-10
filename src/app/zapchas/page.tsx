@@ -135,7 +135,7 @@ export default function ZapchasPage() {
       </div>
 
       <div className="flex-1 p-4 max-w-3xl w-full mx-auto">
-        <ZapchasSection user={user} WebApp={WebApp} />
+        <ZapchasSection user={user} WebApp={WebApp} viewScope="app" />
       </div>
     </main>
   );

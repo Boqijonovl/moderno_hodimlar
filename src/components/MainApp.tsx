@@ -171,7 +171,7 @@ export default function MainApp() {
             {currentTab === 'attendance' && showAttendance && <AttendanceTab user={user} WebApp={WebApp} />}
             {currentTab === 'sales' && showSales && <SalesTab user={user} WebApp={WebApp} />}
             {currentTab === 'expenses' && showExpenses && <ExpensesTab user={user} WebApp={WebApp} />}
-            {currentTab === 'zapchas' && showZapchas && <ZapchasSection user={user} WebApp={WebApp} />}
+            {currentTab === 'zapchas' && showZapchas && <ZapchasSection user={user} WebApp={WebApp} viewScope="app" />}
             {currentTab === 'settings' && <SettingsTab user={user} onUserUpdate={handleUserUpdate} />}
           </motion.div>
         </AnimatePresence>
