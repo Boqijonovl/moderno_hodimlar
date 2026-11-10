@@ -9,6 +9,7 @@ import {
   Phone,
   Plus,
   Send,
+  Sparkles,
   Trash2,
   User as UserIcon,
 } from 'lucide-react';
@@ -58,7 +59,6 @@ export default function ZapchasSellForm({
   const [loading, setLoading] = useState(false);
   const [lastSale, setLastSale] = useState<ZapchasSaleItem | null>(null);
 
-  // Sync default selected payment method if paymentMethods arrived after mount
   const effectiveSelectedMethods =
     selectedMethods.length === 0 && paymentMethods.length > 0 && !isPartial
       ? [paymentMethods[0].name]
@@ -75,6 +75,32 @@ export default function ZapchasSellForm({
   const removeRow = (index: number) => {
     if (rows.length <= 1) return;
     setRows((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleQuickPickPart = (part: ZapchasPartItem) => {
+    if (part.quantity <= 0) return;
+    const formattedPrice = part.price
+      ? formatAmountInput(String(Math.round(part.price)))
+      : '';
+
+    const emptyIdx = rows.findIndex((r) => !r.partId);
+    if (emptyIdx !== -1) {
+      updateRow(emptyIdx, { partId: part.id, quantity: '1', unitPrice: formattedPrice });
+      return;
+    }
+
+    const existingIdx = rows.findIndex((r) => r.partId === part.id);
+    if (existingIdx !== -1) {
+      const currentQty = parseInt(rows[existingIdx].quantity || '1', 10) || 1;
+      const nextQty = Math.min(part.quantity, currentQty + 1);
+      updateRow(existingIdx, { quantity: String(nextQty) });
+      return;
+    }
+
+    setRows((prev) => [
+      ...prev,
+      { partId: part.id, quantity: '1', unitPrice: formattedPrice },
+    ]);
   };
 
   const stepQuantity = (index: number, delta: number) => {
@@ -124,6 +150,18 @@ export default function ZapchasSellForm({
     setPaymentAmounts((prev) => ({
       ...prev,
       [method]: formatAmountInput(val),
+    }));
+  };
+
+  const handleFillRemainder = (method: string) => {
+    const total = calculateTotalItems();
+    const otherPaid = effectiveSelectedMethods
+      .filter((m) => m !== method)
+      .reduce((sum, m) => sum + parseNumericInput(paymentAmounts[m] || ''), 0);
+    const remainder = Math.max(0, total - otherPaid);
+    setPaymentAmounts((prev) => ({
+      ...prev,
+      [method]: remainder > 0 ? formatAmountInput(String(Math.round(remainder))) : '',
     }));
   };
 
@@ -216,6 +254,7 @@ export default function ZapchasSellForm({
 
   const totalItemsAmount = calculateTotalItems();
   const totalPaidAmount = calculateTotalPaid();
+  const inStockQuickPicks = parts.filter((p) => p.quantity > 0).slice(0, 8);
 
   return (
     <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-6 shadow-sm border border-slate-100 dark:border-slate-800 space-y-5">
@@ -291,6 +330,31 @@ export default function ZapchasSellForm({
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Quick-pick in-stock chips */}
+          {inStockQuickPicks.length > 0 && (
+            <div className="space-y-2">
+              <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1 uppercase tracking-wide">
+                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                Tez tanlash (Omborda borlar)
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {inStockQuickPicks.map((part) => (
+                  <button
+                    key={part.id}
+                    type="button"
+                    onClick={() => handleQuickPickPart(part)}
+                    className="px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-300 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700 transition-colors active:scale-95"
+                  >
+                    {part.name}{' '}
+                    <span className="text-[10px] text-slate-400 font-bold">
+                      ({part.quantity})
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* 1. Sotilgan zapchaslar */}
           <div className="space-y-3">
             <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">
@@ -302,6 +366,9 @@ export default function ZapchasSellForm({
               const qtyNum = parseInt(row.quantity || '0', 10) || 0;
               const unitPriceNum = parseNumericInput(row.unitPrice);
               const lineTotal = qtyNum * unitPriceNum;
+              const remainingAfter = selectedPart
+                ? Math.max(0, selectedPart.quantity - qtyNum)
+                : null;
 
               return (
                 <div
@@ -342,9 +409,16 @@ export default function ZapchasSellForm({
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">
-                        Soni ({selectedPart?.unit || 'dona'})
-                      </label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-xs font-bold text-slate-600 dark:text-slate-300">
+                          Soni ({selectedPart?.unit || 'dona'})
+                        </label>
+                        {remainingAfter !== null && (
+                          <span className="text-[10px] font-semibold text-slate-400">
+                            Keyin qoladi: <b>{remainingAfter}</b>
+                          </span>
+                        )}
+                      </div>
                       <div className="flex items-center gap-2">
                         <button
                           type="button"
@@ -473,7 +547,7 @@ export default function ZapchasSellForm({
             </div>
           </div>
 
-          {/* 3. To'lov Turlari (Savdo bo'limi bilan bir xil) */}
+          {/* 3. To'lov Turlari */}
           <div className="space-y-3">
             <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
               <CreditCard className="w-4 h-4 text-blue-600" />
@@ -530,21 +604,43 @@ export default function ZapchasSellForm({
                 <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                   Har bir to&apos;lov turi bo&apos;yicha summani kiriting
                 </label>
-                {effectiveSelectedMethods.map((method) => (
-                  <div key={method} className="flex items-center gap-3">
-                    <span className="w-1/3 text-sm font-semibold text-slate-700 dark:text-slate-300">
-                      {method}:
-                    </span>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      value={paymentAmounts[method] || ''}
-                      onChange={(e) => handlePaymentAmountChange(method, e.target.value)}
-                      className="flex-1 p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 dark:text-white font-bold outline-none"
-                      placeholder="Summa..."
-                    />
-                  </div>
-                ))}
+                {effectiveSelectedMethods.map((method) => {
+                  const otherPaid = effectiveSelectedMethods
+                    .filter((m) => m !== method)
+                    .reduce((sum, m) => sum + parseNumericInput(paymentAmounts[m] || ''), 0);
+                  const remainingToFill = Math.max(0, totalItemsAmount - otherPaid);
+
+                  return (
+                    <div key={method} className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="w-1/3 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                          {method}:
+                        </span>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          value={paymentAmounts[method] || ''}
+                          onChange={(e) => handlePaymentAmountChange(method, e.target.value)}
+                          className="flex-1 p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 dark:text-white font-bold outline-none"
+                          placeholder="Summa..."
+                        />
+                      </div>
+                      {totalItemsAmount > 0 &&
+                        remainingToFill > 0 &&
+                        parseNumericInput(paymentAmounts[method] || '') !== remainingToFill && (
+                          <div className="flex justify-end">
+                            <button
+                              type="button"
+                              onClick={() => handleFillRemainder(method)}
+                              className="text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:underline"
+                            >
+                              Qolganini to&apos;ldirish ({remainingToFill.toLocaleString()} so&apos;m)
+                            </button>
+                          </div>
+                        )}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>

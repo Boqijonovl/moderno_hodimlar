@@ -16,6 +16,7 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const telegramId = searchParams.get('telegramId');
+    const scope = searchParams.get('scope') === 'admin' ? 'admin' : 'app';
     const typeFilter = searchParams.get('type') || 'ALL';
     const partIdFilter = searchParams.get('partId') || '';
     const search = (searchParams.get('search') || '').trim();
@@ -33,8 +34,20 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Zapchas bo'limiga ruxsat berilmagan" }, { status: 403 });
     }
 
-    const canManage = canManageZapchasUser(user);
     const isAdmin = isAdminUser(user);
+    if (scope === 'admin' && !isAdmin) {
+      return NextResponse.json(
+        { error: "Faqat adminlar admin nazorat bo'limiga kira oladi" },
+        { status: 403 }
+      );
+    }
+
+    // Admins supervise from Admin Panel (scope=admin); in the employee app (scope=app) Admins only sell.
+    // Non-admin assigned managers (canManageZapchas) manage stock inside the app.
+    const canManage =
+      scope === 'admin'
+        ? isAdmin
+        : !isAdmin && canManageZapchasUser(user);
 
     const parts = await prisma.zapchasPart.findMany({
       orderBy: { name: 'asc' },
@@ -150,7 +163,7 @@ export async function GET(req: Request) {
           },
         },
         orderBy: { createdAt: 'desc' },
-        take: canManage ? 200 : 100,
+        take: canManage ? 300 : 100,
       }),
       prisma.zapchasSale.findMany({
         where: salesWhere,
@@ -164,7 +177,7 @@ export async function GET(req: Request) {
           },
         },
         orderBy: { createdAt: 'desc' },
-        take: canManage ? 150 : 100,
+        take: canManage ? 300 : 100,
       }),
     ]);
 
@@ -173,11 +186,119 @@ export async function GET(req: Request) {
     const lowStockCount = parts.filter(
       (p) => p.quantity > 0 && p.minQuantity > 0 && p.quantity <= p.minQuantity
     ).length;
+    const inventoryValue = parts.reduce(
+      (sum, p) => sum + p.quantity * (p.price || 0),
+      0
+    );
+
+    // Compute period analytics for Admin / Manager view
+    let analytics: {
+      inventoryValue: number;
+      periodSalesCount: number;
+      periodSalesTotal: number;
+      periodPaidTotal: number;
+      periodDebtTotal: number;
+      periodPaymentBreakdown: Record<string, number>;
+      topSellers: Array<{
+        userId: string;
+        name: string;
+        salesCount: number;
+        totalAmount: number;
+        paidAmount: number;
+        debtAmount: number;
+      }>;
+      topParts: Array<{
+        partId: string;
+        name: string;
+        unit: string;
+        soldQty: number;
+        soldRevenue: number;
+      }>;
+    } | null = null;
+
+    if (canManage) {
+      const periodPaymentBreakdown: Record<string, number> = {};
+      const sellerMap = new Map<
+        string,
+        {
+          userId: string;
+          name: string;
+          salesCount: number;
+          totalAmount: number;
+          paidAmount: number;
+          debtAmount: number;
+        }
+      >();
+      const partMap = new Map<
+        string,
+        { partId: string; name: string; unit: string; soldQty: number; soldRevenue: number }
+      >();
+
+      let periodSalesTotal = 0;
+      let periodPaidTotal = 0;
+      let periodDebtTotal = 0;
+
+      for (const s of sales) {
+        periodSalesTotal += s.totalPrice || 0;
+        periodPaidTotal += s.advance || 0;
+        periodDebtTotal += s.balance || 0;
+
+        for (const pay of s.payments) {
+          const m = normalizePaymentMethod(pay.method);
+          periodPaymentBreakdown[m] = (periodPaymentBreakdown[m] || 0) + pay.amount;
+        }
+
+        const sellerId = s.userId;
+        const sellerName = s.user?.name || "Noma'lum";
+        const sellerEntry = sellerMap.get(sellerId) || {
+          userId: sellerId,
+          name: sellerName,
+          salesCount: 0,
+          totalAmount: 0,
+          paidAmount: 0,
+          debtAmount: 0,
+        };
+        sellerEntry.salesCount += 1;
+        sellerEntry.totalAmount += s.totalPrice || 0;
+        sellerEntry.paidAmount += s.advance || 0;
+        sellerEntry.debtAmount += s.balance || 0;
+        sellerMap.set(sellerId, sellerEntry);
+
+        for (const item of s.transactions) {
+          const pEntry = partMap.get(item.partId) || {
+            partId: item.partId,
+            name: item.part.name,
+            unit: item.part.unit,
+            soldQty: 0,
+            soldRevenue: 0,
+          };
+          pEntry.soldQty += item.quantity;
+          pEntry.soldRevenue += item.totalPrice || 0;
+          partMap.set(item.partId, pEntry);
+        }
+      }
+
+      analytics = {
+        inventoryValue,
+        periodSalesCount: sales.length,
+        periodSalesTotal,
+        periodPaidTotal,
+        periodDebtTotal,
+        periodPaymentBreakdown,
+        topSellers: Array.from(sellerMap.values()).sort(
+          (a, b) => b.totalAmount - a.totalAmount
+        ),
+        topParts: Array.from(partMap.values())
+          .sort((a, b) => b.soldQty - a.soldQty)
+          .slice(0, 15),
+      };
+    }
 
     return NextResponse.json({
       parts: enrichedParts,
       transactions,
       sales,
+      analytics,
       summary: {
         totalParts: parts.length,
         totalStock,

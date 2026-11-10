@@ -120,6 +120,30 @@ export interface ZapchasSummary {
   todayPaymentBreakdown?: Record<string, number>;
 }
 
+export interface ZapchasAnalytics {
+  inventoryValue: number;
+  periodSalesCount: number;
+  periodSalesTotal: number;
+  periodPaidTotal: number;
+  periodDebtTotal: number;
+  periodPaymentBreakdown: Record<string, number>;
+  topSellers: Array<{
+    userId: string;
+    name: string;
+    salesCount: number;
+    totalAmount: number;
+    paidAmount: number;
+    debtAmount: number;
+  }>;
+  topParts: Array<{
+    partId: string;
+    name: string;
+    unit: string;
+    soldQty: number;
+    soldRevenue: number;
+  }>;
+}
+
 export interface ZapchasPermissions {
   canSell: boolean;
   canManage: boolean;

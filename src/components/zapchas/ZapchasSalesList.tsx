@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { CheckCircle2, List, Phone, Trash2 } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, List, Phone, Search, Trash2 } from 'lucide-react';
 import { getPaymentMethodColor, normalizePaymentMethod } from '@/lib/formatters';
 import {
   PaymentMethodOption,
@@ -38,8 +38,26 @@ export default function ZapchasSalesList({
     paymentMethods[0]?.name || 'Naqd'
   );
   const [payDebtLoading, setPayDebtLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [onlyDebtors, setOnlyDebtors] = useState(false);
 
-  const groupedSales = sales.reduce<Record<string, ZapchasSaleItem[]>>((acc, sale) => {
+  const debtCount = sales.filter((s) => s.balance > 0).length;
+
+  const filteredSales = sales.filter((s) => {
+    if (onlyDebtors && s.balance <= 0) return false;
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      (s.customerName || '').toLowerCase().includes(q) ||
+      (s.customerPhone || '').toLowerCase().includes(q) ||
+      (s.user?.name || '').toLowerCase().includes(q) ||
+      (s.note || '').toLowerCase().includes(q) ||
+      s.paymentMethod.toLowerCase().includes(q) ||
+      s.transactions.some((t) => t.part.name.toLowerCase().includes(q))
+    );
+  });
+
+  const groupedSales = filteredSales.reduce<Record<string, ZapchasSaleItem[]>>((acc, sale) => {
     const dateLabel = new Date(sale.createdAt).toLocaleDateString('uz-UZ', {
       timeZone: 'Asia/Tashkent',
       day: 'numeric',
@@ -116,7 +134,8 @@ export default function ZapchasSalesList({
     }
   };
 
-  const totalSalesSum = sales.reduce((sum, s) => sum + (s.totalPrice || 0), 0);
+  const totalSalesSum = filteredSales.reduce((sum, s) => sum + (s.totalPrice || 0), 0);
+  const totalDebtSum = filteredSales.reduce((sum, s) => sum + (s.balance || 0), 0);
 
   return (
     <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-6 shadow-sm border border-slate-100 dark:border-slate-800 space-y-4">
@@ -132,7 +151,7 @@ export default function ZapchasSalesList({
             onChange={(e) => onMonthChange(e.target.value)}
             className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs font-semibold border-none focus:ring-2 focus:ring-blue-500 dark:text-white"
           />
-          {sales.length > 0 && (
+          {filteredSales.length > 0 && (
             <div className="text-right">
               <div className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-bold">
                 Umumiy Savdo
@@ -140,15 +159,51 @@ export default function ZapchasSalesList({
               <div className="text-sm font-bold text-emerald-600">
                 {totalSalesSum.toLocaleString()} so&apos;m
               </div>
+              {totalDebtSum > 0 && (
+                <div className="text-[11px] font-bold text-rose-500">
+                  Qarz: {totalDebtSum.toLocaleString()} so&apos;m
+                </div>
+              )}
             </div>
           )}
         </div>
       </div>
 
+      {sales.length > 0 && (
+        <div className="flex flex-col sm:flex-row gap-2">
+          <div className="relative flex-1 flex items-center">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 pointer-events-none" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Zapchas, mijoz, telefon yoki sotuvchi..."
+              className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs dark:text-white outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          {debtCount > 0 && (
+            <button
+              type="button"
+              onClick={() => setOnlyDebtors((v) => !v)}
+              className={`px-3 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shrink-0 ${
+                onlyDebtors
+                  ? 'bg-rose-600 text-white'
+                  : 'bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800'
+              }`}
+            >
+              <AlertTriangle className="w-3.5 h-3.5" />
+              Qarzdorlar ({debtCount})
+            </button>
+          )}
+        </div>
+      )}
+
       <div className="space-y-4">
-        {sales.length === 0 ? (
+        {filteredSales.length === 0 ? (
           <p className="text-slate-500 dark:text-slate-400 text-center py-6 text-sm">
-            Hali zapchas sotuvlari qayd etilmagan.
+            {sales.length === 0
+              ? 'Hali zapchas sotuvlari qayd etilmagan.'
+              : 'Qidiruv natijasi topilmadi.'}
           </p>
         ) : (
           Object.entries(groupedSales).map(([date, dateSales]) => (
