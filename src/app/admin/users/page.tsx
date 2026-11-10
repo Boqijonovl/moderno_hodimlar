@@ -78,9 +78,10 @@ export default function UsersPage() {
                 href={`/admin/users/${user.telegramId}`}
                 className="flex-1"
               >
-                <div className="font-bold text-slate-800 text-lg flex items-center gap-2">
+                <div className="font-bold text-slate-800 text-lg flex flex-wrap items-center gap-2">
                   {user.name} 
                   {user.role === 'ADMIN' && <span className="bg-rose-100 text-rose-700 text-[10px] px-2 py-0.5 rounded-full uppercase">Admin</span>}
+                  {user.canManageZapchas && <span className="bg-emerald-100 text-emerald-700 text-[10px] px-2 py-0.5 rounded-full">🔧 Zapchas Mas&apos;uli</span>}
                 </div>
                 <div className="text-sm text-slate-500 mt-1">ID: {user.telegramId}</div>
               </Link>

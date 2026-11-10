@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { DollarSign, ShoppingCart, UserCheck, Activity } from 'lucide-react';
+import { DollarSign, ShoppingCart, UserCheck, Activity, Wrench } from 'lucide-react';
 import Link from 'next/link';
 import DashboardCharts from '@/components/admin/DashboardCharts';
 import { normalizePaymentMethod } from '@/lib/formatters';
@@ -65,6 +65,34 @@ export default function AdminDashboard() {
       </div>
       
       {data.chartData && <DashboardCharts data={data.chartData} />}
+
+      <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 mt-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-semibold text-slate-800 flex items-center gap-2">
+            <Wrench className="w-5 h-5 text-indigo-500" />
+            Zapchaslar Ombori
+          </h2>
+          <Link href="/admin/zapchas" className="text-xs text-blue-600 font-medium">Boshqarish →</Link>
+        </div>
+        <div className="grid grid-cols-4 gap-2 text-center">
+           <div>
+             <p className="text-xl font-bold text-slate-800">{data.zapchas?.totalParts ?? 0}</p>
+             <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Turlar</p>
+           </div>
+           <div>
+             <p className="text-xl font-bold text-blue-600">{data.zapchas?.totalStock ?? 0}</p>
+             <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Qoldiq</p>
+           </div>
+           <div>
+             <p className="text-xl font-bold text-emerald-500">+{data.zapchas?.todayIn ?? 0}</p>
+             <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Kelgan</p>
+           </div>
+           <div>
+             <p className="text-xl font-bold text-rose-500">-{data.zapchas?.todayOut ?? 0}</p>
+             <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Ketgan</p>
+           </div>
+        </div>
+      </div>
 
       <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 mt-6">
         <div className="flex items-center justify-between mb-4">

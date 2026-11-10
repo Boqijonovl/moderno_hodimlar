@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { Telegraf, Markup } from 'telegraf';
 import { prisma } from '@/lib/prisma';
-import { calculateMebelKroy, calculateRaskroy, parsePartsFromText } from '@/lib/raskroyEngine';
 import { handleDailyReport } from '@/app/api/cron/daily-report/route';
+import { canManageZapchasUser, canSellZapchasUser, getTashkentTodayRange, isAdminUser } from '@/lib/zapchas';
 
 const bot = new Telegraf(process.env.BOT_TOKEN as string);
 
@@ -39,11 +39,11 @@ bot.start(async (ctx) => {
   try {
     if (role === 'ADMIN') {
       await ctx.reply(
-        `Xush kelibsiz ${name}! Hisobotlarni pastdagi menyudan tanlang yoki Kroy & Raskroy vositasidan foydalaning.`,
+        `Xush kelibsiz ${name}! Hisobotlarni pastdagi menyudan tanlang yoki Zapchaslar bo'limidan foydalaning.`,
         Markup.keyboard([
           ['📊 Kassa Hisoboti (18:00)', '💰 Bugungi Savdolar'],
           ['📊 Bugungi Davomat', '📅 Oylik Davomat'],
-          ['📈 Oylik Savdolar', '📐 Kroy & Raskroy']
+          ['📈 Oylik Savdolar', '🔧 Zapchaslar']
         ]).resize()
       );
       // Ilovani ochish uchun alohida inline tugmalar yuboramiz
@@ -51,7 +51,7 @@ bot.start(async (ctx) => {
         reply_markup: {
           inline_keyboard: [
             [{ text: '📱 Asosiy Ilovani ochish', web_app: { url: webAppUrl } }],
-            [{ text: '📐 Kroy & Raskroy kalkulyatori', web_app: { url: `${webAppUrl}/raskroy` } }]
+            [{ text: '🔧 Zapchaslar bo\'limi', web_app: { url: `${webAppUrl}/zapchas` } }]
           ]
         }
       });
@@ -59,14 +59,14 @@ bot.start(async (ctx) => {
       await ctx.reply(
         `Xush kelibsiz ${name}! Menyudan xizmatni tanlang yoki ilovani oching:`,
         Markup.keyboard([
-          ['📐 Kroy & Raskroy']
+          ['🔧 Zapchaslar']
         ]).resize()
       );
       await ctx.reply(`Ilovani ochish uchun tugmani bosing:`, {
         reply_markup: {
           inline_keyboard: [
             [{ text: '📱 Asosiy Ilovani ochish', web_app: { url: webAppUrl } }],
-            [{ text: '📐 Kroy & Raskroy kalkulyatori', web_app: { url: `${webAppUrl}/raskroy` } }]
+            [{ text: '🔧 Zapchaslar bo\'limi', web_app: { url: `${webAppUrl}/zapchas` } }]
           ]
         }
       });
@@ -312,182 +312,77 @@ bot.hears('📈 Oylik Savdolar', async (ctx) => {
 });
 
 // ==========================================
-// 📐 KROY VA RASKROY FUNKSIYALARI
+// 🔧 ZAPCHASLAR BO'LIMI
 // ==========================================
 
-bot.hears('📐 Kroy & Raskroy', async (ctx) => {
+bot.hears(['🔧 Zapchaslar', '/zapchas'], async (ctx) => {
   try {
     const webAppUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://moderno-hodimlar.vercel.app';
-    const text = `📐 <b>Mebel Kroy & 2D Raskroy Xizmati</b>\n\n` +
-      `Moderno Mebel sexining professional avto-kroy va arra (raskroy) kalkulyatori.\n\n` +
-      `⚡ <b>Nimalar qila oladi?</b>\n` +
-      `• Shkaf, Tumba, Oshxona shkaflarini avtomatik kroy qilish (aniq o'lchamlar, oraliqlar va kromkalar)\n` +
-      `• Detallarni standart 2750×1830 listlarga 2D Guillotine usulida eng kam chiqindi bilan joylashtirish\n` +
-      `• Kromka 2.0mm va 0.4mm metrlari, DVP orqa devor maydonini hisoblash\n` +
-      `• Arra va kromka ustalari uchun A4 formatda chop etish (Print/PDF)\n\n` +
-      `💬 <b>Chat orqali tezkor hisoblash:</b>\n\n` +
-      `1️⃣ <b>Mebel kroyi:</b>\n` +
-      `<code>/kroy [Balandlik] [Eni] [Chuqurlik] [Polkalar] [Tortmalar] [Eshiklar]</code>\n` +
-      `<i>Masalan:</i> <code>/kroy 2100 800 500 3 2 2</code>\n\n` +
-      `2️⃣ <b>Erkin detallar raskroyi:</b>\n` +
-      `<code>/raskroy\n2000x500 2 Yon devor\n768x500 2 Qopqoq\n768x480 3 Polka</code>\n\n` +
-      `Vizual 2D xarita va PDF yuklab olish uchun quyidagi tugmani bosing:`;
+    const telegramId = ctx.from.id.toString();
+    const user = await prisma.user.findUnique({ where: { telegramId } });
 
-    await ctx.reply(text, {
-      parse_mode: 'HTML',
-      reply_markup: {
-        inline_keyboard: [
-          [{ text: '📱 Kroy & Raskroy dasturini ochish', web_app: { url: `${webAppUrl}/raskroy` } }]
-        ]
-      }
-    });
-  } catch (e) {
-    console.error('Error in raskroy menu:', e);
-  }
-});
-
-bot.hears(/^\/kroy(?:\s+(.*))?$/i, async (ctx) => {
-  try {
-    const webAppUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://moderno-hodimlar.vercel.app';
-    const argsStr = ctx.match[1]?.trim();
-
-    if (!argsStr) {
-      return ctx.reply(
-        `📐 <b>Mebel Kroy Kalkulyatori</b>\n\n` +
-        `O'lchamlarni quyidagi formatda yuboring:\n` +
-        `<code>/kroy [Balandlik] [Eni] [Chuqurlik] [Polkalar] [Tortmalar] [Eshiklar]</code>\n\n` +
-        `<b>Namunalar:</b>\n` +
-        `• Standart shkaf: <code>/kroy 2100 800 500 3 2 2</code>\n` +
-        `• Tumba / Komod: <code>/kroy 850 600 450 0 3 0</code>\n` +
-        `• Oshxona pastki shkafi: <code>/kroy 850 800 600 1 0 2</code>\n\n` +
-        `Yoki interaktiv dastur orqali qulay hisoblang:`,
-        {
-          parse_mode: 'HTML',
-          reply_markup: {
-            inline_keyboard: [
-              [{ text: '📱 Interaktiv Kroy Dasturi', web_app: { url: `${webAppUrl}/raskroy` } }]
-            ]
-          }
-        }
-      );
+    if (!user || user.active === false) {
+      return ctx.reply('Kechirasiz, tizimda faol akkauntingiz topilmadi.');
     }
 
-    const parts = argsStr.split(/\s+/).map(Number).filter(n => !isNaN(n));
-    const H = parts[0] || 2000;
-    const W = parts[1] || 800;
-    const D = parts[2] || 500;
-    const shelves = parts[3] !== undefined ? parts[3] : 3;
-    const drawers = parts[4] !== undefined ? parts[4] : 0;
-    const doors = parts[5] !== undefined ? parts[5] : (W > 900 ? 2 : 1);
+    if (!canSellZapchasUser(user)) {
+      return ctx.reply("Sizda Zapchaslar bo'limidan foydalanish ruxsati yo'q.");
+    }
 
-    const kroy = calculateMebelKroy({
-      type: 'shkaf',
-      height: H,
-      width: W,
-      depth: D,
-      thickness: 16,
-      shelvesCount: shelves,
-      drawersCount: drawers,
-      doorType: doors > 0 ? 'hinged' : 'none',
-      doorsCount: doors
+    const canManage = canManageZapchasUser(user);
+    const isAdmin = isAdminUser(user);
+
+    const [parts, todayGrouped] = await Promise.all([
+      prisma.zapchasPart.findMany({ orderBy: { name: 'asc' } }),
+      (() => {
+        const { start, end } = getTashkentTodayRange();
+        return prisma.zapchasTransaction.groupBy({
+          by: ['type'],
+          where: { createdAt: { gte: start, lte: end } },
+          _sum: { quantity: true },
+        });
+      })(),
+    ]);
+
+    const totalStock = parts.reduce((sum, p) => sum + p.quantity, 0);
+    const lowStock = parts.filter((p) => p.quantity <= 0 || (p.minQuantity > 0 && p.quantity <= p.minQuantity));
+    let todayIn = 0;
+    let todayOut = 0;
+    todayGrouped.forEach((row) => {
+      if (row.type === 'IN') todayIn += row._sum.quantity || 0;
+      if (row.type === 'OUT') todayOut += row._sum.quantity || 0;
     });
 
-    const raskroy = calculateRaskroy(kroy.parts);
+    let msg = `🔧 <b>Zapchaslar Ombori va Sotuvi</b>\n\n`;
+    if (canManage) {
+      msg += `📦 <b>Zapchas turlari:</b> ${parts.length} xil\n`;
+      msg += `🔢 <b>Ombordagi jami soni:</b> ${totalStock} dona\n`;
+      msg += `📥 <b>Bugun kelgan:</b> +${todayIn} | 📤 <b>Bugun ketgan:</b> -${todayOut}\n`;
+      if (lowStock.length > 0) {
+        msg += `\n⚠️ <b>Tugagan / Kam qolganlar (${lowStock.length}):</b>\n`;
+        lowStock.slice(0, 8).forEach((p) => {
+          msg += `• ${p.name}: <b>${p.quantity} ${p.unit}</b>\n`;
+        });
+      }
+      msg += `\nKelgan zapchaslarni kiritish, sotuv yozish va kelgan-ketgan sonini boshqarish uchun oching:`;
+    } else {
+      msg += `Ombordagi mavjud zapchaslarni ko'rish va sotilgan zapchaslarni tizimga kiritish uchun quyidagi tugmani bosing:`;
+    }
 
-    let msg = `📐 <b>Mebel Kroy & Raskroy Hisoboti</b>\n`;
-    msg += `📏 O'lcham: <b>${H} × ${W} × ${D} mm</b>\n`;
-    msg += `🚪 Eshiklar: <b>${doors} ta</b> | 📚 Polkalar: <b>${shelves} ta</b> | 🗄 Tortmalar: <b>${drawers} ta</b>\n\n`;
-    msg += `📋 <b>Detallar spetsifikatsiyasi (Kroy):</b>\n`;
-
-    kroy.parts.forEach((p, idx) => {
-      msg += `${idx + 1}. <b>${p.name}</b>: ${p.length}×${p.width} mm — <b>${p.qty} dona</b> (${p.material})\n`;
-    });
-
-    msg += `\n📊 <b>Materiallar va Raskroy sarfi:</b>\n`;
-    msg += `• Jami DSP listi (2750×1830): <b>${raskroy.totalSheets} dona</b>\n`;
-    msg += `• Detallar maydoni: <b>${kroy.totalDspArea.toFixed(2)} m²</b>\n`;
-    msg += `• Chiqindi (scrap): <b>~${raskroy.averageWastePercent}%</b>\n`;
-    msg += `• Orqa fon DVP: <b>${kroy.totalDvpArea.toFixed(2)} m²</b>\n`;
-    msg += `• Kromka 2.0 mm (oldi): <b>${kroy.edge2mmMeters} metr</b>\n`;
-    msg += `• Kromka 0.4 mm (ichki): <b>${kroy.edge04mmMeters} metr</b>\n`;
-
-    const webUrlWithParams = `${webAppUrl}/raskroy?h=${H}&w=${W}&d=${D}&s=${shelves}&dr=${drawers}&dc=${doors}`;
+    const keyboard: any[] = [
+      [{ text: "🔧 Zapchas bo'limini ochish", web_app: { url: `${webAppUrl}/zapchas` } }],
+    ];
+    if (isAdmin) {
+      keyboard.push([{ text: '🛡 Admin Zapchas Boshqaruvi', web_app: { url: `${webAppUrl}/admin/zapchas` } }]);
+    }
 
     await ctx.reply(msg, {
       parse_mode: 'HTML',
-      reply_markup: {
-        inline_keyboard: [
-          [{ text: '🗺 2D Raskroy Xaritasini Ko\'rish', web_app: { url: webUrlWithParams } }],
-          [{ text: '🖨 Sex uchun Chop Etish (PDF)', web_app: { url: `${webUrlWithParams}&print=1` } }]
-        ]
-      }
+      reply_markup: { inline_keyboard: keyboard },
     });
   } catch (e) {
-    console.error('Error in /kroy:', e);
-    ctx.reply('Hisoblashda xatolik yuz berdi. Iltimos o\'lchamlarni to\'g\'ri kiriting.');
-  }
-});
-
-bot.hears(/^\/raskroy(?:\s+([\s\S]+))?$/i, async (ctx) => {
-  try {
-    const webAppUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://moderno-hodimlar.vercel.app';
-    const text = ctx.match[1]?.trim();
-
-    if (!text) {
-      return ctx.reply(
-        `🗺 <b>2D Guillotine Raskroy Kalkulyatori</b>\n\n` +
-        `Sexdagi o'lchamlaringizni quyidagi shaklda yuboring:\n` +
-        `<code>/raskroy\n` +
-        `2000x500 2 Yon devor\n` +
-        `768x500 2 Qopqoq\n` +
-        `768x480 3 Polka\n` +
-        `350x140 4 Tortma yoni</code>\n\n` +
-        `Standart list: <b>2750 × 1830 mm</b> (DSP)\n` +
-        `Pilyan tishi (kerf): <b>4 mm</b>\n\n` +
-        `Yoki to'liq vizual dasturni oching:`,
-        {
-          parse_mode: 'HTML',
-          reply_markup: {
-            inline_keyboard: [
-              [{ text: '📱 Raskroy Dasturini Ochish', web_app: { url: `${webAppUrl}/raskroy` } }]
-            ]
-          }
-        }
-      );
-    }
-
-    const parts = parsePartsFromText(text);
-    if (parts.length === 0) {
-      return ctx.reply("Detallar formati aniqlanmadi. Masalan:\n<code>2000x500 2 Yon devor</code> shaklida yozing.");
-    }
-
-    const result = calculateRaskroy(parts);
-
-    let msg = `🗺 <b>Raskroy Hisob-kitob Natijasi:</b>\n\n`;
-    msg += `📦 Jami detallar: <b>${result.totalPartsCount} dona</b>\n`;
-    msg += `📐 Detallar maydoni: <b>${result.totalDspArea} m²</b>\n`;
-    msg += `📄 Kerakli DSP listi (2750×1830): <b>${result.totalSheets} dona</b>\n`;
-    msg += `♻️ O'rtacha chiqindi (scrap): <b>${result.averageWastePercent}%</b>\n\n`;
-
-    msg += `<b>Listlar bo'yicha joylashuv:</b>\n`;
-    result.sheets.forEach(s => {
-      msg += `• List #${s.sheetIndex}: <b>${s.items.length} ta detal</b> (Maydon: ${s.usedArea} m², Chiqindi: ${s.wastePercent}%)\n`;
-    });
-
-    const encodedData = encodeURIComponent(text.substring(0, 400));
-    const openUrl = `${webAppUrl}/raskroy?tab=manual&data=${encodedData}`;
-
-    await ctx.reply(msg, {
-      parse_mode: 'HTML',
-      reply_markup: {
-        inline_keyboard: [
-          [{ text: '🗺 2D Xarita va Arra sxemasini ochish', web_app: { url: openUrl } }]
-        ]
-      }
-    });
-  } catch (e) {
-    console.error('Error in /raskroy:', e);
-    ctx.reply('Raskroy hisoblashda xatolik yuz berdi.');
+    console.error('Error in Zapchas menu:', e);
+    ctx.reply("Zapchas ma'lumotlarini yuklashda xatolik yuz berdi.");
   }
 });
 

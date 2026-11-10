@@ -34,7 +34,7 @@ export async function handleDailyReport(targetTelegramId?: string) {
     const startDate = new Date(Date.UTC(year, month - 1, day, -6, 0, 0));
     const endDate = new Date(Date.UTC(year, month - 1, day + 1, 6, 0, 0));
 
-    const [rawSales, rawSalePayments, rawExpenses, totalStoreDebtAggregate] = await Promise.all([
+    const [rawSales, rawSalePayments, rawExpenses, totalStoreDebtAggregate, rawZapchasTx] = await Promise.all([
       prisma.sale.findMany({
         where: {
           OR: [
@@ -55,6 +55,9 @@ export async function handleDailyReport(targetTelegramId?: string) {
       prisma.sale.aggregate({
         where: { balance: { gt: 0 } },
         _sum: { balance: true }
+      }),
+      prisma.zapchasTransaction.findMany({
+        where: { createdAt: { gte: startDate, lte: endDate } }
       })
     ]);
 
@@ -62,6 +65,9 @@ export async function handleDailyReport(targetTelegramId?: string) {
     const todaySales = rawSales.filter(s => toTashkentDate(s.createdAt || s.date) === todayStr);
     const todayPayments = rawSalePayments.filter(p => toTashkentDate(p.createdAt) === todayStr);
     const todayExpenses = rawExpenses.filter(e => toTashkentDate(e.createdAt) === todayStr);
+    const todayZapchas = rawZapchasTx.filter(z => toTashkentDate(z.createdAt) === todayStr);
+    const todayZapchasIn = todayZapchas.filter(z => z.type === 'IN').reduce((sum, z) => sum + z.quantity, 0);
+    const todayZapchasOut = todayZapchas.filter(z => z.type === 'OUT').reduce((sum, z) => sum + z.quantity, 0);
 
     const totalSales = todaySales.reduce((sum, s) => sum + (s.totalPrice || 0), 0);
     let totalReceived = todayPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
@@ -139,6 +145,11 @@ export async function handleDailyReport(targetTelegramId?: string) {
       debtText += `\n📌 <b>Do'konning jami qarz qoldig'i:</b> <b>${totalStoreDebt.toLocaleString()} so'm</b>`;
     }
 
+    let zapchasText = '';
+    if (todayZapchasIn > 0 || todayZapchasOut > 0) {
+      zapchasText = `\n🔧 <b>Zapchas harakati:</b> Keldi +${todayZapchasIn} | Ketdi/Sotildi -${todayZapchasOut}`;
+    }
+
     const reportMessage = 
 `📊 <b>Bugungi Kassa va Savdo Hisoboti (${timeStr})</b>
 📅 <b>Sana:</b> ${readableDate}
@@ -150,7 +161,7 @@ export async function handleDailyReport(targetTelegramId?: string) {
    • 📟 Terminal: ${(paymentBreakdown['Terminal'] || 0).toLocaleString()} so'm
    • 🏢 Karparativ: ${(paymentBreakdown['Karparativ'] || 0).toLocaleString()} so'm
 🔻 <b>Xarajatlar:</b> <b>${totalExpenses.toLocaleString()} so'm</b> (${todayExpenses.length} ta)
-💼 <b>Sof naqd kassa qoldig'i:</b> <b>${netCash.toLocaleString()} so'm</b>${debtText}
+💼 <b>Sof naqd kassa qoldig'i:</b> <b>${netCash.toLocaleString()} so'm</b>${debtText}${zapchasText}
 
 ${heroText}`;
 

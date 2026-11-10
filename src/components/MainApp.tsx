@@ -1,17 +1,17 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { Clock, Package, Wallet, Settings as SettingsIcon, Ruler, Scissors } from 'lucide-react';
+import { Clock, Package, Wallet, Settings as SettingsIcon, Ruler, Wrench } from 'lucide-react';
 import AttendanceTab from '@/components/tabs/AttendanceTab';
 import SalesTab from '@/components/tabs/SalesTab';
 import ExpensesTab from '@/components/tabs/ExpensesTab';
 import SettingsTab from '@/components/tabs/SettingsTab';
+import ZapchasSection from '@/components/ZapchasSection';
 import { useTranslation, Language } from '@/lib/i18n';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function MainApp() {
-  const [activeTab, setActiveTab] = useState<'attendance' | 'sales' | 'expenses' | 'settings'>('attendance');
+  const [activeTab, setActiveTab] = useState<'attendance' | 'sales' | 'expenses' | 'zapchas' | 'settings'>('attendance');
   const [user, setUser] = useState<any>(null);
   const [WebApp, setWebApp] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -155,15 +155,18 @@ export default function MainApp() {
   const showAttendance = user.canUseAttendance !== false;
   const showSales = user.canUseSales !== false;
   const showExpenses = user.canUseExpenses !== false;
+  const showZapchas = user.role === 'ADMIN' || user.canManageZapchas === true || user.canUseZapchas !== false;
   const showConstructor = user.role === 'ADMIN' || user.canUseConstructor === true;
   
   let currentTab = activeTab;
   if (!showAttendance && currentTab === 'attendance') {
-    currentTab = showSales ? 'sales' : showExpenses ? 'expenses' : 'settings';
+    currentTab = showSales ? 'sales' : showExpenses ? 'expenses' : showZapchas ? 'zapchas' : 'settings';
   } else if (!showSales && currentTab === 'sales') {
-    currentTab = showAttendance ? 'attendance' : showExpenses ? 'expenses' : 'settings';
+    currentTab = showAttendance ? 'attendance' : showExpenses ? 'expenses' : showZapchas ? 'zapchas' : 'settings';
   } else if (!showExpenses && currentTab === 'expenses') {
-    currentTab = showAttendance ? 'attendance' : showSales ? 'sales' : 'settings';
+    currentTab = showAttendance ? 'attendance' : showSales ? 'sales' : showZapchas ? 'zapchas' : 'settings';
+  } else if (!showZapchas && currentTab === 'zapchas') {
+    currentTab = showAttendance ? 'attendance' : showSales ? 'sales' : showExpenses ? 'expenses' : 'settings';
   }
 
   return (
@@ -172,16 +175,31 @@ export default function MainApp() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Moderno Mebel</h1>
           <p className="text-blue-100 dark:text-blue-200 mt-1 font-medium">
-            {currentTab === 'attendance' ? t('menu_attendance') : currentTab === 'sales' ? t('menu_sales') : currentTab === 'expenses' ? t('menu_expenses') : t('menu_settings')}
+            {currentTab === 'attendance'
+              ? t('menu_attendance')
+              : currentTab === 'sales'
+                ? t('menu_sales')
+                : currentTab === 'expenses'
+                  ? t('menu_expenses')
+                  : currentTab === 'zapchas'
+                    ? t('menu_zapchas')
+                    : t('menu_settings')}
           </p>
         </div>
-        <Link
-          href="/raskroy"
-          className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-white/20 hover:bg-white/30 text-white backdrop-blur-md text-xs font-bold transition-all shadow-md hover:scale-105 active:scale-95 shrink-0 border border-white/20"
-        >
-          <Scissors className="w-4 h-4 text-blue-200" />
-          <span>Kroy & Raskroy</span>
-        </Link>
+        {showZapchas && (
+          <button
+            type="button"
+            onClick={() => setActiveTab('zapchas')}
+            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-2xl backdrop-blur-md text-xs font-bold transition-all shadow-md hover:scale-105 active:scale-95 shrink-0 border ${
+              currentTab === 'zapchas'
+                ? 'bg-white text-blue-700 border-white'
+                : 'bg-white/20 hover:bg-white/30 text-white border-white/20'
+            }`}
+          >
+            <Wrench className={`w-4 h-4 ${currentTab === 'zapchas' ? 'text-blue-600' : 'text-blue-200'}`} />
+            <span>{t('menu_zapchas')}</span>
+          </button>
+        )}
       </div>
 
       <div className="flex-1 overflow-x-hidden overflow-y-auto p-4 relative z-0 mt-[-20px] pt-[40px]">
@@ -196,53 +214,64 @@ export default function MainApp() {
             {currentTab === 'attendance' && showAttendance && <AttendanceTab user={user} WebApp={WebApp} />}
             {currentTab === 'sales' && showSales && <SalesTab user={user} WebApp={WebApp} />}
             {currentTab === 'expenses' && showExpenses && <ExpensesTab user={user} WebApp={WebApp} />}
+            {currentTab === 'zapchas' && showZapchas && <ZapchasSection user={user} WebApp={WebApp} />}
             {currentTab === 'settings' && <SettingsTab user={user} onUserUpdate={handleUserUpdate} />}
           </motion.div>
         </AnimatePresence>
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-t border-slate-200/50 dark:border-slate-800/50 flex justify-around p-3 pb-safe z-50">
+      <div className="fixed bottom-0 left-0 right-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-t border-slate-200/50 dark:border-slate-800/50 flex justify-around px-1 py-2.5 pb-safe z-50">
         {showAttendance && (
           <button 
             onClick={() => setActiveTab('attendance')}
-            className={`flex flex-col items-center transition-all duration-300 w-16 sm:w-20 ${currentTab === 'attendance' ? 'text-blue-600 dark:text-blue-400 scale-110' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
+            className={`flex flex-col items-center justify-center transition-all duration-300 flex-1 min-w-0 px-0.5 ${currentTab === 'attendance' ? 'text-blue-600 dark:text-blue-400 scale-105' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
           >
-            <Clock className={`w-6 h-6 mb-1 ${currentTab === 'attendance' ? 'fill-blue-50 dark:fill-blue-900' : ''}`} />
-            <span className="text-[10px] font-bold">{t('menu_attendance')}</span>
+            <Clock className={`w-5 h-5 sm:w-6 sm:h-6 mb-1 ${currentTab === 'attendance' ? 'fill-blue-50 dark:fill-blue-900' : ''}`} />
+            <span className="text-[10px] font-bold truncate max-w-full">{t('menu_attendance')}</span>
           </button>
         )}
         
         {showSales && (
           <button 
             onClick={() => setActiveTab('sales')}
-            className={`flex flex-col items-center transition-all duration-300 w-16 sm:w-20 ${currentTab === 'sales' ? 'text-blue-600 dark:text-blue-400 scale-110' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
+            className={`flex flex-col items-center justify-center transition-all duration-300 flex-1 min-w-0 px-0.5 ${currentTab === 'sales' ? 'text-blue-600 dark:text-blue-400 scale-105' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
           >
-            <Package className={`w-6 h-6 mb-1 ${currentTab === 'sales' ? 'fill-blue-50 dark:fill-blue-900' : ''}`} />
-            <span className="text-[10px] font-bold">{t('menu_sales')}</span>
+            <Package className={`w-5 h-5 sm:w-6 sm:h-6 mb-1 ${currentTab === 'sales' ? 'fill-blue-50 dark:fill-blue-900' : ''}`} />
+            <span className="text-[10px] font-bold truncate max-w-full">{t('menu_sales')}</span>
           </button>
         )}
 
         {showExpenses && (
           <button 
             onClick={() => setActiveTab('expenses')}
-            className={`flex flex-col items-center transition-all duration-300 w-16 sm:w-20 ${currentTab === 'expenses' ? 'text-blue-600 dark:text-blue-400 scale-110' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
+            className={`flex flex-col items-center justify-center transition-all duration-300 flex-1 min-w-0 px-0.5 ${currentTab === 'expenses' ? 'text-blue-600 dark:text-blue-400 scale-105' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
           >
-            <Wallet className={`w-6 h-6 mb-1 ${currentTab === 'expenses' ? 'fill-blue-50 dark:fill-blue-900' : ''}`} />
-            <span className="text-[10px] font-bold">{t('menu_expenses')}</span>
+            <Wallet className={`w-5 h-5 sm:w-6 sm:h-6 mb-1 ${currentTab === 'expenses' ? 'fill-blue-50 dark:fill-blue-900' : ''}`} />
+            <span className="text-[10px] font-bold truncate max-w-full">{t('menu_expenses')}</span>
+          </button>
+        )}
+
+        {showZapchas && (
+          <button 
+            onClick={() => setActiveTab('zapchas')}
+            className={`flex flex-col items-center justify-center transition-all duration-300 flex-1 min-w-0 px-0.5 ${currentTab === 'zapchas' ? 'text-blue-600 dark:text-blue-400 scale-105' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
+          >
+            <Wrench className={`w-5 h-5 sm:w-6 sm:h-6 mb-1 ${currentTab === 'zapchas' ? 'fill-blue-50 dark:fill-blue-900' : ''}`} />
+            <span className="text-[10px] font-bold truncate max-w-full">{t('menu_zapchas')}</span>
           </button>
         )}
 
         {showConstructor && (
           <button 
             onClick={handleOpenConstructor}
-            className="flex flex-col items-center transition-all duration-300 w-16 sm:w-20 text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 group relative"
+            className="flex flex-col items-center justify-center transition-all duration-300 flex-1 min-w-0 px-0.5 text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 group relative"
             title="Mebel Konstruktor (Brauzerda ochish)"
           >
             <div className="relative">
-              <Ruler className="w-6 h-6 mb-1 text-slate-400 dark:text-slate-500 group-hover:text-blue-600 dark:group-hover:text-blue-400 group-hover:scale-110 transition-all" />
+              <Ruler className="w-5 h-5 sm:w-6 sm:h-6 mb-1 text-slate-400 dark:text-slate-500 group-hover:text-blue-600 dark:group-hover:text-blue-400 group-hover:scale-110 transition-all" />
               <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
             </div>
-            <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+            <span className="text-[10px] font-bold truncate max-w-full text-slate-400 dark:text-slate-500 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
               {t('menu_constructor')}
             </span>
           </button>
@@ -250,10 +279,10 @@ export default function MainApp() {
 
         <button 
           onClick={() => setActiveTab('settings')}
-          className={`flex flex-col items-center transition-all duration-300 w-16 sm:w-20 ${currentTab === 'settings' ? 'text-blue-600 dark:text-blue-400 scale-110' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
+          className={`flex flex-col items-center justify-center transition-all duration-300 flex-1 min-w-0 px-0.5 ${currentTab === 'settings' ? 'text-blue-600 dark:text-blue-400 scale-105' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
         >
-          <SettingsIcon className={`w-6 h-6 mb-1 ${currentTab === 'settings' ? 'fill-blue-50 dark:fill-blue-900' : ''}`} />
-          <span className="text-[10px] font-bold">{t('menu_settings')}</span>
+          <SettingsIcon className={`w-5 h-5 sm:w-6 sm:h-6 mb-1 ${currentTab === 'settings' ? 'fill-blue-50 dark:fill-blue-900' : ''}`} />
+          <span className="text-[10px] font-bold truncate max-w-full">{t('menu_settings')}</span>
         </button>
       </div>
     </main>

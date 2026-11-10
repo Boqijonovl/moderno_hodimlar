@@ -70,8 +70,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <div className="bg-white/80 backdrop-blur-md border-b border-slate-200 px-4 py-3 flex justify-between items-center shadow-sm sticky top-0 z-40">
         <div className="font-bold text-slate-800">Admin Panel</div>
         <div className="flex items-center gap-2">
-          <Link href="/raskroy" className="flex items-center gap-1 text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1.5 rounded-lg transition-colors">
-            📐 Raskroy
+          <Link href="/admin/zapchas" className="flex items-center gap-1 text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1.5 rounded-lg transition-colors">
+            🔧 Zapchas
           </Link>
           <Link href="/" className="flex items-center gap-1 text-xs font-semibold text-blue-600 bg-blue-50 px-2.5 py-1.5 rounded-lg hover:bg-blue-100 transition-colors">
             <ArrowLeft className="w-3.5 h-3.5" />

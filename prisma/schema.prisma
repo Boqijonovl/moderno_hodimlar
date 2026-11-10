@@ -18,19 +18,22 @@ model User {
   canUseAttendance Boolean      @default(true)
   canUseSales      Boolean      @default(true)
   canUseExpenses   Boolean      @default(true)
-  canUseOrders     Boolean      @default(true)
-  canUseConstructor Boolean     @default(false)
-  constructorToken  String?     @unique
-  workStartTime    String       @default("09:00")
-  workEndTime      String       @default("18:00")
-  language         String       @default("uz") // uz, ru
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @updatedAt
-  Attendance       Attendance[]
-  Sale             Sale[]
-  Expense          Expense[]
-  assignedOrders   Order[]      @relation("AssignedOrders")
-  createdOrders    Order[]      @relation("CreatedOrders")
+  canUseOrders      Boolean              @default(true)
+  canUseZapchas     Boolean              @default(true)
+  canManageZapchas  Boolean              @default(false)
+  canUseConstructor Boolean              @default(false)
+  constructorToken  String?              @unique
+  workStartTime     String               @default("09:00")
+  workEndTime       String               @default("18:00")
+  language          String               @default("uz") // uz, ru
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  Attendance        Attendance[]
+  Sale              Sale[]
+  Expense           Expense[]
+  assignedOrders    Order[]              @relation("AssignedOrders")
+  createdOrders     Order[]              @relation("CreatedOrders")
+  zapchasLogs       ZapchasTransaction[] @relation("ZapchasActor")
 }
 
 model Attendance {
@@ -160,16 +163,33 @@ model CashShift {
   updatedAt    DateTime  @updatedAt
 }
 
-model Offcut {
-  id        String   @id @default(uuid())
-  material  String   @default("DSP 18mm")
-  width     Float    // mm
-  length    Float    // mm
-  thickness Float?   @default(18)
-  quantity  Int      @default(1)
-  note      String?
-  source    String?  // Raskroy nomi yoki izoh
-  isUsed    Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model ZapchasPart {
+  id           String               @id @default(uuid())
+  name         String               @unique
+  unit         String               @default("dona") // dona, juft, metr, komplekt, kg
+  quantity     Int                  @default(0)
+  minQuantity  Int                  @default(0)
+  price        Float?
+  note         String?
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+  transactions ZapchasTransaction[]
+}
+
+model ZapchasTransaction {
+  id            String      @id @default(uuid())
+  partId        String
+  part          ZapchasPart @relation(fields: [partId], references: [id], onDelete: Cascade)
+  type          String      // IN, OUT, ADJUST
+  quantity      Int
+  quantityDelta Int
+  balanceAfter  Int
+  unitPrice     Float?
+  totalPrice    Float?
+  customerName  String?
+  note          String?
+  userId        String
+  user          User        @relation("ZapchasActor", fields: [userId], references: [id])
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
 }

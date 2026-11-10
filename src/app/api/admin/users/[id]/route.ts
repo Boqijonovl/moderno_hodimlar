@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { Telegraf } from 'telegraf';
 
 export async function PUT(req: Request, props: { params: Promise<{ id: string }> }) {
   try {
@@ -13,6 +14,8 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
       canUseSales, 
       canUseExpenses, 
       canUseOrders, 
+      canUseZapchas,
+      canManageZapchas,
       canUseConstructor, 
       regenerateToken, 
       workStartTime, 
@@ -38,6 +41,8 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
         canUseSales: canUseSales !== undefined ? canUseSales : undefined,
         canUseExpenses: canUseExpenses !== undefined ? canUseExpenses : undefined,
         canUseOrders: canUseOrders !== undefined ? canUseOrders : undefined,
+        canUseZapchas: canUseZapchas !== undefined ? canUseZapchas : undefined,
+        canManageZapchas: canManageZapchas !== undefined ? canManageZapchas : undefined,
         canUseConstructor: canUseConstructor !== undefined ? canUseConstructor : undefined,
         constructorToken: tokenUpdate !== undefined ? tokenUpdate : undefined,
         workStartTime: workStartTime !== undefined ? workStartTime : undefined,
@@ -45,6 +50,19 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
         phone: phone !== undefined ? phone : undefined
       }
     });
+
+    if (canManageZapchas === true && !existingUser?.canManageZapchas && process.env.BOT_TOKEN && user.telegramId) {
+      try {
+        const bot = new Telegraf(process.env.BOT_TOKEN);
+        await bot.telegram.sendMessage(
+          user.telegramId,
+          `🔧 <b>Zapchas Ombori Mas'uli</b>\n\nSiz Admin tomonidan <b>Zapchaslar</b> bo'limiga mas'ul etib biriktirildingiz.\nEndi kelgan zapchaslar sonini kiritishingiz va kelgan-ketgan zapchaslarni boshqarishingiz mumkin.`,
+          { parse_mode: 'HTML' }
+        ).catch(() => {});
+      } catch (e) {
+        console.error('Failed to notify user on canManageZapchas toggle:', e);
+      }
+    }
 
     return NextResponse.json({ success: true, user });
   } catch (error) {

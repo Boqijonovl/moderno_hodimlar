@@ -19,7 +19,7 @@ export async function GET() {
   try {
     const { start: todayStart, end: todayEnd, todayDateMidnight } = getTashkentTodayRange();
 
-    const [sales, todayPayments, attendance, totalStoreDebtAggregate] = await Promise.all([
+    const [sales, todayPayments, attendance, totalStoreDebtAggregate, zapchasParts, todayZapchasGrouped] = await Promise.all([
       prisma.sale.findMany({
         where: { createdAt: { gte: todayStart, lte: todayEnd } },
         include: { user: true, items: true, payments: true }
@@ -39,6 +39,14 @@ export async function GET() {
       prisma.sale.aggregate({
         where: { balance: { gt: 0 } },
         _sum: { balance: true }
+      }),
+      prisma.zapchasPart.findMany({
+        select: { quantity: true, minQuantity: true }
+      }),
+      prisma.zapchasTransaction.groupBy({
+        by: ['type'],
+        where: { createdAt: { gte: todayStart, lte: todayEnd } },
+        _sum: { quantity: true }
       })
     ]);
 
@@ -99,6 +107,13 @@ export async function GET() {
       chartData.push({ name: dayName, total: dayTotal });
     }
     
+    let todayZapchasIn = 0;
+    let todayZapchasOut = 0;
+    todayZapchasGrouped.forEach((row) => {
+      if (row.type === 'IN') todayZapchasIn += row._sum.quantity || 0;
+      if (row.type === 'OUT') todayZapchasOut += row._sum.quantity || 0;
+    });
+
     return NextResponse.json({
       totalRevenue,
       totalDebt: totalStoreDebt,
@@ -113,6 +128,13 @@ export async function GET() {
       },
       salesCount: sales.length,
       attendance: { total: attendance.length, onTime, late },
+      zapchas: {
+        totalParts: zapchasParts.length,
+        totalStock: zapchasParts.reduce((sum, p) => sum + p.quantity, 0),
+        lowStockCount: zapchasParts.filter(p => p.quantity <= 0 || (p.minQuantity > 0 && p.quantity <= p.minQuantity)).length,
+        todayIn: todayZapchasIn,
+        todayOut: todayZapchasOut
+      },
       chartData,
       recentSales: await prisma.sale.findMany({
         take: 5,
