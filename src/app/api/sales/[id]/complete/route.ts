@@ -69,7 +69,7 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
     }
 
     return NextResponse.json(updatedSale);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error completing sale:', error);
     return NextResponse.json({ error: 'Failed to complete sale' }, { status: 500 });
   }
