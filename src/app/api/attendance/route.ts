@@ -165,7 +165,7 @@ export async function POST(req: Request) {
 
       // If lat/lng provided, check distance for check-out as well, optionally
       if (lat && lng) {
-        let settings = await prisma.settings.findFirst();
+        const settings = await prisma.settings.findFirst();
         if (settings) {
           const distance = getDistance(
             { latitude: lat, longitude: lng },
@@ -190,7 +190,7 @@ export async function POST(req: Request) {
       } else if (currentMinuteOfDay > endMinuteOfDay) {
         // Kech ketdi (Left late): ishlagan ortiqcha vaqtni kechikishdan ayirish
         const extraMinutes = currentMinuteOfDay - endMinuteOfDay;
-        newLateMinutes -= extraMinutes;
+        newLateMinutes = Math.max(0, newLateMinutes - extraMinutes);
       }
 
       await prisma.attendance.update({
@@ -223,8 +223,9 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Attendance error:', error);
-    return NextResponse.json({ error: error.message || 'Internal error' }, { status: 500 });
+    const message = error instanceof Error ? error.message : 'Internal error';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

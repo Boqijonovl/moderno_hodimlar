@@ -26,7 +26,7 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
       if (body?.method && typeof body.method === 'string') {
         method = body.method.trim();
       }
-    } catch (e) {
+    } catch {
       // Body is optional (e.g. simple PUT without payload)
     }
 
@@ -54,7 +54,7 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
         const bot = new Telegraf(process.env.BOT_TOKEN);
         const admins = await prisma.user.findMany({ where: { role: 'ADMIN' } });
         
-        let itemsText = sale.items.map((item: any) => `- ${item.name}`).join('\n');
+        const itemsText = sale.items.map((item: { name: string }) => `- ${item.name}`).join('\n');
         
         const message = `🟢 <b>Qarz to'landi!</b>\n\n👤 Xodim: ${sale.user.name}\n\n🛍 <b>Sotilgan tovarlar:</b>\n${itemsText}\n\n💰 To'langan qarz summasi: <b>${paidBalance.toLocaleString()} so'm</b>`;
 

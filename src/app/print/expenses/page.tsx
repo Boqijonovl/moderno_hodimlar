@@ -68,7 +68,7 @@ export default function PrintExpensesPage() {
                 return (
                   <tr key={expense.id} className="hover:bg-gray-50 print:break-inside-avoid">
                     <td className="p-3 border border-gray-300 text-gray-600 font-medium">{index + 1}</td>
-                    <td className="p-3 border border-gray-300 text-gray-700 whitespace-nowrap">{new Date(expense.createdAt).toLocaleString('uz-UZ', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'})}</td>
+                    <td className="p-3 border border-gray-300 text-gray-700 whitespace-nowrap">{new Date(expense.createdAt).toLocaleString('uz-UZ', { timeZone: 'Asia/Tashkent', year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'})}</td>
                     <td className="p-3 border border-gray-300 font-bold text-gray-800">{expense.user?.name || 'Noma\'lum'}</td>
                     <td className="p-3 border border-gray-300 text-gray-700">{expense.reason}</td>
                     <td className="p-3 border border-gray-300 text-gray-900 font-bold text-right">{expense.amount?.toLocaleString()}</td>

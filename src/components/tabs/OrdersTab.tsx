@@ -10,10 +10,6 @@ export default function OrdersTab({ user, WebApp }: { user: any, WebApp: any }) 
 
   const t = useTranslation(user?.language as Language);
 
-  useEffect(() => {
-    fetchOrders();
-  }, [user]);
-
   const fetchOrders = async () => {
     if (!user?.id) return;
     try {
@@ -27,6 +23,11 @@ export default function OrdersTab({ user, WebApp }: { user: any, WebApp: any }) 
     }
     setLoading(false);
   };
+
+  useEffect(() => {
+    void Promise.resolve().then(() => fetchOrders());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   const updateStatus = async (id: string, newStatus: string) => {
     try {

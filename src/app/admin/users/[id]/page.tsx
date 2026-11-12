@@ -15,10 +15,6 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
   const [sales, setSales] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchData();
-  }, [telegramId]);
-
   const fetchData = async () => {
     try {
       const [userRes, attRes, salesRes] = await Promise.all([
@@ -44,6 +40,11 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
     }
     setLoading(false);
   };
+
+  useEffect(() => {
+    void Promise.resolve().then(() => fetchData());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [telegramId]);
 
   const requestContact = async () => {
     try {

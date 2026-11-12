@@ -27,14 +27,27 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
     const { id } = params;
     const { checkInTime, checkOutTime, status } = await req.json();
 
-    const updateData: any = {};
+    const updateData: {
+      checkInTime?: Date | null;
+      checkOutTime?: Date | null;
+      status?: string;
+      lateMinutes?: number;
+    } = {};
     if (checkInTime !== undefined) updateData.checkInTime = checkInTime ? new Date(checkInTime) : null;
     if (checkOutTime !== undefined) updateData.checkOutTime = checkOutTime ? new Date(checkOutTime) : null;
     if (status !== undefined) updateData.status = status;
 
     let targetUserId = '';
+    let mockTargetDate: Date | null = null;
     if (id.startsWith('mock-')) {
-      targetUserId = id.split('-')[1];
+      const withoutPrefix = id.slice('mock-'.length);
+      const lastDash = withoutPrefix.lastIndexOf('-');
+      if (lastDash <= 0) {
+        return NextResponse.json({ error: 'Invalid mock attendance ID' }, { status: 400 });
+      }
+      targetUserId = withoutPrefix.slice(0, lastDash);
+      const ts = Number(withoutPrefix.slice(lastDash + 1));
+      mockTargetDate = Number.isFinite(ts) ? new Date(ts) : new Date();
     } else {
       const existing = await prisma.attendance.findUnique({ where: { id }, select: { userId: true } });
       if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
@@ -92,14 +105,10 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
     updateData.status = newStatus;
 
     if (id.startsWith('mock-')) {
-      const parts = id.split('-');
-      const userId = parts[1];
-      const targetDate = new Date(parseInt(parts[2], 10));
-      
       const created = await prisma.attendance.create({
         data: {
-          userId,
-          date: targetDate,
+          userId: targetUserId,
+          date: mockTargetDate || new Date(),
           checkInTime: updateData.checkInTime,
           checkOutTime: updateData.checkOutTime,
           status: updateData.status,

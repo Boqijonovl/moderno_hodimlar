@@ -13,10 +13,6 @@ export default function AttendanceTab({ user, WebApp }: { user: any, WebApp: any
 
   const t = useTranslation(user?.language as Language);
 
-  useEffect(() => {
-    fetchHistory();
-  }, [user, selectedMonth]);
-
   const fetchHistory = async () => {
     if (!user?.telegramId) return;
     try {
@@ -27,7 +23,7 @@ export default function AttendanceTab({ user, WebApp }: { user: any, WebApp: any
         const records = data.attendances || [];
         setHistory(records);
         
-        const openRecord = records.find((r: any) => !r.checkOutTime);
+        const openRecord = records.find((r: { checkOutTime: string | null }) => !r.checkOutTime);
         if (openRecord) {
           setStatus('checked-in');
         } else {
@@ -38,6 +34,11 @@ export default function AttendanceTab({ user, WebApp }: { user: any, WebApp: any
       console.error(e);
     }
   };
+
+  useEffect(() => {
+    void Promise.resolve().then(() => fetchHistory());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, selectedMonth]);
 
   const handleCheckIn = (reason?: string) => {
     if (typeof window === 'undefined' || !navigator.geolocation) {
@@ -193,7 +194,7 @@ export default function AttendanceTab({ user, WebApp }: { user: any, WebApp: any
             {history.length > 0 && (
               <div className="text-right">
                 {(() => {
-                  let totalLate = history.reduce((sum, r) => sum + (r.lateMinutes || 0), 0);
+                  const totalLate = history.reduce((sum, r) => sum + (r.lateMinutes || 0), 0);
                   
                   if (totalLate <= 0) {
                     return (

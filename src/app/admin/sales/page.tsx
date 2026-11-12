@@ -88,18 +88,6 @@ export default function SalesAnalytics() {
     setPayDebtLoading(false);
   };
 
-  useEffect(() => {
-    fetch('/api/sales')
-      .then(res => res.json())
-      .then(setSales);
-
-    fetch('/api/admin/expenses')
-      .then(res => res.json())
-      .then(setExpenses);
-
-    fetchShifts();
-  }, []);
-
   const fetchShifts = async () => {
     try {
       const res = await fetch('/api/admin/shifts');
@@ -113,6 +101,18 @@ export default function SalesAnalytics() {
       console.error(e);
     }
   };
+
+  useEffect(() => {
+    fetch('/api/sales')
+      .then(res => res.json())
+      .then(setSales);
+
+    fetch('/api/admin/expenses')
+      .then(res => res.json())
+      .then(setExpenses);
+
+    fetchShifts();
+  }, []);
 
   const fetchAuditLogs = async () => {
     setLoadingAudit(true);

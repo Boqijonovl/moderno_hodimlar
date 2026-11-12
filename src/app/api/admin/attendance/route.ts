@@ -3,6 +3,16 @@ import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
 
+function getTashkentDateUTC(dateStr?: string | null): Date {
+  if (dateStr && /^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    return new Date(Date.UTC(y, m - 1, d, 0, 0, 0, 0));
+  }
+  const tashkentDateStr = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Tashkent' });
+  const [y, m, d] = tashkentDateStr.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d, 0, 0, 0, 0));
+}
+
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
@@ -10,23 +20,18 @@ export async function GET(req: Request) {
     const monthParam = searchParams.get('month');
 
     let whereClause = {};
-    let targetDate = new Date();
+    const targetDate = getTashkentDateUTC(dateParam);
 
     if (monthParam) {
-      const year = parseInt(monthParam.split('-')[0]);
-      const month = parseInt(monthParam.split('-')[1]);
-      const start = new Date(year, month - 1, 1);
-      const end = new Date(year, month, 1);
+      const year = parseInt(monthParam.split('-')[0], 10);
+      const month = parseInt(monthParam.split('-')[1], 10);
+      const start = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0));
+      const end = new Date(Date.UTC(year, month, 1, 0, 0, 0, 0));
       whereClause = {
         date: { gte: start, lt: end }
       };
     } else {
-      if (dateParam) {
-        targetDate = new Date(dateParam);
-      }
-      targetDate.setHours(0, 0, 0, 0);
-      const nextDay = new Date(targetDate);
-      nextDay.setDate(nextDay.getDate() + 1);
+      const nextDay = new Date(targetDate.getTime() + 24 * 60 * 60 * 1000);
       whereClause = {
         date: { gte: targetDate, lt: nextDay }
       };
@@ -38,7 +43,7 @@ export async function GET(req: Request) {
       orderBy: { checkInTime: 'desc' }
     });
 
-    let fullAttendance: any[] = attendance;
+    let fullAttendance: unknown[] = attendance;
     
     // Only generate mock attendances for single day view
     if (!monthParam) {

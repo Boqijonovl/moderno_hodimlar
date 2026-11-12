@@ -17,6 +17,7 @@ interface ManagedEmployee {
 
 export default function AdminZapchasPage() {
   const [adminUser, setAdminUser] = useState<ZapchasUserProp | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
   const [webApp, setWebApp] = useState<TelegramWebAppProp | null>(null);
   const [employees, setEmployees] = useState<ManagedEmployee[]>([]);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('');
@@ -64,12 +65,16 @@ export default function AdminZapchasPage() {
                   setAdminUser({ telegramId, name: fallbackName, role: 'ADMIN', active: true });
                 }
               })
-              .catch(() => {
-                setAdminUser({ telegramId, name: fallbackName, role: 'ADMIN', active: true });
+              .finally(() => {
+                setAuthChecked(true);
               });
+          } else {
+            setAuthChecked(true);
           }
         })
-        .catch(() => {});
+        .catch(() => {
+          setAuthChecked(true);
+        });
     }
   }, []);
 
@@ -284,6 +289,10 @@ export default function AdminZapchasPage() {
       {/* Main Zapchas Stock, Incoming, Sell, History, Supervision Management */}
       {adminUser ? (
         <ZapchasSection user={adminUser} WebApp={webApp} viewScope="admin" initialView="stock" />
+      ) : authChecked ? (
+        <div className="bg-amber-50 border border-amber-200 rounded-3xl p-6 text-center text-sm text-amber-800 font-semibold">
+          Admin hisobingiz aniqlanmadi. Iltimos, sahifani Telegram ilovasi ichidan oching.
+        </div>
       ) : (
         <div className="flex justify-center py-8">
           <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />

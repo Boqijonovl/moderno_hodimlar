@@ -5,6 +5,55 @@ import { normalizePaymentMethod } from '@/lib/formatters';
 
 export const dynamic = 'force-dynamic';
 
+async function calculateShiftCash(openedAt: Date) {
+  const [salePayments, rawSales, zapchasPayments, expenses] = await Promise.all([
+    prisma.salePayment.findMany({
+      where: { createdAt: { gte: openedAt } }
+    }),
+    prisma.sale.findMany({
+      where: {
+        createdAt: { gte: openedAt },
+        payments: { none: {} }
+      }
+    }),
+    prisma.zapchasSalePayment.findMany({
+      where: { createdAt: { gte: openedAt } }
+    }),
+    prisma.expense.findMany({
+      where: { createdAt: { gte: openedAt } }
+    })
+  ]);
+
+  let furnitureCashIn = 0;
+  salePayments.forEach(p => {
+    if (normalizePaymentMethod(p.method) === 'Naqd') {
+      furnitureCashIn += p.amount;
+    }
+  });
+  rawSales.forEach(s => {
+    if (normalizePaymentMethod(s.paymentMethod) === 'Naqd') {
+      furnitureCashIn += (s.advance || s.totalPrice || 0);
+    }
+  });
+
+  let zapchasCashIn = 0;
+  zapchasPayments.forEach(zp => {
+    if (normalizePaymentMethod(zp.method) === 'Naqd') {
+      zapchasCashIn += zp.amount;
+    }
+  });
+
+  let cashOut = 0;
+  expenses.forEach(e => {
+    if (normalizePaymentMethod(e.paymentMethod) === 'Naqd') {
+      cashOut += e.amount;
+    }
+  });
+
+  const cashIn = furnitureCashIn + zapchasCashIn;
+  return { cashIn, furnitureCashIn, zapchasCashIn, cashOut };
+}
+
 export async function GET() {
   try {
     const activeShift = await prisma.cashShift.findFirst({
@@ -14,45 +63,13 @@ export async function GET() {
 
     let currentStats = null;
     if (activeShift) {
-      // Calculate real-time cash in and cash out since shift opened
-      const [salePayments, rawSales, expenses] = await Promise.all([
-        prisma.salePayment.findMany({
-          where: { createdAt: { gte: activeShift.openedAt } }
-        }),
-        prisma.sale.findMany({
-          where: {
-            createdAt: { gte: activeShift.openedAt },
-            payments: { none: {} } // sales without payments relation
-          }
-        }),
-        prisma.expense.findMany({
-          where: { createdAt: { gte: activeShift.openedAt } }
-        })
-      ]);
-
-      let cashIn = 0;
-      salePayments.forEach(p => {
-        if (normalizePaymentMethod(p.method) === 'Naqd') {
-          cashIn += p.amount;
-        }
-      });
-      rawSales.forEach(s => {
-        if (normalizePaymentMethod(s.paymentMethod) === 'Naqd') {
-          cashIn += (s.advance || s.totalPrice || 0);
-        }
-      });
-
-      let cashOut = 0;
-      expenses.forEach(e => {
-        if (normalizePaymentMethod(e.paymentMethod) === 'Naqd') {
-          cashOut += e.amount;
-        }
-      });
-
+      const { cashIn, furnitureCashIn, zapchasCashIn, cashOut } = await calculateShiftCash(activeShift.openedAt);
       const expectedCash = activeShift.startAmount + cashIn - cashOut;
 
       currentStats = {
         cashIn,
+        furnitureCashIn,
+        zapchasCashIn,
         cashOut,
         expectedCash
       };
@@ -147,40 +164,8 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: 'Ochiq smena topilmadi!' }, { status: 404 });
       }
 
-      // Calculate cash collected
-      const [salePayments, rawSales, expenses] = await Promise.all([
-        prisma.salePayment.findMany({
-          where: { createdAt: { gte: activeShift.openedAt } }
-        }),
-        prisma.sale.findMany({
-          where: {
-            createdAt: { gte: activeShift.openedAt },
-            payments: { none: {} }
-          }
-        }),
-        prisma.expense.findMany({
-          where: { createdAt: { gte: activeShift.openedAt } }
-        })
-      ]);
-
-      let cashIn = 0;
-      salePayments.forEach(p => {
-        if (normalizePaymentMethod(p.method) === 'Naqd') {
-          cashIn += p.amount;
-        }
-      });
-      rawSales.forEach(s => {
-        if (normalizePaymentMethod(s.paymentMethod) === 'Naqd') {
-          cashIn += (s.advance || s.totalPrice || 0);
-        }
-      });
-
-      let cashOut = 0;
-      expenses.forEach(e => {
-        if (normalizePaymentMethod(e.paymentMethod) === 'Naqd') {
-          cashOut += e.amount;
-        }
-      });
+      // Calculate cash collected (furniture + zapchas - expenses)
+      const { cashIn, zapchasCashIn, cashOut } = await calculateShiftCash(activeShift.openedAt);
 
       const expectedCash = activeShift.startAmount + cashIn - cashOut;
       const handedCash = Math.max(0, parseFloat(actualCash) || 0);
@@ -238,7 +223,7 @@ export async function POST(req: Request) {
 ⏰ <b>Smena vaqti:</b> ${openTime} — ${closeTime}
 
 💵 <b>Boshlang'ich kassa:</b> ${activeShift.startAmount.toLocaleString()} so'm
-➕ <b>Naqd savdo tushumi:</b> ${cashIn.toLocaleString()} so'm
+➕ <b>Naqd savdo tushumi:</b> ${cashIn.toLocaleString()} so'm${zapchasCashIn > 0 ? ` (shundan Zapchas: ${zapchasCashIn.toLocaleString()} so'm)` : ''}
 ➖ <b>Naqd xarajatlar:</b> ${cashOut.toLocaleString()} so'm
 ━━━━━━━━━━━━━━━━━━━━
 📊 <b>Kassada bo'lishi kerak:</b> <b>${expectedCash.toLocaleString()} so'm</b>

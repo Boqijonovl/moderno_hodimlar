@@ -9,10 +9,6 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(true);
   const [sendingSummary, setSendingSummary] = useState(false);
 
-  useEffect(() => {
-    fetchData(selectedMonth);
-  }, [selectedMonth]);
-
   const fetchData = async (month: string) => {
     setLoading(true);
     try {
@@ -30,6 +26,11 @@ export default function ReportsPage() {
     }
     setLoading(false);
   };
+
+  useEffect(() => {
+    void Promise.resolve().then(() => fetchData(selectedMonth));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedMonth]);
 
   const sendTelegramDailySummary = async () => {
     if (!confirm("Bugungi kassa hisobotini barcha adminlarga Telegram orqali yuborasizmi?")) return;

@@ -16,16 +16,6 @@ export default function ExpensesTab({ user, WebApp }: { user: any, WebApp: any }
 
   const t = useTranslation(user?.language as Language);
 
-  useEffect(() => {
-    fetchHistory();
-    fetch('/api/payment-methods').then(res => res.json()).then(data => {
-      setPaymentMethods(data);
-      if (data.length > 0 && !paymentMethod) {
-        setPaymentMethod(data[0].name);
-      }
-    }).catch(() => {});
-  }, [user, selectedMonth]);
-
   const fetchHistory = async () => {
     if (!user?.telegramId) return;
     try {
@@ -39,6 +29,21 @@ export default function ExpensesTab({ user, WebApp }: { user: any, WebApp: any }
       console.error(e);
     }
   };
+
+  useEffect(() => {
+    fetch('/api/payment-methods').then(res => res.json()).then(data => {
+      setPaymentMethods(data);
+      if (data.length > 0 && !paymentMethod) {
+        setPaymentMethod(data[0].name);
+      }
+    }).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    void Promise.resolve().then(() => fetchHistory());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, selectedMonth]);
 
   const formatNumber = (val: string) => {
     const raw = val.replace(/\D/g, '');

@@ -27,17 +27,6 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
 
   const t = useTranslation(user?.language as Language);
 
-  useEffect(() => {
-    fetchHistory();
-    fetch('/api/payment-methods').then(res => res.json()).then(data => {
-      setPaymentMethods(data);
-      if (data.length > 0) {
-        setDebtPayMethod(data[0].name);
-        setSelectedMethods([data[0].name]); // Default select the first one
-      }
-    }).catch(() => {});
-  }, [user, selectedMonth]);
-
   const fetchHistory = async () => {
     if (!user?.telegramId) return;
     try {
@@ -51,6 +40,21 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
       console.error(e);
     }
   };
+
+  useEffect(() => {
+    fetch('/api/payment-methods').then(res => res.json()).then(data => {
+      setPaymentMethods(data);
+      if (data.length > 0) {
+        setDebtPayMethod(data[0].name);
+        setSelectedMethods([data[0].name]); // Default select the first one
+      }
+    }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    void Promise.resolve().then(() => fetchHistory());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, selectedMonth]);
 
   const handleAddItem = () => {
     setItems(prev => [...prev, { name: '', price: '' }]);
@@ -237,7 +241,12 @@ export default function SalesTab({ user, WebApp }: { user: any, WebApp: any }) {
   const openPDF = (saleId?: string) => {
     const id = saleId || lastSale?.id;
     if (id) {
-      WebApp?.openLink(`${window.location.origin}/receipt/${id}`);
+      const url = `${window.location.origin}/api/sales/${id}/pdf`;
+      if (WebApp?.openLink) {
+        WebApp.openLink(url);
+      } else {
+        window.open(url, '_blank');
+      }
     }
   };
 

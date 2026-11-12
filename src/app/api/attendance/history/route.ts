@@ -11,19 +11,12 @@ export async function GET(req: Request) {
     }
 
     const monthParam = searchParams.get('month'); // YYYY-MM
-    const now = new Date();
-    
-    let startOfMonth: Date;
-    let endOfMonth: Date;
+    const tashkentNow = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Tashkent' });
+    const [curYear, curMonth] = tashkentNow.split('-').map(Number);
 
-    if (monthParam) {
-      const [year, month] = monthParam.split('-').map(Number);
-      startOfMonth = new Date(year, month - 1, 1);
-      endOfMonth = new Date(year, month, 0, 23, 59, 59, 999);
-    } else {
-      startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-      endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
-    }
+    const [year, month] = monthParam ? monthParam.split('-').map(Number) : [curYear, curMonth];
+    const startOfMonth = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0));
+    const endOfMonth = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999));
 
     const attendances = await prisma.attendance.findMany({
       where: {

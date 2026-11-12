@@ -74,13 +74,13 @@ function PrintAttendanceContent() {
 
                 const formatTime = (isoString: string | null) => {
                   if (!isoString) return '--:--';
-                  return new Date(isoString).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' });
+                  return new Date(isoString).toLocaleTimeString('uz-UZ', { timeZone: 'Asia/Tashkent', hour: '2-digit', minute: '2-digit' });
                 };
 
                 return (
                   <tr key={att.id} className="hover:bg-gray-50 print:break-inside-avoid">
                     <td className="p-3 border border-gray-300 text-gray-600 text-sm font-medium">{index + 1}</td>
-                    {monthParam && <td className="p-3 border border-gray-300 text-gray-700 font-medium whitespace-nowrap">{new Date(att.date).toLocaleDateString('uz-UZ')}</td>}
+                    {monthParam && <td className="p-3 border border-gray-300 text-gray-700 font-medium whitespace-nowrap">{new Date(att.date).toLocaleDateString('uz-UZ', { timeZone: 'Asia/Tashkent' })}</td>}
                     <td className="p-3 border border-gray-300 font-bold text-gray-800">{att.user?.name || 'Noma\'lum'}</td>
                     <td className="p-3 border border-gray-300 text-gray-700">{formatTime(att.checkInTime)}</td>
                     <td className="p-3 border border-gray-300 text-gray-700">{formatTime(att.checkOutTime)}</td>

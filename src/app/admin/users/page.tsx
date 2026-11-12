@@ -8,10 +8,6 @@ export default function UsersPage() {
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
   const fetchUsers = async () => {
     try {
       const res = await fetch('/api/admin/users');
@@ -24,6 +20,10 @@ export default function UsersPage() {
     }
     setLoading(false);
   };
+
+  useEffect(() => {
+    void Promise.resolve().then(() => fetchUsers());
+  }, []);
 
   const requestContact = async (targetTelegramId: string) => {
     try {

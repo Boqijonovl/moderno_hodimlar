@@ -3,6 +3,12 @@ import { prisma } from '@/lib/prisma';
 import { Telegraf } from 'telegraf';
 import { handleDailyReport } from '@/app/api/cron/daily-report/route';
 
+function getTashkentTodayUTC() {
+  const tashkentDateStr = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Tashkent' });
+  const [y, m, d] = tashkentDateStr.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d, 0, 0, 0, 0));
+}
+
 // This endpoint is meant to be called by a CRON job
 export async function GET(req: Request) {
   try {
@@ -30,8 +36,7 @@ export async function GET(req: Request) {
       const users = await prisma.user.findMany({
         where: { role: { not: 'ADMIN' }, active: true }
       });
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      const today = getTashkentTodayUTC();
 
       const attendances = await prisma.attendance.findMany({
         where: { date: { gte: today } }
@@ -84,8 +89,8 @@ export async function GET(req: Request) {
 
       for (const [telegramId, orders] of userOrdersMap.entries()) {
         let msg = `📦 <b>Jarayondagi buyurtmalar eslatmasi!</b>\n\n`;
-        orders.forEach((o: any, i: number) => {
-          const dStr = o.deadline ? new Date(o.deadline).toLocaleDateString('uz-UZ') : 'Noma\'lum';
+        orders.forEach((o: { name: string; deadline: Date | string | null; status: string; role: string }, i: number) => {
+          const dStr = o.deadline ? new Date(o.deadline).toLocaleDateString('uz-UZ', { timeZone: 'Asia/Tashkent' }) : 'Noma\'lum';
           const role = o.role === 'assignee' ? "Sizga biriktirilgan" : 'Siz yaratgan';
           msg += `${i+1}. <b>${o.name}</b> (Muddat: ${dStr})\n   Holati: ${o.status === 'PENDING' ? 'Kutilmoqda' : 'Jarayonda'} [${role}]\n`;
         });
@@ -93,8 +98,7 @@ export async function GET(req: Request) {
         sentCount++;
       }
     } else if (type === 'check_open_23') {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      const today = getTashkentTodayUTC();
 
       const openAttendances = await prisma.attendance.findMany({
         where: { date: { gte: today }, checkOutTime: null },
@@ -132,24 +136,20 @@ export async function GET(req: Request) {
       });
 
       const serverTime = new Date();
-      const tashkentTimeStr = serverTime.toLocaleString("en-US", {timeZone: "Asia/Tashkent"});
-      const tashkentTime = new Date(tashkentTimeStr);
 
       for (const att of openAttendances) {
         const user = att.user;
         
-        // Use the DATE of the attendance, not the current time!
+        // Use the DATE of the attendance (stored as Tashkent midnight UTC)
         const attDate = new Date(att.date);
         const endTimeLimit = new Date(attDate);
         const [endHour, endMinute] = (user.workEndTime || "18:00").split(':').map(Number);
         
-        // Ensure the time limit uses Tashkent timezone interpretation of the hours
-        // The attendance date is already saved as a midnight UTC object corresponding to Tashkent midnight.
-        // We just add the hours.
-        endTimeLimit.setUTCHours(endHour - 5, endMinute, 0, 0); // Convert local hour to UTC by subtracting 5 (Tashkent offset)
+        // Convert Tashkent local workEndTime to true UTC timestamp by subtracting 5 hours
+        endTimeLimit.setUTCHours(endHour - 5, endMinute, 0, 0);
 
-        // From 18:00 to 00:00 is 360 minutes penalty
-        const penaltyMinutes = Math.floor((tashkentTime.getTime() - endTimeLimit.getTime()) / 60000);
+        // Compare two true UTC timestamps (e.g. 19:00Z [00:00 UZT] - 13:00Z [18:00 UZT] = 360 min)
+        const penaltyMinutes = Math.max(0, Math.floor((serverTime.getTime() - endTimeLimit.getTime()) / 60000));
         const newLateMinutes = (att.lateMinutes || 0) + penaltyMinutes;
 
         await prisma.attendance.update({
@@ -168,7 +168,9 @@ export async function GET(req: Request) {
               `❌ <b>Jarima!</b>\n\nSiz davomatni yopishni unutganingiz uchun tizim uni avtomatik yopdi va ${penaltyMinutes} daqiqa jarima yozdi. Keyingi safar e'tiborliroq bo'ling!`,
               { parse_mode: 'HTML' }
             );
-          } catch (e) {}
+          } catch {
+            // ignore unreachable user
+          }
         }
         sentCount++;
       }

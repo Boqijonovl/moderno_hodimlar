@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import PDFDocument from 'pdfkit';
 import { prisma } from '@/lib/prisma';
 import { formatPaymentMethod } from '@/lib/formatters';
 
@@ -14,7 +15,6 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       return new NextResponse('Sale not found', { status: 404 });
     }
 
-    const PDFDocument = require('pdfkit');
     const doc = new PDFDocument({ size: [350, 480 + ((sale.items?.length || 0) * 20)], margin: 30 });
     const buffers: Buffer[] = [];
     
@@ -36,7 +36,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     
     doc.fontSize(12).fillColor('black');
     const startY1 = doc.y;
-    doc.text('Sana:', 30, startY1).font('Helvetica-Bold').text(new Date(sale.createdAt).toLocaleString('uz-UZ'), 150, startY1, { align: 'right', width: 170 });
+    doc.text('Sana:', 30, startY1).font('Helvetica-Bold').text(new Date(sale.createdAt).toLocaleString('uz-UZ', { timeZone: 'Asia/Tashkent' }), 150, startY1, { align: 'right', width: 170 });
     
     doc.moveDown(0.5);
     const startY2 = doc.y;
@@ -45,7 +45,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     doc.moveDown(0.5);
     const startY3 = doc.y;
     const paymentText = sale.payments && sale.payments.length > 0
-      ? sale.payments.map((p: any) => `${formatPaymentMethod(p.method)} (${Number(p.amount).toLocaleString()})`).join(', ')
+      ? sale.payments.map((p: { method: string; amount: number }) => `${formatPaymentMethod(p.method)} (${Number(p.amount).toLocaleString()})`).join(', ')
       : formatPaymentMethod(sale.paymentMethod);
     doc.font('Helvetica').text("To'lov turi:", 30, startY3).font('Helvetica-Bold').text(paymentText, 110, startY3, { align: 'right', width: 210 });
     
@@ -62,7 +62,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     doc.fontSize(14).font('Helvetica-Bold').text('Tovarlar:', { align: 'left' });
     doc.moveDown(0.5);
     
-    sale.items.forEach((item: any) => {
+    sale.items.forEach((item: { name: string; price: number }) => {
       const y = doc.y;
       doc.fontSize(12).font('Helvetica').fillColor('black').text(item.name, 30, y, { width: 150 });
       doc.font('Helvetica-Bold').text(`${(item.price).toLocaleString()} so'm`, 180, y, { align: 'right', width: 140 });
@@ -88,7 +88,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 
     const pdfBuffer = await pdfPromise;
 
-    return new NextResponse(pdfBuffer as any, {
+    return new NextResponse(new Uint8Array(pdfBuffer), {
       status: 200,
       headers: {
         'Content-Type': 'application/pdf',

@@ -14,6 +14,16 @@ export default function SettingsPage() {
   const [newMethodName, setNewMethodName] = useState('');
   const [editingMethod, setEditingMethod] = useState<{id: string, name: string} | null>(null);
 
+  const fetchPaymentMethods = async () => {
+    try {
+      const res = await fetch('/api/admin/payment-methods');
+      const data = await res.json();
+      setPaymentMethods(data);
+    } catch {
+      // ignore
+    }
+  };
+
   useEffect(() => {
     fetch('/api/admin/settings')
       .then(res => res.json())
@@ -26,16 +36,8 @@ export default function SettingsPage() {
         }
       });
     
-    fetchPaymentMethods();
+    void Promise.resolve().then(() => fetchPaymentMethods());
   }, []);
-
-  const fetchPaymentMethods = async () => {
-    try {
-      const res = await fetch('/api/admin/payment-methods');
-      const data = await res.json();
-      setPaymentMethods(data);
-    } catch (e) {}
-  };
 
   const addPaymentMethod = async () => {
     if (!newMethodName.trim()) return;

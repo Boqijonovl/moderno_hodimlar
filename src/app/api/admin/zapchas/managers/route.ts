@@ -37,14 +37,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Xodim tanlanmagan' }, { status: 400 });
     }
 
-    let adminName = 'Admin';
-    if (adminTelegramId) {
-      const adminUser = await resolveZapchasUser(adminTelegramId);
-      if (!adminUser || !isAdminUser(adminUser)) {
-        return NextResponse.json({ error: 'Faqat Admin mas\'ul biriktira oladi' }, { status: 403 });
-      }
-      adminName = adminUser.name;
+    if (!adminTelegramId) {
+      return NextResponse.json({ error: 'Admin identifikatori talab qilinadi' }, { status: 403 });
     }
+    const adminUser = await resolveZapchasUser(adminTelegramId);
+    if (!adminUser || !isAdminUser(adminUser)) {
+      return NextResponse.json({ error: 'Faqat Admin mas\'ul biriktira oladi' }, { status: 403 });
+    }
+    const adminName = adminUser.name;
 
     const target = await prisma.user.findUnique({ where: { id: targetUserId } });
     if (!target) {
