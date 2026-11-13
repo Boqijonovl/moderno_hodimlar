@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Settings as SettingsIcon, Wrench } from 'lucide-react';
 import ZapchasSection from '@/components/ZapchasSection';
+import AppLoadingVideo from '@/components/AppLoadingVideo';
 import { TelegramWebAppProp, ZapchasUserProp } from '@/components/zapchas/ZapchasTypes';
 
 type PageUserState = (ZapchasUserProp & { blocked_by_browser?: false }) | { blocked_by_browser: true };
@@ -62,11 +63,7 @@ export default function ZapchasPage() {
   }, []);
 
   if (!user) {
-    return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
-        <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
+    return <AppLoadingVideo message="Zapchas bo'limi yuklanmoqda..." />;
   }
 
   if (user.blocked_by_browser) {

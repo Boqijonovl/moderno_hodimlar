@@ -7,6 +7,7 @@ import SalesTab from '@/components/tabs/SalesTab';
 import ExpensesTab from '@/components/tabs/ExpensesTab';
 import SettingsTab from '@/components/tabs/SettingsTab';
 import ZapchasSection from '@/components/ZapchasSection';
+import AppLoadingVideo from '@/components/AppLoadingVideo';
 import { useTranslation, Language } from '@/lib/i18n';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -14,7 +15,14 @@ export default function MainApp() {
   const [activeTab, setActiveTab] = useState<'attendance' | 'sales' | 'expenses' | 'zapchas' | 'settings'>('attendance');
   const [user, setUser] = useState<any>(null);
   const [WebApp, setWebApp] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [minLoadingDone, setMinLoadingDone] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setMinLoadingDone(true);
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, []);
 
   const fetchUser = async (telegramId: string, fallbackName: string) => {
     try {
@@ -76,16 +84,16 @@ export default function MainApp() {
 
   const t = useTranslation(user?.language as Language);
 
-  // Wait for user to be loaded
-  if (!user) {
+  // Wait for user to be loaded and minimum intro animation
+  if (!user || !minLoadingDone) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <motion.div 
-          animate={{ rotate: 360 }}
-          transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
-          className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full"
-        />
-      </div>
+      <AppLoadingVideo
+        message="Ilova ishga tushirilmoqda..."
+        canSkip={Boolean(user)}
+        onSkip={() => {
+          if (user) setMinLoadingDone(true);
+        }}
+      />
     );
   }
 
