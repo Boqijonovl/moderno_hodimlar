@@ -12,6 +12,7 @@ type PageUserState = (ZapchasUserProp & { blocked_by_browser?: false }) | { bloc
 export default function ZapchasPage() {
   const [user, setUser] = useState<PageUserState | null>(null);
   const [WebApp, setWebApp] = useState<TelegramWebAppProp | null>(null);
+  const [splashFinished, setSplashFinished] = useState(false);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -62,8 +63,14 @@ export default function ZapchasPage() {
     }
   }, []);
 
-  if (!user) {
-    return <AppLoadingVideo message="Zapchas bo'limi yuklanmoqda..." />;
+  if (!splashFinished || !user) {
+    return (
+      <AppLoadingVideo
+        message="Zapchas bo'limi yuklanmoqda..."
+        canSkip={Boolean(user)}
+        onComplete={() => setSplashFinished(true)}
+      />
+    );
   }
 
   if (user.blocked_by_browser) {

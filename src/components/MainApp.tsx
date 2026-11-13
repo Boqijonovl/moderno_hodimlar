@@ -15,14 +15,7 @@ export default function MainApp() {
   const [activeTab, setActiveTab] = useState<'attendance' | 'sales' | 'expenses' | 'zapchas' | 'settings'>('attendance');
   const [user, setUser] = useState<any>(null);
   const [WebApp, setWebApp] = useState<any>(null);
-  const [minLoadingDone, setMinLoadingDone] = useState(false);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setMinLoadingDone(true);
-    }, 2000);
-    return () => clearTimeout(timer);
-  }, []);
+  const [splashFinished, setSplashFinished] = useState(false);
 
   const fetchUser = async (telegramId: string, fallbackName: string) => {
     try {
@@ -84,14 +77,14 @@ export default function MainApp() {
 
   const t = useTranslation(user?.language as Language);
 
-  // Wait for user to be loaded and minimum intro animation
-  if (!user || !minLoadingDone) {
+  // Wait for 10-second intro video to end and user to be loaded
+  if (!splashFinished || !user) {
     return (
       <AppLoadingVideo
         message="Ilova ishga tushirilmoqda..."
         canSkip={Boolean(user)}
-        onSkip={() => {
-          if (user) setMinLoadingDone(true);
+        onComplete={() => {
+          setSplashFinished(true);
         }}
       />
     );
