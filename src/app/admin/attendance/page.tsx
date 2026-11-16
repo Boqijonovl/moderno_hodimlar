@@ -210,15 +210,20 @@ export default function AttendancePage() {
                 )}
               </div>
             </div>
-            <div className="text-right flex flex-col items-end gap-2">
-              <span className={`text-[10px] px-2 py-1 rounded-md font-bold uppercase tracking-wider
-                ${att.status === 'ON_TIME' && (!att.lateMinutes || att.lateMinutes === 0) ? 'bg-emerald-50 text-emerald-600' : 
-                  att.status === 'ABSENT' ? 'bg-rose-50 text-rose-600' : 'bg-amber-50 text-amber-600'}
-              `}>
-                {att.status === 'ABSENT' 
-                  ? 'Kelmagan' 
-                  : (att.lateMinutes > 0 ? `Kechikkan (-${att.lateMinutes} daq)` : 'Vaqtida')}
-              </span>
+            <div className="text-right flex flex-col items-end gap-1.5">
+              <div className="flex items-center gap-1.5">
+                <span className={`text-[10px] px-2 py-0.5 rounded-md font-bold uppercase tracking-wider
+                  ${att.status === 'ON_TIME' && (!att.lateMinutes || att.lateMinutes === 0) ? 'bg-emerald-50 text-emerald-600' : 
+                    att.status === 'ABSENT' ? 'bg-rose-50 text-rose-600' : 'bg-amber-50 text-amber-600'}
+                `}>
+                  {att.status === 'ABSENT' ? 'Kelmagan' : (att.status === 'ON_TIME' ? 'Vaqtida' : 'Kechikkan')}
+                </span>
+                {att.lateMinutes > 0 && (
+                  <span className="text-[10px] px-2 py-0.5 rounded-md font-bold text-amber-700 bg-amber-100">
+                    Jarima: {att.lateMinutes} daq
+                  </span>
+                )}
+              </div>
               <div className="flex gap-2 mt-1 items-center">
                 <button 
                   onClick={(e) => { e.stopPropagation(); openEditModal(att); }}

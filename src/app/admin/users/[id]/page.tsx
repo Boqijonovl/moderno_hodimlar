@@ -358,14 +358,19 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
                   )}
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className={`px-2 py-1 rounded-md text-[10px] font-bold ${
-                    (!record.lateMinutes || record.lateMinutes === 0) && record.status === 'ON_TIME' ? 'bg-emerald-100 text-emerald-700' :
-                    record.status === 'ABSENT' ? 'bg-rose-100 text-rose-700' :
-                    'bg-amber-100 text-amber-700'
-                  }`}>
-                    {record.status === 'ABSENT' 
-                      ? 'Kelmagan' 
-                      : (record.lateMinutes > 0 ? `Kechikdi (-${record.lateMinutes}d)` : 'Vaqtida')}
+                  <div className="flex items-center gap-1.5">
+                    <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${
+                      (!record.lateMinutes || record.lateMinutes === 0) && record.status === 'ON_TIME' ? 'bg-emerald-100 text-emerald-700' :
+                      record.status === 'ABSENT' ? 'bg-rose-100 text-rose-700' :
+                      'bg-amber-100 text-amber-700'
+                    }`}>
+                      {record.status === 'ABSENT' ? 'Kelmagan' : (record.status === 'ON_TIME' ? 'Vaqtida' : 'Kechikdi')}
+                    </span>
+                    {record.lateMinutes > 0 && (
+                      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold text-amber-700 bg-amber-100">
+                        Jarima: {record.lateMinutes} daq
+                      </span>
+                    )}
                   </div>
                   <button onClick={() => deleteAttendance(record.id)} className="p-1.5 bg-rose-50 text-rose-500 rounded-lg hover:bg-rose-100 transition-colors">
                     <Trash2 className="w-4 h-4" />

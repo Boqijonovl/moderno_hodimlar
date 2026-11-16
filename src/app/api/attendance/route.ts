@@ -108,7 +108,7 @@ export async function POST(req: Request) {
 
         const remainingMs = scheduledEndUTC.getTime() - serverTime.getTime();
         if (remainingMs > 0) {
-          penaltyToReverse = Math.floor(remainingMs / 60000);
+          penaltyToReverse = Math.round(remainingMs / 60000);
         }
 
         lateMinutes = Math.max(0, (closedAttendance.lateMinutes || 0) - penaltyToReverse);
@@ -213,7 +213,7 @@ export async function POST(req: Request) {
       ));
 
       let newLateMinutes = attendance.lateMinutes || 0;
-      const diffMinutes = Math.floor((serverTime.getTime() - scheduledEndUTC.getTime()) / 60000);
+      const diffMinutes = Math.round((serverTime.getTime() - scheduledEndUTC.getTime()) / 60000);
 
       if (diffMinutes < 0) {
         // Vohli ketdi (Left early): qolgan vaqtni kechikishga qo'shish

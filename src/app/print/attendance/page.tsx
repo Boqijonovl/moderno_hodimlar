@@ -57,6 +57,7 @@ function PrintAttendanceContent() {
                 <th className="p-3 border border-gray-300 font-bold text-gray-800">Kelgan Vaqti</th>
                 <th className="p-3 border border-gray-300 font-bold text-gray-800">Ketgan Vaqti</th>
                 <th className="p-3 border border-gray-300 font-bold text-gray-800">Holat</th>
+                <th className="p-3 border border-gray-300 font-bold text-amber-700 text-center">Jarima (Daqiqa)</th>
               </tr>
             </thead>
             <tbody>
@@ -65,16 +66,11 @@ function PrintAttendanceContent() {
                 let statusColor = 'text-red-600';
                 
                 if (att.status === 'ON_TIME') {
-                  if (att.lateMinutes > 0) {
-                    statusText = `Erta ketgan (${att.lateMinutes} daq)`;
-                    statusColor = 'text-yellow-600';
-                  } else {
-                    statusText = 'Vaqtida';
-                    statusColor = 'text-green-600';
-                  }
+                  statusText = 'Vaqtida';
+                  statusColor = 'text-green-600';
                 } else if (att.status === 'LATE') {
                   if (att.lateMinutes > 0) {
-                    statusText = `Kechikkan / Erta ketgan (${att.lateMinutes} daq)`;
+                    statusText = 'Kechikkan / Erta ketgan';
                     statusColor = 'text-yellow-600';
                   } else {
                     statusText = 'Vaqtida (Qoplangan)';
@@ -97,12 +93,15 @@ function PrintAttendanceContent() {
                     <td className={`p-3 border border-gray-300 font-bold ${statusColor}`}>
                       {statusText}
                     </td>
+                    <td className="p-3 border border-gray-300 font-bold text-center text-amber-700">
+                      {att.lateMinutes > 0 ? `${att.lateMinutes} daq` : '0 daq'}
+                    </td>
                   </tr>
                 );
               })}
               {data.attendance.length === 0 && (
                 <tr>
-                  <td colSpan={monthParam ? 6 : 5} className="p-4 text-center text-gray-500 italic">Ma'lumot topilmadi</td>
+                  <td colSpan={monthParam ? 7 : 6} className="p-4 text-center text-gray-500 italic">Ma'lumot topilmadi</td>
                 </tr>
               )}
             </tbody>

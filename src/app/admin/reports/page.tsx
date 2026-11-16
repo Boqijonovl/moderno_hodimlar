@@ -115,7 +115,8 @@ export default function ReportsPage() {
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-100 text-xs uppercase text-slate-500 font-semibold">
                     <th className="p-3">Xodim</th>
-                    <th className="p-3 text-center">Kunlar</th>
+                    <th className="p-3 text-center">Davomat (Kunlar)</th>
+                    <th className="p-3 text-center text-amber-600 font-bold">Jarima (Daqiqa)</th>
                     <th className="p-3 text-center">Sotuv Soni</th>
                     <th className="p-3 text-right">Jami Savdo</th>
                     <th className="p-3 text-right text-emerald-600">Real Kirim</th>
@@ -125,12 +126,21 @@ export default function ReportsPage() {
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {data.monthly.length === 0 && (
-                    <tr><td colSpan={5} className="p-6 text-center text-slate-500">Bu oyda ma'lumot yo'q</td></tr>
+                    <tr><td colSpan={8} className="p-6 text-center text-slate-500">Bu oyda ma'lumot yo'q</td></tr>
                   )}
                   {data.monthly.map((m: any) => (
                     <tr key={m.user.id} className="hover:bg-slate-50 transition-colors">
                       <td className="p-3 font-medium text-slate-800">{m.user.name}</td>
-                      <td className="p-3 text-center text-slate-600">{m.totalDaysPresent} kun</td>
+                      <td className="p-3 text-center text-slate-600 font-semibold">{m.totalDaysPresent} kun</td>
+                      <td className="p-3 text-center font-bold">
+                        {m.totalLateMinutes > 0 ? (
+                          <span className="text-amber-600 bg-amber-50 px-2.5 py-1 rounded-lg text-xs font-bold">
+                            {m.totalLateMinutes} daq
+                          </span>
+                        ) : (
+                          <span className="text-slate-400 text-xs">0 daq</span>
+                        )}
+                      </td>
                       <td className="p-3 text-center text-slate-600">{m.totalSalesCount}</td>
                       <td className="p-3 text-right font-bold text-slate-700">{(m.totalSales).toLocaleString()}</td>
                       <td className="p-3 text-right">
@@ -171,7 +181,8 @@ export default function ReportsPage() {
                     <thead>
                       <tr className="bg-slate-50 border-b border-slate-100 text-[10px] uppercase text-slate-500 font-semibold">
                         <th className="p-2 pl-3">Xodim</th>
-                        <th className="p-2 text-center">Holat</th>
+                        <th className="p-2 text-center">Kunlik Davomat</th>
+                        <th className="p-2 text-center text-amber-600 font-bold">Jarima (Daq)</th>
                         <th className="p-2 text-right">Jami Savdo</th>
                         <th className="p-2 text-right">Real Kirim</th>
                         <th className="p-2 text-right pr-3">Xarajat</th>
@@ -183,19 +194,28 @@ export default function ReportsPage() {
                           <td className="p-2 pl-3 font-medium text-slate-800">{d.user.name}</td>
                           <td className="p-2 text-center">
                             {d.attendance ? (
-                              <div className="flex flex-col items-center gap-1">
+                              <div className="flex flex-col items-center gap-0.5">
                                 <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider ${
-                                  d.attendance.status === 'ON_TIME' ? 'bg-emerald-50 text-emerald-600' : 
-                                  d.attendance.status === 'LATE' ? 'bg-amber-50 text-amber-600' : 'bg-rose-50 text-rose-600'
+                                  d.attendance.checkInTime ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'
                                 }`}>
-                                  {d.attendance.status === 'ON_TIME' ? 'Vaqtida' : d.attendance.status === 'LATE' ? 'Kechikkan' : 'Kelmagan'}
+                                  {d.attendance.checkInTime ? 'Kelgan' : 'Kelmagan'}
                                 </span>
-                                <span className="text-[10px] text-slate-400">
-                                  {d.attendance.checkInTime ? new Date(d.attendance.checkInTime).toLocaleTimeString('uz-UZ', {hour:'2-digit', minute:'2-digit'}) : '-'}
+                                <span className="text-[10px] text-slate-500 font-medium">
+                                  {d.attendance.checkInTime ? new Date(d.attendance.checkInTime).toLocaleTimeString('uz-UZ', {hour:'2-digit', minute:'2-digit', timeZone: 'Asia/Tashkent'}) : '-'}
+                                  {d.attendance.checkOutTime ? ` - ${new Date(d.attendance.checkOutTime).toLocaleTimeString('uz-UZ', {hour:'2-digit', minute:'2-digit', timeZone: 'Asia/Tashkent'})}` : (d.attendance.checkInTime ? ' (ishda)' : '')}
                                 </span>
                               </div>
                             ) : (
                               <span className="text-slate-400 text-xs">Kelmagan</span>
+                            )}
+                          </td>
+                          <td className="p-2 text-center">
+                            {d.attendance && d.attendance.lateMinutes > 0 ? (
+                              <span className="text-amber-600 font-bold bg-amber-50 px-2 py-0.5 rounded text-xs">
+                                {d.attendance.lateMinutes} daq
+                              </span>
+                            ) : (
+                              <span className="text-slate-400 text-xs">0 daq</span>
                             )}
                           </td>
                           <td className="p-2 text-right font-bold text-slate-700">

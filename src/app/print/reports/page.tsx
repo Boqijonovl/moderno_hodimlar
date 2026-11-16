@@ -80,7 +80,8 @@ function PrintReportsContent() {
                 <th className="p-3 border border-gray-300 font-bold text-gray-800 text-right">Qilgan Savdosi</th>
                 <th className="p-3 border border-gray-300 font-bold text-gray-800 text-right">Real Kirim</th>
                 <th className="p-3 border border-gray-300 font-bold text-gray-800 text-right">Xarajatlar</th>
-                <th className="p-3 border border-gray-300 font-bold text-gray-800 text-center">Davomat</th>
+                <th className="p-3 border border-gray-300 font-bold text-gray-800 text-center">Davomat (Kunlar)</th>
+                <th className="p-3 border border-gray-300 font-bold text-amber-700 text-center">Jarima (Daqiqa)</th>
               </tr>
             </thead>
             <tbody>
@@ -91,16 +92,17 @@ function PrintReportsContent() {
                   <td className="p-3 border border-gray-300 text-slate-700 font-bold text-right">{formatCurrency(u.totalSales)}</td>
                   <td className="p-3 border border-gray-300 text-emerald-600 font-bold text-right">{formatCurrency(u.totalReceived)}</td>
                   <td className="p-3 border border-gray-300 text-rose-600 font-bold text-right">{formatCurrency(u.totalExpenses)}</td>
-                  <td className="p-3 border border-gray-300 text-center">
-                    <span className="text-green-600 font-bold">{u.totalDaysPresent} kun</span>
-                    <br />
-                    <span className="text-yellow-600 font-bold">{u.totalLateMinutes} daq kechikish</span>
+                  <td className="p-3 border border-gray-300 text-center font-bold text-green-700">
+                    {u.totalDaysPresent} kun
+                  </td>
+                  <td className="p-3 border border-gray-300 text-center font-bold text-amber-700">
+                    {u.totalLateMinutes > 0 ? `${u.totalLateMinutes} daq` : '0 daq'}
                   </td>
                 </tr>
               ))}
               {users.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="p-4 text-center text-gray-500 italic">Ma'lumot topilmadi</td>
+                  <td colSpan={7} className="p-4 text-center text-gray-500 italic">Ma'lumot topilmadi</td>
                 </tr>
               )}
             </tbody>
