@@ -103,12 +103,14 @@ bot.action(/^still_working_(yes|no)_([a-zA-Z0-9-]+)$/, async (ctx) => {
       ));
       
       const newLateMinutes = attendance.lateMinutes || 0;
+      const newStatus = newLateMinutes > 0 ? 'LATE' : 'ON_TIME';
 
       await prisma.attendance.update({
         where: { id: attendanceId },
         data: { 
           checkOutTime: endTimeLimit,
           lateMinutes: newLateMinutes,
+          status: newStatus,
           reason: attendance.reason ? `${attendance.reason} | (Esdan chiqqan, bot orqali yopildi)` : `(Esdan chiqqan, bot orqali yopildi)`
         }
       });
@@ -179,9 +181,11 @@ bot.hears('📅 Oylik Davomat', async (ctx) => {
 
     const stats = {} as Record<string, { days: number, lateMins: number }>;
     attendances.forEach(a => {
-      if (!stats[a.user.name]) stats[a.user.name] = { days: 0, lateMins: 0 };
-      stats[a.user.name].days++;
-      stats[a.user.name].lateMins += (a.lateMinutes || 0);
+      if (a.status !== 'ABSENT' && a.checkInTime !== null) {
+        if (!stats[a.user.name]) stats[a.user.name] = { days: 0, lateMins: 0 };
+        stats[a.user.name].days++;
+        stats[a.user.name].lateMins += (a.lateMinutes || 0);
+      }
     });
 
     let text = `📅 <b>Oylik Davomat (${uzNow.toLocaleDateString('uz-UZ', { month: 'long', year: 'numeric' })})</b>\n\n`;

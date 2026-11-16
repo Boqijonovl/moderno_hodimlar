@@ -70,7 +70,6 @@ export async function POST(req: Request) {
       const startMinuteOfDay = startHour * 60 + startMinute;
 
       const [endHour, endMinute] = (user.workEndTime || "18:00").split(':').map(Number);
-      const endMinuteOfDay = endHour * 60 + endMinute;
 
       // Check if they already have a closed attendance for TODAY (for reopening)
       const closedAttendance = await prisma.attendance.findFirst({
@@ -91,22 +90,39 @@ export async function POST(req: Request) {
         isReopening = true;
         let penaltyToReverse = 0;
         
-        if (currentMinuteOfDay < endMinuteOfDay) {
-           penaltyToReverse = endMinuteOfDay - currentMinuteOfDay;
+        // Calculate remaining minutes until scheduled end of shift
+        const attDate = new Date(closedAttendance.date);
+        let endDay = attDate.getUTCDate();
+        if (endHour < startHour || (endHour === startHour && endMinute < startMinute)) {
+          endDay += 1;
+        }
+        const scheduledEndUTC = new Date(Date.UTC(
+          attDate.getUTCFullYear(),
+          attDate.getUTCMonth(),
+          endDay,
+          endHour - 5,
+          endMinute,
+          0,
+          0
+        ));
+
+        const remainingMs = scheduledEndUTC.getTime() - serverTime.getTime();
+        if (remainingMs > 0) {
+          penaltyToReverse = Math.floor(remainingMs / 60000);
         }
 
-        lateMinutes = (closedAttendance.lateMinutes || 0) - penaltyToReverse;
+        lateMinutes = Math.max(0, (closedAttendance.lateMinutes || 0) - penaltyToReverse);
+        status = lateMinutes > 0 ? 'LATE' : 'ON_TIME';
         
         await prisma.attendance.update({
           where: { id: closedAttendance.id },
           data: {
              checkOutTime: null,
              lateMinutes: lateMinutes,
+             status: status,
              reason: body.reason ? (closedAttendance.reason ? `${closedAttendance.reason} | Qaytdi: ${body.reason}` : `Qaytdi: ${body.reason}`) : closedAttendance.reason
           }
         });
-        
-        status = closedAttendance.status;
       } else {
         const isLate = currentMinuteOfDay > startMinuteOfDay;
         status = isLate ? 'LATE' : 'ON_TIME';
@@ -178,26 +194,45 @@ export async function POST(req: Request) {
         }
       }
 
+      const [startHour, startMinute] = (user.workStartTime || "09:00").split(':').map(Number);
       const [endHour, endMinute] = (user.workEndTime || "18:00").split(':').map(Number);
-      const endMinuteOfDay = endHour * 60 + endMinute;
+
+      const attDate = new Date(attendance.date);
+      let endDay = attDate.getUTCDate();
+      if (endHour < startHour || (endHour === startHour && endMinute < startMinute)) {
+        endDay += 1;
+      }
+      const scheduledEndUTC = new Date(Date.UTC(
+        attDate.getUTCFullYear(),
+        attDate.getUTCMonth(),
+        endDay,
+        endHour - 5,
+        endMinute,
+        0,
+        0
+      ));
 
       let newLateMinutes = attendance.lateMinutes || 0;
+      const diffMinutes = Math.floor((serverTime.getTime() - scheduledEndUTC.getTime()) / 60000);
 
-      if (currentMinuteOfDay < endMinuteOfDay) {
+      if (diffMinutes < 0) {
         // Vohli ketdi (Left early): qolgan vaqtni kechikishga qo'shish
-        const earlyMinutes = endMinuteOfDay - currentMinuteOfDay;
+        const earlyMinutes = Math.abs(diffMinutes);
         newLateMinutes += earlyMinutes;
-      } else if (currentMinuteOfDay > endMinuteOfDay) {
+      } else if (diffMinutes > 0) {
         // Kech ketdi (Left late): ishlagan ortiqcha vaqtni kechikishdan ayirish
-        const extraMinutes = currentMinuteOfDay - endMinuteOfDay;
+        const extraMinutes = diffMinutes;
         newLateMinutes = Math.max(0, newLateMinutes - extraMinutes);
       }
+
+      const newStatus = newLateMinutes > 0 ? 'LATE' : 'ON_TIME';
 
       await prisma.attendance.update({
         where: { id: attendance.id },
         data: { 
           checkOutTime: serverTime,
           lateMinutes: newLateMinutes,
+          status: newStatus,
           reason: body.reason ? (attendance.reason ? `${attendance.reason} | Chiqishda: ${body.reason}` : `Chiqishda: ${body.reason}`) : attendance.reason 
         }
       });
@@ -206,7 +241,14 @@ export async function POST(req: Request) {
         if (process.env.BOT_TOKEN) {
           const bot = new Telegraf(process.env.BOT_TOKEN);
           const admins = await prisma.user.findMany({ where: { role: 'ADMIN' } });
-          const message = `🔴 <b>Ishdan ketdi!</b>\n\n👤 Xodim: ${user.name}\n🕒 Vaqt: ${timeString}${body.reason ? `\n📝 Izoh: ${body.reason}` : ''}`;
+          let diffInfo = '';
+          if (diffMinutes < 0) {
+            diffInfo = `\n⚠️ <b>Erta ketdi:</b> ${Math.abs(diffMinutes)} daqiqa oldin`;
+          } else if (diffMinutes > 0) {
+            diffInfo = `\n⏳ <b>Ortiqcha ishladi:</b> +${diffMinutes} daqiqa`;
+          }
+          const lateInfo = newLateMinutes > 0 ? `\n📊 <b>Jami kechikish/kamomad:</b> ${newLateMinutes} daqiqa` : '\n📊 <b>Holat:</b> Vaqtida';
+          const message = `🔴 <b>Ishdan ketdi!</b>\n\n👤 Xodim: ${user.name}\n🕒 Vaqt: ${timeString}${diffInfo}${lateInfo}${body.reason ? `\n📝 Izoh: ${body.reason}` : ''}`;
           
           for (const admin of admins) {
             if (admin.telegramId) {

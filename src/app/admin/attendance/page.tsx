@@ -212,10 +212,12 @@ export default function AttendancePage() {
             </div>
             <div className="text-right flex flex-col items-end gap-2">
               <span className={`text-[10px] px-2 py-1 rounded-md font-bold uppercase tracking-wider
-                ${att.status === 'ON_TIME' ? 'bg-emerald-50 text-emerald-600' : 
-                  att.status === 'LATE' ? 'bg-amber-50 text-amber-600' : 'bg-rose-50 text-rose-600'}
+                ${att.status === 'ON_TIME' && (!att.lateMinutes || att.lateMinutes === 0) ? 'bg-emerald-50 text-emerald-600' : 
+                  att.status === 'ABSENT' ? 'bg-rose-50 text-rose-600' : 'bg-amber-50 text-amber-600'}
               `}>
-                {att.status === 'ON_TIME' ? 'Vaqtida' : att.status === 'LATE' ? 'Kechikkan' : 'Kelmagan'}
+                {att.status === 'ABSENT' 
+                  ? 'Kelmagan' 
+                  : (att.lateMinutes > 0 ? `Kechikkan (-${att.lateMinutes} daq)` : 'Vaqtida')}
               </span>
               <div className="flex gap-2 mt-1 items-center">
                 <button 

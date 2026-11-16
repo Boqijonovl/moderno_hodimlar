@@ -65,11 +65,21 @@ function PrintAttendanceContent() {
                 let statusColor = 'text-red-600';
                 
                 if (att.status === 'ON_TIME') {
-                  statusText = 'Vaqtida';
-                  statusColor = 'text-green-600';
+                  if (att.lateMinutes > 0) {
+                    statusText = `Erta ketgan (${att.lateMinutes} daq)`;
+                    statusColor = 'text-yellow-600';
+                  } else {
+                    statusText = 'Vaqtida';
+                    statusColor = 'text-green-600';
+                  }
                 } else if (att.status === 'LATE') {
-                  statusText = `Kechikkan (${att.lateMinutes} daq)`;
-                  statusColor = 'text-yellow-600';
+                  if (att.lateMinutes > 0) {
+                    statusText = `Kechikkan / Erta ketgan (${att.lateMinutes} daq)`;
+                    statusColor = 'text-yellow-600';
+                  } else {
+                    statusText = 'Vaqtida (Qoplangan)';
+                    statusColor = 'text-green-600';
+                  }
                 }
 
                 const formatTime = (isoString: string | null) => {

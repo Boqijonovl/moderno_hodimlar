@@ -78,12 +78,21 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
     }
 
     if (updateData.checkOutTime && updateData.checkInTime) {
+      const checkInDate = new Date(updateData.checkInTime);
+      const tashkentCheckInStr = checkInDate.toLocaleString("en-US", {timeZone: "Asia/Tashkent"});
+      const tashkentCheckIn = new Date(tashkentCheckInStr);
+
       const checkOutDate = new Date(updateData.checkOutTime);
       const tashkentCheckOutStr = checkOutDate.toLocaleString("en-US", {timeZone: "Asia/Tashkent"});
       const tashkentCheckOut = new Date(tashkentCheckOutStr);
 
-      const endTimeLimit = new Date(tashkentCheckOut);
+      const [startHour, startMinute] = (user.workStartTime || "09:00").split(':').map(Number);
       const [endHour, endMinute] = (user.workEndTime || "18:00").split(':').map(Number);
+
+      const endTimeLimit = new Date(tashkentCheckIn);
+      if (endHour < startHour || (endHour === startHour && endMinute < startMinute)) {
+        endTimeLimit.setDate(endTimeLimit.getDate() + 1);
+      }
       endTimeLimit.setHours(endHour, endMinute, 0, 0);
 
       if (tashkentCheckOut < endTimeLimit) {
@@ -99,6 +108,8 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
     if (!updateData.checkInTime) {
       newLateMinutes = 0;
       newStatus = 'ABSENT';
+    } else {
+      newStatus = newLateMinutes > 0 ? 'LATE' : 'ON_TIME';
     }
 
     updateData.lateMinutes = newLateMinutes;

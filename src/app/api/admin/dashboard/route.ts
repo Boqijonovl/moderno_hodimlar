@@ -88,8 +88,9 @@ export async function GET() {
     const todayDebt = sales.reduce((sum, s) => sum + (s.balance || 0), 0);
     const totalStoreDebt = totalStoreDebtAggregate._sum.balance || 0;
     
-    const onTime = attendance.filter(a => a.status === 'ON_TIME').length;
-    const late = attendance.filter(a => a.status === 'LATE').length;
+    const presentAttendance = attendance.filter(a => a.status !== 'ABSENT' && a.checkInTime !== null);
+    const onTime = presentAttendance.filter(a => a.status === 'ON_TIME' && (!a.lateMinutes || a.lateMinutes === 0)).length;
+    const late = presentAttendance.filter(a => a.status === 'LATE' || (a.lateMinutes && a.lateMinutes > 0)).length;
     
     // Generate 7-day chart data
     const sevenDaysAgo = new Date(todayStart.getTime() - 6 * 24 * 60 * 60 * 1000);
@@ -131,7 +132,7 @@ export async function GET() {
         totalOutstandingDebt: totalStoreDebt
       },
       salesCount: sales.length,
-      attendance: { total: attendance.length, onTime, late },
+      attendance: { total: presentAttendance.length, onTime, late },
       zapchas: {
         totalParts: zapchasParts.length,
         totalStock: zapchasParts.reduce((sum, p) => sum + p.quantity, 0),

@@ -102,11 +102,12 @@ export async function GET(req: Request) {
     // Process monthly summary
     const monthlySummary = users.map(user => {
       const userAtts = attendances.filter(a => a.userId === user.id);
+      const presentAtts = userAtts.filter(a => a.checkInTime !== null && a.status !== 'ABSENT');
       const userSales = sales.filter(s => s.userId === user.id);
       const userPayments = salePayments.filter(p => p.sale.userId === user.id);
       const userExpenses = expenses.filter(e => e.userId === user.id);
       
-      const totalLateMinutes = userAtts.reduce((sum, a) => sum + a.lateMinutes, 0);
+      const totalLateMinutes = userAtts.reduce((sum, a) => sum + (a.lateMinutes || 0), 0);
       
       const paymentBreakdown: Record<string, number> = {};
       userPayments.forEach(p => {
@@ -116,7 +117,7 @@ export async function GET(req: Request) {
       
       return {
         user: { id: user.id, name: user.name },
-        totalDaysPresent: userAtts.length,
+        totalDaysPresent: presentAtts.length,
         totalLateMinutes,
         totalSales: userSales.reduce((sum, s) => sum + s.totalPrice, 0),
         totalSalesCount: userSales.length,

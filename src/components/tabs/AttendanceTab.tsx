@@ -23,7 +23,7 @@ export default function AttendanceTab({ user, WebApp }: { user: any, WebApp: any
         const records = data.attendances || [];
         setHistory(records);
         
-        const openRecord = records.find((r: { checkOutTime: string | null }) => !r.checkOutTime);
+        const openRecord = data.activeAttendance || records.find((r: { checkOutTime: string | null }) => !r.checkOutTime);
         if (openRecord) {
           setStatus('checked-in');
         } else {
@@ -247,11 +247,13 @@ export default function AttendanceTab({ user, WebApp }: { user: any, WebApp: any
                   )}
                 </div>
                 <div className={`px-2 py-1 rounded-md text-[10px] font-bold ${
-                  record.status === 'ON_TIME' ? 'bg-emerald-100 text-emerald-700' :
-                  record.status === 'LATE' ? 'bg-amber-100 text-amber-700' :
-                  'bg-rose-100 text-rose-700'
+                  (!record.lateMinutes || record.lateMinutes === 0) && record.status === 'ON_TIME' ? 'bg-emerald-100 text-emerald-700' :
+                  record.status === 'ABSENT' ? 'bg-rose-100 text-rose-700' :
+                  'bg-amber-100 text-amber-700'
                 }`}>
-                  {record.status === 'ON_TIME' ? t('on_time') : record.status === 'LATE' ? t('late') : t('absent')}
+                  {record.status === 'ABSENT' 
+                    ? t('absent') 
+                    : (record.lateMinutes > 0 ? `${t('late')} (-${record.lateMinutes}d)` : t('on_time'))}
                 </div>
               </div>
             ))

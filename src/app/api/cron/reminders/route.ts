@@ -157,6 +157,7 @@ export async function GET(req: Request) {
           data: {
             checkOutTime: endTimeLimit,
             lateMinutes: newLateMinutes,
+            status: 'LATE',
             reason: att.reason ? `${att.reason} | (Esdan chiqqan, jarima yozildi)` : `(Esdan chiqqan, jarima yozildi)`
           }
         });
