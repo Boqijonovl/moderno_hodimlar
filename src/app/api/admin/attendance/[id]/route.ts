@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { calculateAttendanceMetrics } from '@/lib/attendance';
 
 export async function DELETE(req: Request, props: { params: Promise<{ id: string }> }) {
   try {
@@ -49,71 +50,25 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
       const ts = Number(withoutPrefix.slice(lastDash + 1));
       mockTargetDate = Number.isFinite(ts) ? new Date(ts) : new Date();
     } else {
-      const existing = await prisma.attendance.findUnique({ where: { id }, select: { userId: true } });
+      const existing = await prisma.attendance.findUnique({ where: { id }, select: { userId: true, date: true } });
       if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
       targetUserId = existing.userId;
+      mockTargetDate = existing.date;
     }
 
     const user = await prisma.user.findUnique({ where: { id: targetUserId } });
     if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
 
-    let newLateMinutes = 0;
-    let newStatus = updateData.status || 'ABSENT';
+    const metrics = calculateAttendanceMetrics({
+      checkInTime: updateData.checkInTime,
+      checkOutTime: updateData.checkOutTime,
+      date: mockTargetDate || updateData.checkInTime,
+      workStartTime: user.workStartTime,
+      workEndTime: user.workEndTime
+    });
 
-    if (updateData.checkInTime) {
-      const checkInDate = new Date(updateData.checkInTime);
-      const tashkentCheckInStr = checkInDate.toLocaleString("en-US", {timeZone: "Asia/Tashkent"});
-      const tashkentCheckIn = new Date(tashkentCheckInStr);
-      
-      const onTimeLimit = new Date(tashkentCheckIn);
-      const [startHour, startMinute] = (user.workStartTime || "09:00").split(':').map(Number);
-      onTimeLimit.setHours(startHour, startMinute, 0, 0);
-
-      const isLate = tashkentCheckIn > onTimeLimit;
-      newStatus = isLate ? 'LATE' : 'ON_TIME';
-
-      if (isLate) {
-        newLateMinutes = Math.floor((tashkentCheckIn.getTime() - onTimeLimit.getTime()) / 60000);
-      }
-    }
-
-    if (updateData.checkOutTime && updateData.checkInTime) {
-      const checkInDate = new Date(updateData.checkInTime);
-      const tashkentCheckInStr = checkInDate.toLocaleString("en-US", {timeZone: "Asia/Tashkent"});
-      const tashkentCheckIn = new Date(tashkentCheckInStr);
-
-      const checkOutDate = new Date(updateData.checkOutTime);
-      const tashkentCheckOutStr = checkOutDate.toLocaleString("en-US", {timeZone: "Asia/Tashkent"});
-      const tashkentCheckOut = new Date(tashkentCheckOutStr);
-
-      const [startHour, startMinute] = (user.workStartTime || "09:00").split(':').map(Number);
-      const [endHour, endMinute] = (user.workEndTime || "18:00").split(':').map(Number);
-
-      const endTimeLimit = new Date(tashkentCheckIn);
-      if (endHour < startHour || (endHour === startHour && endMinute < startMinute)) {
-        endTimeLimit.setDate(endTimeLimit.getDate() + 1);
-      }
-      endTimeLimit.setHours(endHour, endMinute, 0, 0);
-
-      if (tashkentCheckOut < endTimeLimit) {
-        const earlyMinutes = Math.floor((endTimeLimit.getTime() - tashkentCheckOut.getTime()) / 60000);
-        newLateMinutes += earlyMinutes;
-      } else if (tashkentCheckOut > endTimeLimit) {
-        const extraMinutes = Math.floor((tashkentCheckOut.getTime() - endTimeLimit.getTime()) / 60000);
-        newLateMinutes -= extraMinutes;
-        if (newLateMinutes < 0) newLateMinutes = 0;
-      }
-    }
-
-    if (!updateData.checkInTime) {
-      newLateMinutes = 0;
-      newStatus = 'ABSENT';
-    } else {
-      newStatus = newLateMinutes > 0 ? 'LATE' : 'ON_TIME';
-    }
-
-    updateData.lateMinutes = newLateMinutes;
-    updateData.status = newStatus;
+    updateData.lateMinutes = metrics.lateMinutes;
+    updateData.status = metrics.status;
 
     if (id.startsWith('mock-')) {
       const created = await prisma.attendance.create({

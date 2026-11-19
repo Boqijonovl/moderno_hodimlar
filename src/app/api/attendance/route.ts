@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getDistance } from 'geolib';
 import { Telegraf } from 'telegraf';
+import { calculateAttendanceMetrics } from '@/lib/attendance';
 
 function getTashkentTime(date: Date = new Date()) {
   // Uzbekistan is UTC+5 strictly (no DST)
@@ -67,8 +68,6 @@ export async function POST(req: Request) {
       }
 
       const [startHour, startMinute] = (user.workStartTime || "09:00").split(':').map(Number);
-      const startMinuteOfDay = startHour * 60 + startMinute;
-
       const [endHour, endMinute] = (user.workEndTime || "18:00").split(':').map(Number);
 
       // Check if they already have a closed attendance for TODAY (for reopening)
@@ -124,12 +123,14 @@ export async function POST(req: Request) {
           }
         });
       } else {
-        const isLate = currentMinuteOfDay > startMinuteOfDay;
-        status = isLate ? 'LATE' : 'ON_TIME';
-
-        if (isLate) {
-          lateMinutes = currentMinuteOfDay - startMinuteOfDay;
-        }
+        const metrics = calculateAttendanceMetrics({
+          checkInTime: serverTime,
+          date: todayDate,
+          workStartTime: user.workStartTime,
+          workEndTime: user.workEndTime
+        });
+        status = metrics.status;
+        lateMinutes = metrics.lateMinutes;
 
         await prisma.attendance.create({
           data: {
@@ -194,45 +195,20 @@ export async function POST(req: Request) {
         }
       }
 
-      const [startHour, startMinute] = (user.workStartTime || "09:00").split(':').map(Number);
-      const [endHour, endMinute] = (user.workEndTime || "18:00").split(':').map(Number);
-
-      const attDate = new Date(attendance.date);
-      let endDay = attDate.getUTCDate();
-      if (endHour < startHour || (endHour === startHour && endMinute < startMinute)) {
-        endDay += 1;
-      }
-      const scheduledEndUTC = new Date(Date.UTC(
-        attDate.getUTCFullYear(),
-        attDate.getUTCMonth(),
-        endDay,
-        endHour - 5,
-        endMinute,
-        0,
-        0
-      ));
-
-      let newLateMinutes = attendance.lateMinutes || 0;
-      const diffMinutes = Math.round((serverTime.getTime() - scheduledEndUTC.getTime()) / 60000);
-
-      if (diffMinutes < 0) {
-        // Vohli ketdi (Left early): qolgan vaqtni kechikishga qo'shish
-        const earlyMinutes = Math.abs(diffMinutes);
-        newLateMinutes += earlyMinutes;
-      } else if (diffMinutes > 0) {
-        // Kech ketdi (Left late): ishlagan ortiqcha vaqtni kechikishdan ayirish
-        const extraMinutes = diffMinutes;
-        newLateMinutes = Math.max(0, newLateMinutes - extraMinutes);
-      }
-
-      const newStatus = newLateMinutes > 0 ? 'LATE' : 'ON_TIME';
+      const metrics = calculateAttendanceMetrics({
+        checkInTime: attendance.checkInTime,
+        checkOutTime: serverTime,
+        date: attendance.date,
+        workStartTime: user.workStartTime,
+        workEndTime: user.workEndTime
+      });
 
       await prisma.attendance.update({
         where: { id: attendance.id },
         data: { 
           checkOutTime: serverTime,
-          lateMinutes: newLateMinutes,
-          status: newStatus,
+          lateMinutes: metrics.lateMinutes,
+          status: metrics.status,
           reason: body.reason ? (attendance.reason ? `${attendance.reason} | Chiqishda: ${body.reason}` : `Chiqishda: ${body.reason}`) : attendance.reason 
         }
       });
@@ -242,12 +218,12 @@ export async function POST(req: Request) {
           const bot = new Telegraf(process.env.BOT_TOKEN);
           const admins = await prisma.user.findMany({ where: { role: 'ADMIN' } });
           let diffInfo = '';
-          if (diffMinutes < 0) {
-            diffInfo = `\n⚠️ <b>Erta ketdi:</b> ${Math.abs(diffMinutes)} daqiqa oldin`;
-          } else if (diffMinutes > 0) {
-            diffInfo = `\n⏳ <b>Ortiqcha ishladi:</b> +${diffMinutes} daqiqa`;
+          if (metrics.earlyMinutes > 0) {
+            diffInfo = `\n⚠️ <b>Erta ketdi:</b> ${metrics.earlyMinutes} daqiqa oldin`;
+          } else if (metrics.overtimeMinutes > 0) {
+            diffInfo = `\n⏳ <b>Ortiqcha ishladi:</b> +${metrics.overtimeMinutes} daqiqa`;
           }
-          const lateInfo = newLateMinutes > 0 ? `\n📊 <b>Jami kechikish/kamomad:</b> ${newLateMinutes} daqiqa` : '\n📊 <b>Holat:</b> Vaqtida';
+          const lateInfo = metrics.lateMinutes > 0 ? `\n📊 <b>Jami kechikish/kamomad:</b> ${metrics.lateMinutes} daqiqa` : '\n📊 <b>Holat:</b> Vaqtida';
           const message = `🔴 <b>Ishdan ketdi!</b>\n\n👤 Xodim: ${user.name}\n🕒 Vaqt: ${timeString}${diffInfo}${lateInfo}${body.reason ? `\n📝 Izoh: ${body.reason}` : ''}`;
           
           for (const admin of admins) {
